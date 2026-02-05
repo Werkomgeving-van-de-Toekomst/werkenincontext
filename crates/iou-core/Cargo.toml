@@ -1,0 +1,20 @@
+[package]
+name = "iou-core"
+version.workspace = true
+edition = "2024"
+description = "Core domain models for IOU-Modern - Dutch government information management"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+
+# Enum utilities
+strum = { version = "0.26", features = ["derive"] }
+
+# Validation
+validator = { version = "0.19", features = ["derive"] }
+
+[dev-dependencies]

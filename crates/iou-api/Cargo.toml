@@ -1,0 +1,46 @@
+[package]
+name = "iou-api"
+version.workspace = true
+edition = "2024"
+description = "REST API server for IOU-Modern using Axum and DuckDB"
+
+[dependencies]
+# Internal crates
+iou-core.workspace = true
+iou-ai = { path = "../iou-ai" }
+
+# Web framework
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+
+# Async runtime
+tokio.workspace = true
+
+# Database - DuckDB embedded
+duckdb.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Types
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Authentication
+jsonwebtoken = "9.3"
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Config
+dotenvy = "0.15"
+
+[dev-dependencies]
+tokio-test = "0.4"

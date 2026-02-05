@@ -1,0 +1,52 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/iou-core",
+    "crates/iou-api",
+    "crates/iou-ai",
+    "crates/iou-frontend",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["IOU-Modern Team"]
+license = "MIT"
+repository = "https://github.com/terminal-woo/iou-modern"
+
+[workspace.dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Async runtime
+tokio = { version = "1.43", features = ["full"] }
+
+# Database - DuckDB (embedded analytical database)
+duckdb = { version = "1.1", features = ["bundled", "json", "parquet"] }
+
+# Web framework
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Internal crates
+iou-core = { path = "crates/iou-core" }
+iou-ai = { path = "crates/iou-ai" }
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1

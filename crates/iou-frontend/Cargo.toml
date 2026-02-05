@@ -1,0 +1,60 @@
+[package]
+name = "iou-frontend"
+version.workspace = true
+edition = "2021"
+description = "Leptos WebAssembly frontend for IOU-Modern"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Internal
+iou-core.workspace = true
+
+# Leptos framework
+leptos = { version = "0.7", features = ["csr"] }
+leptos_router = "0.7"
+leptos_meta = "0.7"
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4", "js"] }
+chrono = { version = "0.4", features = ["serde", "wasmbind"] }
+
+# WASM bindings
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "console",
+    "Storage",
+    "Headers",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "AbortController",
+    "AbortSignal",
+] }
+
+# HTTP client for WASM
+gloo-net = { version = "0.6", features = ["http"] }
+gloo-timers = "0.3"
+gloo-storage = "0.3"
+
+# Error handling
+thiserror.workspace = true
+
+# Logging in WASM
+console_error_panic_hook = "0.1"
+tracing-wasm = "0.2"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
