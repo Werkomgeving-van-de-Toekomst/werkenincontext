@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../flevoland-theme.css">
+    <title>Nalevingscontrole - IOU</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%); color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .back-btn { background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .panel { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .compliance-item { display: flex; align-items: flex-start; gap: 15px; padding: 15px; margin: 10px 0; border-radius: 6px; }
+        .compliance-item.pass { background: #e8f5e9; border-left: 4px solid #4caf50; }
+        .compliance-item.warning { background: #fff3e0; border-left: 4px solid #ff9800; }
+        .compliance-item.fail { background: #ffebee; border-left: 4px solid #f44336; }
+        .icon { font-size: 24px; }
+        h2 { margin-bottom: 15px; }
+        .btn { background: #0066CC; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✅ Nalevingscontrole</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug</a>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <h2>Woo (Wet Open Overheid) Check</h2>
+            <div class="compliance-item pass">
+                <div class="icon">✓</div>
+                <div>
+                    <strong>8 documenten Woo-relevant</strong><br>
+                    <small>Alle documenten hebben correcte metadata voor openbaarmaking</small>
+                </div>
+            </div>
+            <div class="compliance-item warning">
+                <div class="icon">⚠</div>
+                <div>
+                    <strong>3 documenten wachten op publicatie</strong><br>
+                    <small>Woo-deadline: 28 februari 2025 (13 dagen)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Archiefwet Compliance</h2>
+            <div class="compliance-item pass">
+                <div class="icon">✓</div>
+                <div>
+                    <strong>Bewaartermijnen correct ingesteld</strong><br>
+                    <small>14/14 documenten hebben automatisch bepaalde bewaartermijn</small>
+                </div>
+            </div>
+            <div class="compliance-item pass">
+                <div class="icon">✓</div>
+                <div>
+                    <strong>Metadatering volledig</strong><br>
+                    <small>Alle vereiste metadata aanwezig (auteur, datum, context, classificatie)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>AVG (Privacywetgeving)</h2>
+            <div class="compliance-item pass">
+                <div class="icon">✓</div>
+                <div>
+                    <strong>Geen bijzondere persoonsgegevens gedetecteerd</strong><br>
+                    <small>Alle documenten gescand op BSN, medische data, etc.</small>
+                </div>
+            </div>
+            <div class="compliance-item warning">
+                <div class="icon">⚠</div>
+                <div>
+                    <strong>2 documenten bevatten contactgegevens</strong><br>
+                    <small>Anonimisering vereist bij Woo-publicatie</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>BIO (Baseline Informatiebeveiliging Overheid)</h2>
+            <div class="compliance-item pass">
+                <div class="icon">✓</div>
+                <div>
+                    <strong>Toegangscontrole actief</strong><br>
+                    <small>Fijnmazig autorisatieschema op basis van rollen</small>
+                </div>
+            </div>
+            <div class="compliance-item pass">
+                <div class="icon">✓</div>
+                <div>
+                    <strong>Audit logging volledig</strong><br>
+                    <small>Alle acties worden gelogd voor traceerbaarheid</small>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="alert('Compliance rapport wordt gegenereerd...')">📊 Genereer Rapport</button>
+        <button class="btn" onclick="alert('Alle belanghebbenden worden geïnformeerd')">📧 Informeer Stakeholders</button>
+    </div>
+</body>
+</html>

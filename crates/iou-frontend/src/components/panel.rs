@@ -1,20 +1,17 @@
 //! Panel component - reusable card with header
 
-use leptos::prelude::*;
+use dioxus::prelude::*;
 
 #[component]
-pub fn Panel(
-    title: &'static str,
-    children: Children,
-) -> impl IntoView {
-    view! {
-        <div class="panel">
-            <div class="panel-header">
-                <h2>{title}</h2>
-            </div>
-            <div class="panel-content">
-                {children()}
-            </div>
-        </div>
+pub fn Panel(title: String, children: Element) -> Element {
+    rsx! {
+        div { class: "panel",
+            div { class: "panel-header",
+                h2 { "{title}" }
+            }
+            div { class: "panel-content",
+                {children}
+            }
+        }
     }
 }

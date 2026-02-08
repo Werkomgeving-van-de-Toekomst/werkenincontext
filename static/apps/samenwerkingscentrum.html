@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../flevoland-theme.css">
+    <title>Samenwerkingscentrum - IOU</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%); color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .back-btn { background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; }
+        .main { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 250px; background: white; border-right: 1px solid #ddd; padding: 20px; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: white; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; }
+        .message { margin-bottom: 15px; }
+        .message.me { text-align: right; }
+        .message-bubble { display: inline-block; padding: 10px 15px; border-radius: 16px; max-width: 70%; }
+        .message.me .message-bubble { background: #0066CC; color: white; }
+        .message.other .message-bubble { background: #f0f0f0; color: #333; }
+        .message-time { font-size: 11px; color: #999; margin-top: 3px; }
+        .input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        .input-area input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 24px; }
+        .input-area button { background: #0066CC; color: white; padding: 12px 24px; border: none; border-radius: 24px; cursor: pointer; }
+        .channel { padding: 10px; margin: 5px 0; border-radius: 6px; cursor: pointer; }
+        .channel:hover { background: #f0f0f0; }
+        .channel.active { background: #0066CC; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💬 Samenwerkingscentrum</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug</a>
+    </div>
+    <div class="main">
+        <div class="sidebar">
+            <h3 style="margin-bottom: 15px;">Kanalen</h3>
+            <div class="channel active"># Circulaire Economie</div>
+            <div class="channel"># Algemeen Team</div>
+            <div class="channel"># Data Analyse</div>
+            <div class="channel"># Juridische Vragen</div>
+            <h3 style="margin: 20px 0 15px;">Direct Messages</h3>
+            <div class="channel">💬 Maria Jansen</div>
+            <div class="channel">💬 Jan Bakker</div>
+            <div class="channel">💬 Sophie de Vries</div>
+        </div>
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <div class="message other">
+                    <div><strong>Maria Jansen</strong></div>
+                    <div class="message-bubble">Team, het nieuwe projectplan is klaar! Kunnen jullie feedback geven?</div>
+                    <div class="message-time">Vandaag 10:24</div>
+                </div>
+                <div class="message other">
+                    <div><strong>Sophie de Vries</strong></div>
+                    <div class="message-bubble">Ik heb de data analyse afgerond. Zie document in het project.</div>
+                    <div class="message-time">Vandaag 11:15</div>
+                </div>
+                <div class="message me">
+                    <div class="message-bubble">Super! Ik ga het doornemen vanmiddag.</div>
+                    <div class="message-time">Vandaag 11:18</div>
+                </div>
+                <div class="message other">
+                    <div><strong>Jan Bakker</strong></div>
+                    <div class="message-bubble">Juridisch gezien kunnen we verder. Alle compliance checks zijn OK ✓</div>
+                    <div class="message-time">Vandaag 13:42</div>
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type een bericht..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()">Verzend</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            if (!input.value.trim()) return;
+            
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message me';
+            messageDiv.innerHTML = `
+                <div class="message-bubble">${input.value}</div>
+                <div class="message-time">Nu</div>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            input.value = '';
+        }
+    </script>
+</body>
+</html>

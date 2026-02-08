@@ -1,198 +1,209 @@
 //! Main dashboard page
 
-use leptos::prelude::*;
+use dioxus::prelude::*;
 
-use crate::components::{Header, Panel, AppCard};
-use crate::state::AppState;
+use crate::components::{AppCard, Header, Panel};
+use crate::state::{AppState, UserInfo};
+use crate::Route;
 
 #[component]
-pub fn Dashboard() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState must be provided");
+pub fn Dashboard() -> Element {
+    let mut state = use_context::<Signal<AppState>>();
 
-    // Demo apps data
-    let apps = vec![
-        ("Data Verkenner", "Verken provinciale datasets", "/apps/data-verkenner", Some("Populair")),
-        ("Document Generator", "Genereer compliant documenten", "/apps/document-generator", Some("Nieuw")),
-        ("Nalevingscontrole", "Monitor Woo/AVG compliance", "/apps/nalevingscontrole", None),
-        ("Tijdlijn Weergave", "Bekijk activiteiten tijdlijn", "/apps/tijdlijn-weergave", None),
-        ("GraphRAG Explorer", "Ontdek relaties via kennisgraaf", "/graphrag", Some("AI")),
-        ("Samenwerkingscentrum", "Werk samen met anderen", "/apps/samenwerkingscentrum", None),
-    ];
+    use_effect(move || {
+        state.write().user = Some(UserInfo::flevoland());
+    });
 
-    view! {
-        <Header/>
+    rsx! {
+        Header {}
 
-        <main class="container">
+        main { class: "container",
             // Context Bar
-            <div class="context-bar">
-                <div class="breadcrumb">
-                    <span>"Provincie Flevoland"</span>
-                    <span>" › "</span>
-                    <span class="current">"Duurzaamheid & Energie"</span>
-                </div>
+            div { class: "context-bar",
+                div { class: "breadcrumb",
+                    span { "Provincie Flevoland" }
+                    span { " \u{203A} " }
+                    span { class: "current", "Duurzaamheid & Energie" }
+                }
 
-                <select>
-                    <option>"Duurzaamheid & Energie"</option>
-                    <option>"Windpark Almere"</option>
-                    <option>"Omgevingsvergunning Bouw"</option>
-                    <option>"Omgevingsvisie 2030"</option>
-                </select>
+                select {
+                    option { "Duurzaamheid & Energie" }
+                    option { "Windpark Almere" }
+                    option { "Omgevingsvergunning Bouw" }
+                    option { "Omgevingsvisie 2030" }
+                }
 
-                <div class="search-input">
-                    <input
-                        type="text"
-                        placeholder="Zoeken in context..."
-                        on:input=move |ev| {
-                            state.search_query.set(event_target_value(&ev));
-                        }
-                    />
-                    <button class="btn btn-primary">"Zoeken"</button>
-                </div>
-            </div>
+                div { class: "search-input",
+                    input {
+                        r#type: "text",
+                        placeholder: "Zoeken in context...",
+                        oninput: move |evt| {
+                            state.write().search_query = evt.value();
+                        },
+                    }
+                    button { class: "btn btn-primary", "Zoeken" }
+                }
+            }
 
             // Dashboard Grid
-            <div class="dashboard-grid">
+            div { class: "dashboard-grid",
                 // Left Column - Apps
-                <div>
-                    <Panel title="Context Apps">
-                        <div class="app-grid">
-                            {apps.into_iter().map(|(name, desc, url, badge)| {
-                                match badge {
-                                    Some(b) => view! {
-                                        <AppCard
-                                            name=name.to_string()
-                                            description=desc.to_string()
-                                            endpoint=url.to_string()
-                                            badge=b.to_string()
-                                        />
-                                    }.into_any(),
-                                    None => view! {
-                                        <AppCard
-                                            name=name.to_string()
-                                            description=desc.to_string()
-                                            endpoint=url.to_string()
-                                        />
-                                    }.into_any(),
+                div {
+                    Panel { title: "Context Apps".to_string(),
+                        div { class: "app-grid",
+                            Link { to: Route::DataVerkenner,
+                                AppCard {
+                                    name: "Data Verkenner".to_string(),
+                                    description: "Verken provinciale datasets".to_string(),
+                                    badge: "Populair".to_string(),
                                 }
-                            }).collect::<Vec<_>>()}
-                        </div>
-                    </Panel>
+                            }
+                            Link { to: Route::DocumentGenerator,
+                                AppCard {
+                                    name: "Document Generator".to_string(),
+                                    description: "Genereer compliant documenten".to_string(),
+                                    badge: "Nieuw".to_string(),
+                                }
+                            }
+                            Link { to: Route::Nalevingscontrole,
+                                AppCard {
+                                    name: "Nalevingscontrole".to_string(),
+                                    description: "Monitor Woo/AVG compliance".to_string(),
+                                }
+                            }
+                            AppCard {
+                                name: "Tijdlijn Weergave".to_string(),
+                                description: "Bekijk activiteiten tijdlijn".to_string(),
+                            }
+                            Link { to: Route::GraphRAGExplorer,
+                                AppCard {
+                                    name: "GraphRAG Explorer".to_string(),
+                                    description: "Ontdek relaties via kennisgraaf".to_string(),
+                                    badge: "AI".to_string(),
+                                }
+                            }
+                            AppCard {
+                                name: "Samenwerkingscentrum".to_string(),
+                                description: "Werk samen met anderen".to_string(),
+                            }
+                        }
+                    }
 
-                    <div style="height: 20px;"></div>
+                    div { style: "height: 20px;" }
 
-                    <Panel title="Compliance Status">
-                        <div class="compliance-indicator ok">
-                            <div class="icon">"✓"</div>
-                            <div class="label">"Woo Compliance"</div>
-                            <div class="value">"98%"</div>
-                        </div>
-                        <div class="compliance-indicator ok">
-                            <div class="icon">"✓"</div>
-                            <div class="label">"AVG Compliance"</div>
-                            <div class="value">"100%"</div>
-                        </div>
-                        <div class="compliance-indicator warning">
-                            <div class="icon">"!"</div>
-                            <div class="label">"Bewaartermijnen"</div>
-                            <div class="value">"3 acties"</div>
-                        </div>
-                    </Panel>
-                </div>
+                    Panel { title: "Compliance Status".to_string(),
+                        div { class: "compliance-indicator ok",
+                            div { class: "icon", "\u{2713}" }
+                            div { class: "label", "Woo Compliance" }
+                            div { class: "value", "98%" }
+                        }
+                        div { class: "compliance-indicator ok",
+                            div { class: "icon", "\u{2713}" }
+                            div { class: "label", "AVG Compliance" }
+                            div { class: "value", "100%" }
+                        }
+                        div { class: "compliance-indicator warning",
+                            div { class: "icon", "!" }
+                            div { class: "label", "Bewaartermijnen" }
+                            div { class: "value", "3 acties" }
+                        }
+                    }
+                }
 
                 // Center Column - Documents
-                <div>
-                    <Panel title="Recente Documenten">
-                        <ul class="document-list">
-                            <li class="document-item">
-                                <div class="document-icon">"📄"</div>
-                                <div class="document-info">
-                                    <h4>"Besluit subsidieverlening windpark"</h4>
-                                    <div class="meta">"Besluit • 2 dagen geleden"</div>
-                                </div>
-                                <span class="tag woo">"Woo"</span>
-                            </li>
-                            <li class="document-item">
-                                <div class="document-icon">"📧"</div>
-                                <div class="document-info">
-                                    <h4>"Re: Voortgang projectplan duurzaamheid"</h4>
-                                    <div class="meta">"Email • 3 dagen geleden"</div>
-                                </div>
-                            </li>
-                            <li class="document-item">
-                                <div class="document-icon">"📄"</div>
-                                <div class="document-info">
-                                    <h4>"Advies Omgevingsdienst Flevoland"</h4>
-                                    <div class="meta">"Document • 1 week geleden"</div>
-                                </div>
-                                <span class="tag">"advies"</span>
-                            </li>
-                            <li class="document-item">
-                                <div class="document-icon">"📊"</div>
-                                <div class="document-info">
-                                    <h4>"Dataset energieverbruik gemeenten"</h4>
-                                    <div class="meta">"Data • 2 weken geleden"</div>
-                                </div>
-                                <span class="tag">"CBS"</span>
-                            </li>
-                        </ul>
-                    </Panel>
+                div {
+                    Panel { title: "Recente Documenten".to_string(),
+                        ul { class: "document-list",
+                            li { class: "document-item",
+                                div { class: "document-icon", "\u{1F4C4}" }
+                                div { class: "document-info",
+                                    h4 { "Besluit subsidieverlening windpark" }
+                                    div { class: "meta", "Besluit \u{2022} 2 dagen geleden" }
+                                }
+                                span { class: "tag woo", "Woo" }
+                            }
+                            li { class: "document-item",
+                                div { class: "document-icon", "\u{1F4E7}" }
+                                div { class: "document-info",
+                                    h4 { "Re: Voortgang projectplan duurzaamheid" }
+                                    div { class: "meta", "Email \u{2022} 3 dagen geleden" }
+                                }
+                            }
+                            li { class: "document-item",
+                                div { class: "document-icon", "\u{1F4C4}" }
+                                div { class: "document-info",
+                                    h4 { "Advies Omgevingsdienst Flevoland" }
+                                    div { class: "meta", "Document \u{2022} 1 week geleden" }
+                                }
+                                span { class: "tag", "advies" }
+                            }
+                            li { class: "document-item",
+                                div { class: "document-icon", "\u{1F4CA}" }
+                                div { class: "document-info",
+                                    h4 { "Dataset energieverbruik gemeenten" }
+                                    div { class: "meta", "Data \u{2022} 2 weken geleden" }
+                                }
+                                span { class: "tag", "CBS" }
+                            }
+                        }
+                    }
 
-                    <div style="height: 20px;"></div>
+                    div { style: "height: 20px;" }
 
-                    <Panel title="Gerelateerde Domeinen">
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                            <div class="tag">"Windpark Almere"</div>
-                            <div class="tag">"Omgevingsvisie 2030"</div>
-                            <div class="tag">"Subsidieregeling Energie"</div>
-                            <div class="tag">"Klimaatadaptatie"</div>
-                        </div>
-                    </Panel>
-                </div>
+                    Panel { title: "Gerelateerde Domeinen".to_string(),
+                        div { style: "display: flex; flex-wrap: wrap; gap: 10px;",
+                            div { class: "tag", "Windpark Almere" }
+                            div { class: "tag", "Omgevingsvisie 2030" }
+                            div { class: "tag", "Subsidieregeling Energie" }
+                            div { class: "tag", "Klimaatadaptatie" }
+                        }
+                    }
+                }
 
                 // Right Column - Stakeholders & AI
-                <div>
-                    <Panel title="Stakeholders">
-                        <ul class="document-list">
-                            <li class="document-item">
-                                <div class="document-icon" style="background: #7CB342;">"👤"</div>
-                                <div class="document-info">
-                                    <h4>"Gemeente Almere"</h4>
-                                    <div class="meta">"Mede-initiatiefnemer"</div>
-                                </div>
-                            </li>
-                            <li class="document-item">
-                                <div class="document-icon" style="background: #7CB342;">"👤"</div>
-                                <div class="document-info">
-                                    <h4>"Omgevingsdienst Flevoland"</h4>
-                                    <div class="meta">"Adviseur"</div>
-                                </div>
-                            </li>
-                            <li class="document-item">
-                                <div class="document-icon" style="background: #7CB342;">"👤"</div>
-                                <div class="document-info">
-                                    <h4>"Vattenfall NL"</h4>
-                                    <div class="meta">"Aanvrager"</div>
-                                </div>
-                            </li>
-                        </ul>
-                    </Panel>
+                div {
+                    Panel { title: "Stakeholders".to_string(),
+                        ul { class: "document-list",
+                            li { class: "document-item",
+                                div { class: "document-icon", style: "background: #7CB342;", "\u{1F464}" }
+                                div { class: "document-info",
+                                    h4 { "Gemeente Almere" }
+                                    div { class: "meta", "Mede-initiatiefnemer" }
+                                }
+                            }
+                            li { class: "document-item",
+                                div { class: "document-icon", style: "background: #7CB342;", "\u{1F464}" }
+                                div { class: "document-info",
+                                    h4 { "Omgevingsdienst Flevoland" }
+                                    div { class: "meta", "Adviseur" }
+                                }
+                            }
+                            li { class: "document-item",
+                                div { class: "document-icon", style: "background: #7CB342;", "\u{1F464}" }
+                                div { class: "document-info",
+                                    h4 { "Vattenfall NL" }
+                                    div { class: "meta", "Aanvrager" }
+                                }
+                            }
+                        }
+                    }
 
-                    <div style="height: 20px;"></div>
+                    div { style: "height: 20px;" }
 
-                    <Panel title="AI Suggesties">
-                        <div class="compliance-indicator ok">
-                            <div class="icon">"🤖"</div>
-                            <div class="label">"3 nieuwe metadata suggesties"</div>
-                        </div>
-                        <p style="font-size: 0.875rem; color: #666; margin-top: 10px;">
+                    Panel { title: "AI Suggesties".to_string(),
+                        div { class: "compliance-indicator ok",
+                            div { class: "icon", "\u{1F916}" }
+                            div { class: "label", "3 nieuwe metadata suggesties" }
+                        }
+                        p { style: "font-size: 0.875rem; color: #666; margin-top: 10px;",
                             "AI heeft automatisch tags en classificaties voorgesteld voor 3 nieuwe documenten."
-                        </p>
-                        <button class="btn btn-secondary" style="margin-top: 10px; width: 100%;">
+                        }
+                        button { class: "btn btn-secondary", style: "margin-top: 10px; width: 100%;",
                             "Bekijk suggesties"
-                        </button>
-                    </Panel>
-                </div>
-            </div>
-        </main>
+                        }
+                    }
+                }
+            }
+        }
     }
 }

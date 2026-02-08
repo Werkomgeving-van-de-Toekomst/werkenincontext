@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../flevoland-theme.css">
+    <title>Tijdlijn Weergave - IOU</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%); color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .back-btn { background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .timeline { position: relative; padding-left: 40px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: #ddd; }
+        .timeline-item { position: relative; padding: 20px; background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .timeline-item::before { content: ''; position: absolute; left: -30px; top: 25px; width: 20px; height: 20px; border-radius: 50%; background: #0066CC; border: 3px solid white; box-shadow: 0 0 0 2px #0066CC; }
+        .timeline-date { color: #0066CC; font-weight: bold; margin-bottom: 5px; }
+        .timeline-title { font-size: 16px; font-weight: 600; margin-bottom: 5px; }
+        .timeline-description { color: #666; font-size: 14px; }
+        .timeline-user { color: #999; font-size: 12px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📅 Tijdlijn Weergave</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug</a>
+    </div>
+    <div class="container">
+        <h2 style="margin: 20px 0;">Project: Circulaire Economie Flevoland 2025</h2>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">15 februari 2025, 14:23</div>
+                <div class="timeline-title">📄 Document toegevoegd</div>
+                <div class="timeline-description">Projectplan Circulaire Economie Q1 2025 (versie 2.0)</div>
+                <div class="timeline-user">Door Maria Jansen</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">12 februari 2025, 10:15</div>
+                <div class="timeline-title">💬 Vergadering gepland</div>
+                <div class="timeline-description">Kick-off meeting met Circulair Nederland en stakeholders</div>
+                <div class="timeline-user">Door Maria Jansen</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">8 februari 2025, 16:45</div>
+                <div class="timeline-title">📊 Data analyse voltooid</div>
+                <div class="timeline-description">Data-analyse Afvalstromen Flevoland 2024 gepubliceerd</div>
+                <div class="timeline-user">Door Sophie de Vries</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">3 februari 2025, 09:30</div>
+                <div class="timeline-title">✅ Besluit vastgesteld</div>
+                <div class="timeline-description">Raadsvoorstel Circulaire Inkoop definitief vastgesteld</div>
+                <div class="timeline-user">Door College GS</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">25 januari 2025, 14:00</div>
+                <div class="timeline-title">👥 Stakeholder toegevoegd</div>
+                <div class="timeline-description">Circulair Nederland toegevoegd als kennispartner</div>
+                <div class="timeline-user">Door Maria Jansen</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">15 januari 2025, 11:20</div>
+                <div class="timeline-title">🚀 Project gestart</div>
+                <div class="timeline-description">Project Circulaire Economie Flevoland 2025 aangemaakt (budget: €2.500.000)</div>
+                <div class="timeline-user">Door Maria Jansen</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

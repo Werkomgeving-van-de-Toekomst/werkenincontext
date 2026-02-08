@@ -10,8 +10,8 @@ Een context-driven informatiemanagement platform voor Nederlandse overheidsorgan
 |-----------|-------------|
 | **Backend API** | [Axum](https://github.com/tokio-rs/axum) |
 | **Database** | [DuckDB](https://duckdb.org/) (embedded analytical) |
-| **Frontend** | [Leptos](https://leptos.dev/) (WebAssembly) |
-| **Charts** | [leptos-helios](https://github.com/cloud-shuttle/leptos-helios) (WebGPU) |
+| **Frontend** | [Dioxus](https://dioxuslabs.com/) 0.7 (WebAssembly) |
+| **Charts** | TBD |
 | **Maps** | Leaflet.js via wasm-bindgen |
 | **AI/NLP** | Rust regex NER + petgraph |
 | **GraphRAG** | petgraph |
@@ -24,7 +24,7 @@ iou-modern/
 │   ├── iou-core/       # Gedeelde domain modellen
 │   ├── iou-api/        # REST API (Axum + DuckDB)
 │   ├── iou-ai/         # AI services (NER, GraphRAG)
-│   └── iou-frontend/   # Leptos WASM app
+│   └── iou-frontend/   # Dioxus WASM app
 ├── migrations/         # DuckDB schema
 └── data/              # DuckDB database file
 ```
@@ -40,8 +40,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # WASM target
 rustup target add wasm32-unknown-unknown
 
-# Trunk (WASM build tool)
-cargo install trunk
+# Dioxus CLI
+cargo install dioxus-cli
 
 # Optional: cargo-watch for auto-reload
 cargo install cargo-watch
@@ -70,10 +70,10 @@ cargo run -p iou-api
 cd crates/iou-frontend
 
 # Development server met hot reload
-trunk serve --open
+dx serve
 
 # Production build
-trunk build --release
+dx build --release
 ```
 
 ## 🗄️ Database (DuckDB)
@@ -163,8 +163,8 @@ RUST_LOG=info
 
 ```bash
 cd crates/iou-frontend
-trunk build --release --public-url /iou-modern/
-# Deploy dist/ to GitHub Pages
+dx build --release
+# Deploy target/dx/iou-frontend/release/web/public/ to GitHub Pages
 ```
 
 ### Docker

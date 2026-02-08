@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../flevoland-theme.css">
+    <title>Belanghebbenden Kaart - IOU</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%); color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .back-btn { background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; }
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+        #network { height: 600px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .legend { background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .legend-item { display: inline-flex; align-items: center; margin-right: 20px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 50%; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👥 Belanghebbenden Kaart</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug</a>
+    </div>
+    <div class="container">
+        <div id="network"></div>
+        <div class="legend">
+            <strong>Legenda:</strong>
+            <div class="legend-item"><div class="legend-color" style="background:#0066CC"></div>Project</div>
+            <div class="legend-item"><div class="legend-color" style="background:#4caf50"></div>Intern Team</div>
+            <div class="legend-item"><div class="legend-color" style="background:#ff9800"></div>Externe Partner</div>
+            <div class="legend-item"><div class="legend-color" style="background:#f44336"></div>Burger/Bedrijf</div>
+        </div>
+    </div>
+    <script>
+        const nodes = new vis.DataSet([
+            {id: 1, label: 'Circulaire Economie\nFlevoland 2025', color: '#0066CC', shape: 'box'},
+            {id: 2, label: 'Maria Jansen\n(Projectleider)', color: '#4caf50'},
+            {id: 3, label: 'Sophie de Vries\n(Data Analist)', color: '#4caf50'},
+            {id: 4, label: 'Jan Bakker\n(Juridisch)', color: '#4caf50'},
+            {id: 5, label: 'Circulair Nederland\n(Kennispartner)', color: '#ff9800'},
+            {id: 6, label: 'Groene Energie BV\n(Subsidieaanvrager)', color: '#f44336'},
+            {id: 7, label: 'Gemeente Almere', color: '#ff9800'},
+            {id: 8, label: 'Provincie Bestuur', color: '#4caf50'}
+        ]);
+
+        const edges = new vis.DataSet([
+            {from: 1, to: 2, label: 'eigenaar'},
+            {from: 1, to: 3, label: 'data analyse'},
+            {from: 1, to: 4, label: 'juridisch advies'},
+            {from: 1, to: 5, label: 'kennispartner'},
+            {from: 1, to: 6, label: 'subsidie'},
+            {from: 1, to: 7, label: 'samenwerking'},
+            {from: 1, to: 8, label: 'rapportage'},
+            {from: 5, to: 7, label: 'advies'}
+        ]);
+
+        const container = document.getElementById('network');
+        const data = { nodes: nodes, edges: edges };
+        const options = {
+            nodes: { font: { size: 14 } },
+            edges: { font: { size: 12, align: 'middle' }, arrows: 'to' },
+            physics: { enabled: true }
+        };
+        new vis.Network(container, data, options);
+    </script>
+</body>
+</html>

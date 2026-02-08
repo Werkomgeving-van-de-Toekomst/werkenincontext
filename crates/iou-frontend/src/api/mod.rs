@@ -1,6 +1,5 @@
 //! API client for communicating with the backend
 
-use gloo_net::http::Request;
 use serde::de::DeserializeOwned;
 
 use iou_core::api_types::{ContextResponse, SearchResponse};
@@ -10,22 +9,23 @@ const API_BASE: &str = "http://localhost:8000";
 
 /// Fetch context for a domain
 pub async fn fetch_context(domain_id: &str) -> Result<ContextResponse, String> {
-    fetch_json(&format!("{}/context/{}", API_BASE, domain_id)).await
+    fetch_json(&format!("{API_BASE}/context/{domain_id}")).await
 }
 
 /// Fetch all domains
 pub async fn fetch_domains() -> Result<Vec<InformationDomain>, String> {
-    fetch_json(&format!("{}/domains", API_BASE)).await
+    fetch_json(&format!("{API_BASE}/domains")).await
 }
 
 /// Search for objects
 pub async fn search(query: &str) -> Result<SearchResponse, String> {
-    fetch_json(&format!("{}/search?q={}", API_BASE, urlencoding::encode(query))).await
+    let encoded = urlencoding::encode(query);
+    fetch_json(&format!("{API_BASE}/search?q={encoded}")).await
 }
 
 /// Fetch recommended apps
 pub async fn fetch_recommended_apps() -> Result<Vec<AppInfo>, String> {
-    fetch_json(&format!("{}/apps/recommended", API_BASE)).await
+    fetch_json(&format!("{API_BASE}/apps/recommended")).await
 }
 
 /// App info from API
@@ -43,22 +43,21 @@ pub struct AppInfo {
 
 /// Generic JSON fetch helper
 async fn fetch_json<T: DeserializeOwned>(url: &str) -> Result<T, String> {
-    let response = Request::get(url)
-        .send()
+    let response = reqwest::get(url)
         .await
-        .map_err(|e| format!("Network error: {}", e))?;
+        .map_err(|e| format!("Network error: {e}"))?;
 
-    if !response.ok() {
+    if !response.status().is_success() {
         return Err(format!("HTTP error: {}", response.status()));
     }
 
     response
         .json()
         .await
-        .map_err(|e| format!("JSON parse error: {}", e))
+        .map_err(|e| format!("JSON parse error: {e}"))
 }
 
-// URL encoding helper (since we can't use percent-encoding crate easily in WASM)
+// URL encoding helper
 mod urlencoding {
     pub fn encode(s: &str) -> String {
         let mut result = String::new();
@@ -70,7 +69,7 @@ mod urlencoding {
                 ' ' => result.push_str("%20"),
                 _ => {
                     for byte in c.to_string().bytes() {
-                        result.push_str(&format!("%{:02X}", byte));
+                        result.push_str(&format!("%{byte:02X}"));
                     }
                 }
             }

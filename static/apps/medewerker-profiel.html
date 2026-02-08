@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mijn Profiel & Skills - Provincie Flevoland</title>
+    <link rel="stylesheet" href="../flevoland-theme.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0066CC;
+            --secondary: #7CB342;
+            --accent: #FF9800;
+            --bg-light: #f5f7fa;
+            --text-dark: #333;
+            --text-light: #666;
+            --white: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+            margin: 0;
+            padding: 0;
+            color: var(--text-dark);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            z-index: 0;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--white);
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 15px;
+            background: #eee;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #ccc;
+        }
+
+        .profile-info {
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .profile-role {
+            color: var(--text-light);
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e3f2fd;
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #2e7d32;
+            font-weight: 500;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #4caf50;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        /* Skills Visualization */
+        .skills-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-content: flex-start;
+        }
+
+        .skill-tag {
+            background: #f0f4f8;
+            color: var(--text-dark);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid #e1e4e8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .skill-tag.expert {
+            border-color: var(--primary);
+            background: #e3f2fd;
+            color: var(--primary);
+        }
+
+        .skill-tag i {
+            font-size: 10px;
+        }
+
+        /* Project Matching */
+        .match-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .match-score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4caf50, #8bc34a);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .project-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            padding-right: 60px;
+        }
+
+        .project-meta {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .match-reason {
+            background: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 10px 15px;
+            font-size: 13px;
+            color: #856404;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 10px;
+        }
+
+        .match-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #005bb5;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #ddd;
+            color: var(--text-light);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-dark);
+            color: var(--text-dark);
+        }
+
+        /* Timeline */
+        .timeline-item {
+            display: flex;
+            gap: 20px;
+            padding-bottom: 20px;
+            border-left: 2px solid #eee;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: var(--text-light);
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content h4 {
+            margin: 0 0 5px 0;
+            font-size: 15px;
+        }
+
+        .timeline-content p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1><i class="fas fa-id-card-alt"></i> Mijn Profiel & Skills</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug naar Dashboard</a>
+    </div>
+
+    <div class="container">
+        <!-- Left Column: Profile -->
+        <aside>
+            <div class="profile-card">
+                <div class="avatar">
+                    <img src="https://ui-avatars.com/api/?name=Sophie+de+Vries&background=0D8ABC&color=fff&size=128"
+                        alt="Sophie de Vries" style="width: 100%; height: 100%; border-radius: 50%;">
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">Sophie de Vries</div>
+                    <div class="profile-role">Senior Data Analist</div>
+                    <div class="verified-badge">
+                        <i class="fas fa-check-circle"></i> IOU Verified
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                    <div style="text-align: left; font-size: 14px; color: var(--text-light); line-height: 1.6;">
+                        <div><i class="fas fa-building" style="width: 20px;"></i> Provincie Flevoland</div>
+                        <div><i class="fas fa-map-marker-alt" style="width: 20px;"></i> Lelystad</div>
+                        <div><i class="fas fa-envelope" style="width: 20px;"></i> s.devries@flevoland.nl</div>
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        Beschikbaar: 8u/week
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-history"></i> Ervaring</div>
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">2023 - Heden</div>
+                        <div class="timeline-content">
+                            <h4>Circulaire Economie 2025</h4>
+                            <p>Lead Data Analist voor monitoring grondstoffenstromen.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2021 - 2023</div>
+                        <div class="timeline-content">
+                            <h4>Omgevingswet Implementatie</h4>
+                            <p>GIS specialist en data integratie.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2019 - 2021</div>
+                        <div class="timeline-content">
+                            <h4>Digital Twin Pilot</h4>
+                            <p>Junior analist 3D stadsmodellen.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Column: Skills & Matching -->
+        <main class="main-content">
+
+            <!-- Skills Passport -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-fingerprint"></i> CompetentNL Paspoort</div>
+                    <button class="btn btn-outline"><i class="fas fa-download"></i> Export PDF</button>
+                </div>
+                <div class="skills-container">
+                    <div class="chart-wrapper">
+                        <canvas id="skillsRadar"></canvas>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 16px; margin-bottom: 15px;">Kennis & Vaardigheden</h3>
+                        <div class="skills-list">
+                            <div class="skill-tag expert"><i class="fas fa-book"></i> Omgevingswet</div>
+                            <div class="skill-tag expert"><i class="fas fa-tools"></i> GIS & Data Analyse</div>
+                            <div class="skill-tag"><i class="fas fa-brain"></i> Kritisch Denken</div>
+                        </div>
+
+                        <h3 style="font-size: 16px; margin-top: 25px; margin-bottom: 15px;">Soft Skills & Houding</h3>
+                        <div class="skills-list">
+                            <div class="skill-tag expert"><i class="fas fa-users"></i> Samenwerken</div>
+                            <div class="skill-tag expert"><i class="fas fa-hand-holding-heart"></i> Integriteit</div>
+                            <div class="skill-tag"><i class="fas fa-eye"></i> Omgevingsbewustzijn</div>
+                            <div class="skill-tag"><i class="fas fa-sync"></i> Flexibiliteit</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Project Matcher -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-handshake" style="color: var(--accent);"></i>
+                        Common Ground Matching
+                        <span
+                            style="font-size: 12px; background: #e3f2fd; color: var(--primary); padding: 2px 8px; border-radius: 10px; margin-left: 10px;">Video
+                            Based Logic</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-light);">Matching op competenties & gedeelde waarden
+                    </div>
+                </div>
+
+                <!-- Match 1 -->
+                <div class="match-card">
+                    <div class="match-score">98%</div>
+                    <div class="project-title">Pilot: Smart Mobility Flevoland</div>
+                    <div class="project-meta">
+                        <span><i class="far fa-clock"></i> 4-8 uur/week</span>
+                        <span><i class="fas fa-heart"></i> Waarde: Innovatie</span>
+                    </div>
+                    <div class="match-reason">
+                        <i class="fas fa-puzzle-piece"></i> <strong>Competentie Match:</strong> Jouw sterke
+                        <em>Cognitieve Vaardigheden</em> (zoals Analyseren) sluiten perfect aan.
+                    </div>
+                    <p style="font-size: 14px; color: #555; margin-bottom: 15px;">
+                        Samenwerken aan een datagedreven oplossing voor verkeersdrukte. We zoeken iemand die patronen
+                        ziet waar anderen ruis zien.
+                    </p>
+                    <div class="match-actions">
+                        <button class="btn btn-outline">Bekijk Teamwaarden</button>
+                        <button class="btn btn-primary">Connectie Maken</button>
+                    </div>
+                </div>
+
+                <!-- Match 2 -->
+                <div class="match-card">
+                    <div class="match-score">85%</div>
+                    <div class="project-title">Dashboard Energietransitie</div>
+                    <div class="project-meta">
+                        <span><i class="far fa-clock"></i> 8 uur/week</span>
+                        <span><i class="fas fa-heart"></i> Waarde: Duurzaamheid</span>
+                    </div>
+                    <div class="match-reason">
+                        <i class="fas fa-users"></i> <strong>Cultuur Match:</strong> Dit projectteam scoort hoog op
+                        <em>Soft Skills</em> zoals Samenwerken, net als jij.
+                    </div>
+                    <div
+                        style="background: #e8f5e9; color: #2e7d32; padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 15px; display: inline-block;">
+                        <i class="fas fa-arrow-up"></i> <strong>Ontwikkelkans:</strong> Vergroot je <em>Houding</em>
+                        t.a.v. verandering in deze dynamische rol.
+                    </div>
+                    <div class="match-actions">
+                        <button class="btn btn-outline">Bekijk Teamwaarden</button>
+                        <button class="btn btn-primary">Connectie Maken</button>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Radar Chart Configuration - Based on CompetentNL Taxonomy
+        const ctx = document.getElementById('skillsRadar').getContext('2d');
+        const skillsRadar = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: [
+                    'Kennis',
+                    'Cognitieve Vaardigheden',
+                    'Praktische Vaardigheden',
+                    'Soft Skills',
+                    'Houding'
+                ],
+                datasets: [{
+                    label: 'Huidig Niveau',
+                    data: [85, 90, 75, 85, 80],
+                    fill: true,
+                    backgroundColor: 'rgba(0, 102, 204, 0.2)',
+                    borderColor: 'rgb(0, 102, 204)',
+                    pointBackgroundColor: 'rgb(0, 102, 204)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(0, 102, 204)'
+                }, {
+                    label: 'Gewenst (Rol)',
+                    data: [80, 85, 80, 85, 85],
+                    fill: true,
+                    backgroundColor: 'rgba(124, 179, 66, 0.1)',
+                    borderColor: 'rgba(124, 179, 66, 0.5)',
+                    pointBackgroundColor: 'rgba(124, 179, 66, 1)',
+                    pointBorderColor: '#fff',
+                    borderDash: [5, 5]
+                }]
+            },
+            options: {
+                elements: {
+                    line: {
+                        borderWidth: 3
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true,
+                            color: '#eee'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        ticks: {
+                            stepSize: 20,
+                            display: false // Hide numbers for cleaner look
+                        },
+                        pointLabels: {
+                            font: {
+                                size: 12,
+                                family: "'Segoe UI', sans-serif",
+                                weight: '600'
+                            },
+                            color: '#555'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

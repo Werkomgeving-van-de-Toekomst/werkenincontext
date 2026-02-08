@@ -1,0 +1,32 @@
+{
+  "nodes": [
+    { "id": "1", "label": "Provincie Flevoland", "group": "ORGANIZATION", "color": "#0066CC" },
+    { "id": "2", "label": "Maria Jansen", "group": "PERSON", "color": "#7CB342" },
+    { "id": "3", "label": "Jan Bakker", "group": "PERSON", "color": "#7CB342" },
+    { "id": "4", "label": "Circulaire Economie 2025", "group": "PROJECT", "color": "#9C27B0" },
+    { "id": "5", "label": "Windpark Zeewolde", "group": "PROJECT", "color": "#9C27B0" },
+    { "id": "6", "label": "Omgevingsvisie", "group": "CONCEPT", "color": "#FF9800" },
+    { "id": "7", "label": "Duurzaamheid", "group": "CONCEPT", "color": "#FF9800" },
+    { "id": "8", "label": "Wet natuurbescherming", "group": "LAW", "color": "#F44336" },
+    { "id": "9", "label": "Projectplan Q2", "group": "Document", "color": "#795548" },
+    { "id": "10", "label": "Sophie de Vries", "group": "PERSON", "color": "#7CB342" },
+    { "id": "11", "label": "Gemeente Almere", "group": "ORGANIZATION", "color": "#0066CC" },
+    { "id": "12", "label": "Floriade 2022", "group": "EVENT", "color": "#00BCD4" },
+    { "id": "13", "label": "Mobiliteitsvisie", "group": "CONCEPT", "color": "#FF9800" }
+  ],
+  "edges": [
+    { "from": "2", "to": "1", "label": "WERKT_BIJ" },
+    { "from": "3", "to": "1", "label": "WERKT_BIJ" },
+    { "from": "10", "to": "1", "label": "WERKT_BIJ" },
+    { "from": "2", "to": "4", "label": "LEIDT" },
+    { "from": "3", "to": "8", "label": "ADVISEERT_OVER" },
+    { "from": "4", "to": "7", "label": "GERELATEERD_AAN" },
+    { "from": "5", "to": "7", "label": "DRAAGT_BIJ_AAN" },
+    { "from": "1", "to": "6", "label": "STELT_VAST" },
+    { "from": "9", "to": "4", "label": "BESCHRIJFT" },
+    { "from": "11", "to": "5", "label": "PARTNER_IN" },
+    { "from": "11", "to": "12", "label": "ORGANISEERDE" },
+    { "from": "2", "to": "13", "label": "WERKT_AAN" },
+    { "from": "13", "to": "7", "label": "BEVORDERT" }
+  ]
+}

@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Verkenner - Provincie Flevoland</title>
+    <link rel="stylesheet" href="../flevoland-theme.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .context-info {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .context-info strong {
+            color: #0066CC;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .btn {
+            background: #0066CC;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .geo-map {
+            width: 100%;
+            height: 400px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📊 Data Verkenner</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug naar Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="context-info">
+            Context:
+            <strong>Project: Circulaire Economie Flevoland 2025</strong> |
+            Gebruiker: <strong>Sophie de Vries</strong> (Data Analist)
+        </div>
+
+        <div class="filter-bar">
+            <select id="datasetSelect" onchange="updateDataset()">
+                <option value="verkeer">Verkeersintensiteiten provinciale wegen</option>
+                <option value="archeologie">Provinciaal archeologisch beleidskaart</option>
+                <option value="geluid">Geluidsbelasting provinciale wegen</option>
+                <option value="wko">Bodemgeschiktheid WKO systemen</option>
+                <option value="bodem">Bodemkwaliteitskaart 2024</option>
+                <option value="bodemdaling">Bodemdalingsprognose</option>
+                <option value="kavels">Kavelindeling IJsselmeerpolders</option>
+                <option value="asbest">Asbest in bodem</option>
+                <option value="cbs_bevolking">CBS: Bevolkingsontwikkeling IJsselmeerpolders</option>
+                <option value="cbs_landbouw">CBS: Landbouw & Grondgebruik Flevoland</option>
+                <option value="cbs_biologisch">CBS: Biologische Landbouw Flevoland</option>
+                <option value="cbs_akkerbouw">CBS: Akkerbouw & Opbrengsten</option>
+                <option value="cbs_economie">CBS: Economische Ontwikkeling Flevopolders</option>
+                <option value="cbs_visserij">CBS: IJsselmeervisserij Historisch</option>
+                <option value="nnn">Natuur Netwerk Nederland (NNN)</option>
+                <option value="kwelkaart">Kwelkaart Flevoland</option>
+                <option value="cultuurhistorie">Cultuurhistorische Basiskwaliteiten</option>
+                <option value="aardkunde">Aardkundige waarden</option>
+            </select>
+            <input type="date" value="2024-01-01" />
+            <input type="date" value="2024-12-31" />
+            <button class="btn" onclick="alert('Filter toegepast op dataset')">Filter toepassen</button>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="grid">
+            <div class="metric-card">
+                <div class="metric-label" id="metric1-label">Dataset Records</div>
+                <div class="metric-value" id="metric1-value">1.247</div>
+                <div class="metric-label" id="metric1-trend">↗ Laatste update: 2024</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label" id="metric2-label">Dekking Flevoland</div>
+                <div class="metric-value" id="metric2-value">100%</div>
+                <div class="metric-label" id="metric2-trend">Alle gemeenten</div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid">
+            <div class="panel">
+                <h2 id="chart1-title">Dataset Overzicht</h2>
+                <div class="chart-container">
+                    <canvas id="wasteChart"></canvas>
+                </div>
+            </div>
+            <div class="panel">
+                <h2 id="chart2-title">Trend Analyse</h2>
+                <div class="chart-container">
+                    <canvas id="co2Chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="panel">
+            <h2 id="table-title">Dataset Details per Gemeente</h2>
+            <div id="dataset-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <p id="dataset-description" style="margin: 0; color: #666; font-size: 14px;"></p>
+            </div>
+            <table class="data-table" id="data-table">
+                <thead id="table-header">
+                    <tr>
+                        <th>Gemeente</th>
+                        <th>Totaal Afval (ton)</th>
+                        <th>Gescheiden (ton)</th>
+                        <th>Restafval (ton)</th>
+                        <th>Percentage Gescheiden</th>
+                        <th>Trend</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr>
+                        <td>Almere</td>
+                        <td>45.230</td>
+                        <td>28.450</td>
+                        <td>16.780</td>
+                        <td>62.9%</td>
+                        <td style="color: green">↗ +5.2%</td>
+                    </tr>
+                    <tr>
+                        <td>Lelystad</td>
+                        <td>22.150</td>
+                        <td>13.890</td>
+                        <td>8.260</td>
+                        <td>62.7%</td>
+                        <td style="color: green">↗ +3.8%</td>
+                    </tr>
+                    <tr>
+                        <td>Dronten</td>
+                        <td>15.680</td>
+                        <td>9.340</td>
+                        <td>6.340</td>
+                        <td>59.6%</td>
+                        <td style="color: green">↗ +2.1%</td>
+                    </tr>
+                    <tr>
+                        <td>Urk</td>
+                        <td>8.920</td>
+                        <td>4.560</td>
+                        <td>4.360</td>
+                        <td>51.1%</td>
+                        <td style="color: orange">↗ +0.8%</td>
+                    </tr>
+                    <tr>
+                        <td>Noordoostpolder</td>
+                        <td>18.540</td>
+                        <td>11.220</td>
+                        <td>7.320</td>
+                        <td>60.5%</td>
+                        <td style="color: green">↗ +4.2%</td>
+                    </tr>
+                    <tr>
+                        <td>Zeewolde</td>
+                        <td>9.890</td>
+                        <td>6.120</td>
+                        <td>3.770</td>
+                        <td>61.9%</td>
+                        <td style="color: green">↗ +3.5%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Geographic View -->
+        <div class="panel">
+            <h2 id="map-title">Geografische Weergave - Flevoland</h2>
+            <div id="map" class="geo-map" style="height: 400px; border-radius: 8px; overflow: hidden"></div>
+            <div id="map-description" style="margin-top: 10px; font-size: 12px; color: #666">
+                📍 Interactieve kaart met afvalstromen per gemeente in
+                Flevoland
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="panel">
+            <h2>Exporteer Data</h2>
+            <div style="display: flex; gap: 10px">
+                <button class="btn" onclick="alert('Exporteren naar CSV...')">
+                    📄 Export CSV
+                </button>
+                <button class="btn" onclick="alert('Exporteren naar Excel...')">
+                    📊 Export Excel
+                </button>
+                <button class="btn" onclick="alert('Exporteren naar PDF rapport...')">
+                    📑 Export PDF
+                </button>
+                <button class="btn" onclick="alert('Opslaan in project documenten...')">
+                    💾 Opslaan in Project
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store chart instances globally
+        let wasteChartInstance = null;
+        let co2ChartInstance = null;
+
+        // Waste Chart
+        const wasteCtx = document
+            .getElementById("wasteChart")
+            .getContext("2d");
+        wasteChartInstance = new Chart(wasteCtx, {
+            type: "doughnut",
+            data: {
+                labels: [
+                    "GFT Afval",
+                    "Papier/Karton",
+                    "Plastic",
+                    "Glas",
+                    "Restafval",
+                ],
+                datasets: [
+                    {
+                        data: [28450, 15230, 12890, 8950, 16780],
+                        backgroundColor: [
+                            "#4caf50",
+                            "#2196f3",
+                            "#ff9800",
+                            "#9c27b0",
+                            "#f44336",
+                        ],
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                    },
+                },
+            },
+        });
+
+        // CO2 Chart
+        const co2Ctx = document.getElementById("co2Chart").getContext("2d");
+        co2ChartInstance = new Chart(co2Ctx, {
+            type: "line",
+            data: {
+                labels: [
+                    "Jan",
+                    "Feb",
+                    "Mrt",
+                    "Apr",
+                    "Mei",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Okt",
+                    "Nov",
+                    "Dec",
+                ],
+                datasets: [
+                    {
+                        label: "CO2 Reductie (ton)",
+                        data: [
+                            850, 920, 1050, 1180, 1250, 1320, 1450, 1380,
+                            1520, 1650, 1720, 1850,
+                        ],
+                        borderColor: "#0066CC",
+                        backgroundColor: "rgba(102, 126, 234, 0.1)",
+                        tension: 0.4,
+                        fill: true,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
+
+        // Auto-refresh indicator
+        let refreshCount = 0;
+        setInterval(() => {
+            refreshCount++;
+            console.log(`Data refreshed ${refreshCount} times`);
+        }, 30000);
+
+        // Initialize Leaflet Map for Flevoland
+        const map = L.map("map").setView([52.5188, 5.5408], 9.5);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution:
+                '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+            minZoom: 8,
+        }).addTo(map);
+
+        // Add scale control
+        L.control
+            .scale({
+                metric: true,
+                imperial: false,
+                position: "bottomleft",
+            })
+            .addTo(map);
+
+        // Create a layer group for markers that can be cleared
+        let markersLayer = L.layerGroup().addTo(map);
+
+        // Gemeenten in Flevoland met afvaldata
+        const municipalities = [
+            {
+                name: "Almere",
+                lat: 52.3508,
+                lng: 5.2647,
+                gft: 8500,
+                papier: 4200,
+                plastic: 3800,
+                totaal: 28450,
+                color: "#4caf50",
+            },
+            {
+                name: "Lelystad",
+                lat: 52.5085,
+                lng: 5.475,
+                gft: 6200,
+                papier: 3100,
+                plastic: 2900,
+                totaal: 21300,
+                color: "#2196f3",
+            },
+            {
+                name: "Dronten",
+                lat: 52.525,
+                lng: 5.7167,
+                gft: 4100,
+                papier: 2400,
+                plastic: 2100,
+                totaal: 15230,
+                color: "#ff9800",
+            },
+            {
+                name: "Urk",
+                lat: 52.663,
+                lng: 5.601,
+                gft: 2800,
+                papier: 1500,
+                plastic: 1300,
+                totaal: 8950,
+                color: "#9c27b0",
+            },
+            {
+                name: "Zeewolde",
+                lat: 52.3308,
+                lng: 5.5408,
+                gft: 3200,
+                papier: 1900,
+                plastic: 1600,
+                totaal: 12890,
+                color: "#f44336",
+            },
+            {
+                name: "Noordoostpolder",
+                lat: 52.7167,
+                lng: 5.75,
+                gft: 3650,
+                papier: 2130,
+                plastic: 2090,
+                totaal: 13960,
+                color: "#00bcd4",
+            },
+        ];
+
+        // Function to update map markers based on dataset
+        function updateMapMarkers(datasetType) {
+            // Clear existing markers
+            markersLayer.clearLayers();
+
+            // Dataset-specific marker data
+            const mapData = {
+                verkeer: [
+                    { name: 'N302', lat: 52.45, lng: 5.35, value: 12450, color: '#0066cc', label: '12.450 voertuigen/dag' },
+                    { name: 'N307', lat: 52.55, lng: 5.55, value: 9800, color: '#2196f3', label: '9.800 voertuigen/dag' },
+                    { name: 'N309', lat: 52.35, lng: 5.65, value: 7200, color: '#4caf50', label: '7.200 voertuigen/dag' }
+                ],
+                archeologie: [
+                    { name: 'PArK Zone 1', lat: 52.45, lng: 5.45, value: 1, color: '#9c27b0', label: 'Nederzetting - Middeleeuwen' },
+                    { name: 'PArK Zone 2', lat: 52.55, lng: 5.35, value: 1, color: '#673ab7', label: 'Grafveld - Romeins' },
+                    { name: 'Top Monument 1', lat: 52.35, lng: 5.55, value: 1, color: '#3f51b5', label: 'Kasteel - 16e eeuw' }
+                ],
+                geluid: [
+                    { name: 'N302', lat: 52.45, lng: 5.35, value: 62, color: '#ff5722', label: '62 dB gemiddeld' },
+                    { name: 'N307', lat: 52.55, lng: 5.55, value: 59, color: '#ff9800', label: '59 dB gemiddeld' },
+                    { name: 'N309', lat: 52.35, lng: 5.65, value: 57, color: '#ffc107', label: '57 dB gemiddeld' }
+                ],
+                wko: [
+                    { name: 'Almere Centrum', lat: 52.3508, lng: 5.2647, value: 45, color: '#4caf50', label: 'Zeer geschikt - 45 systemen' },
+                    { name: 'Lelystad Zuid', lat: 52.5085, lng: 5.475, value: 28, color: '#8bc34a', label: 'Geschikt - 28 systemen' },
+                    { name: 'Dronten Oost', lat: 52.525, lng: 5.7167, value: 18, color: '#cddc39', label: 'Geschikt - 18 systemen' }
+                ],
+                bodem: [
+                    { name: 'Almere', lat: 52.3508, lng: 5.2647, value: 2, color: '#8bc34a', label: 'Klasse 2 - Geschikt' },
+                    { name: 'Lelystad', lat: 52.5085, lng: 5.475, value: 2, color: '#8bc34a', label: 'Klasse 2 - Geschikt' },
+                    { name: 'Dronten', lat: 52.525, lng: 5.7167, value: 3, color: '#ffc107', label: 'Klasse 3 - Voorwaardelijk' }
+                ],
+                bodemdaling: [
+                    { name: 'Veengebied Zuid', lat: 52.35, lng: 5.35, value: 3.2, color: '#f44336', label: '3.2 cm/jaar - Hoog risico' },
+                    { name: 'Polder Oost', lat: 52.55, lng: 5.65, value: 2.1, color: '#ff9800', label: '2.1 cm/jaar - Gemiddeld' },
+                    { name: 'Zeeklei Noord', lat: 52.65, lng: 5.45, value: 0.8, color: '#4caf50', label: '0.8 cm/jaar - Laag risico' }
+                ],
+                kavels: [
+                    { name: 'Noordoostpolder', lat: 52.7167, lng: 5.75, value: 1892, color: '#2196f3', label: '1.892 kavels - 26 ha gem.' },
+                    { name: 'Oostelijk Flevoland', lat: 52.45, lng: 5.55, value: 1650, color: '#03a9f4', label: '1.650 kavels - 24 ha gem.' },
+                    { name: 'Zuidelijk Flevoland', lat: 52.35, lng: 5.45, value: 1350, color: '#00bcd4', label: '1.350 kavels - 22 ha gem.' }
+                ],
+                asbest: [
+                    { name: 'Industrieterrein Almere', lat: 52.3508, lng: 5.2647, value: 1, color: '#f44336', label: 'Hoog risico - Sanering gepland' },
+                    { name: 'Oud Lelystad', lat: 52.5085, lng: 5.475, value: 1, color: '#ff9800', label: 'Gemiddeld - In behandeling' },
+                    { name: 'Zeewolde Oost', lat: 52.3308, lng: 5.5408, value: 1, color: '#f44336', label: 'Hoog risico - Sanering actief' }
+                ],
+                cbs_bevolking: [
+                    { name: 'Wieringermeer', lat: 52.82, lng: 4.95, value: 12000, color: '#2196f3', label: '12.000 inwoners - 208 km² (1930)' },
+                    { name: 'Noordoostpolder', lat: 52.7167, lng: 5.75, value: 87000, color: '#03a9f4', label: '87.000 inwoners - 464 km² (1942)' },
+                    { name: 'Oostelijk Flevopolder', lat: 52.525, lng: 5.60, value: 210000, color: '#00bcd4', label: '210.000 inwoners - 560 km² (1957)' },
+                    { name: 'Zuidelijk Flevopolder', lat: 52.35, lng: 5.35, value: 135000, color: '#009688', label: '135.000 inwoners - 368 km² (1968)' }
+                ],
+                cbs_landbouw: [
+                    { name: 'Wieringermeer', lat: 52.82, lng: 4.95, value: 13000, color: '#ff9800', label: '13.000 ha - Akkerbouw 85%' },
+                    { name: 'Noordoostpolder', lat: 52.7167, lng: 5.75, value: 30000, color: '#fb8c00', label: '30.000 ha - Akkerbouw 78%' },
+                    { name: 'Oostelijk Flevopolder', lat: 52.525, lng: 5.60, value: 35000, color: '#f57c00', label: '35.000 ha - Gemengd 68%' },
+                    { name: 'Zuidelijk Flevopolder', lat: 52.35, lng: 5.35, value: 28000, color: '#ef6c00', label: '28.000 ha - Gemengd 65%' }
+                ],
+                cbs_biologisch: [
+                    { name: 'Flevoland Bio', lat: 52.5, lng: 5.5, value: 420, color: '#4caf50', label: '420 biologische bedrijven - 12% van NL' },
+                    { name: 'Oostvaardersplassen', lat: 52.45, lng: 5.35, value: 1, color: '#2e7d32', label: 'Bio hotspot - 14% landoppervlakte' },
+                    { name: 'Noordoostpolder Bio', lat: 52.7167, lng: 5.75, value: 1, color: '#66bb6a', label: 'Biologische akkerbouw' },
+                    { name: 'Zuidelijk Flevoland Bio', lat: 52.35, lng: 5.35, value: 1, color: '#81c784', label: 'Biologische gemengd' }
+                ],
+                cbs_akkerbouw: [
+                    { name: 'Aardappelen', lat: 52.6, lng: 5.6, value: 33, color: '#8d6e63', label: '33% - 48 ton/ha (+6.7% vs NL)' },
+                    { name: 'Suikerbieten', lat: 52.45, lng: 5.45, value: 20, color: '#ff5722', label: '20% - 106 ton/ha (+15.2% vs NL)' },
+                    { name: 'Zaai-uien', lat: 52.7, lng: 5.7, value: 15, color: '#9c27b0', label: '15% - 5x meer dan NL gemiddeld' },
+                    { name: 'Tarwe', lat: 52.35, lng: 5.50, value: 25, color: '#ffc107', label: '25% - 9.2 ton/ha (+4.5% vs NL)' }
+                ],
+                cbs_economie: [
+                    { name: 'Almere', lat: 52.3508, lng: 5.2647, value: 95, color: '#2196f3', label: 'Economie +95% (1995-2016)' },
+                    { name: 'Lelystad', lat: 52.5085, lng: 5.475, value: 87, color: '#03a9f4', label: 'Werkgelegenheid +87%' },
+                    { name: 'Noordoostpolder', lat: 52.7167, lng: 5.75, value: 16, color: '#ff9800', label: 'Landbouw 16% (was 25%)' },
+                    { name: 'Flevopolders', lat: 52.4, lng: 5.4, value: 8, color: '#4caf50', label: 'Snelgroeiende regio' }
+                ],
+                cbs_visserij: [
+                    { name: 'Urk', lat: 52.663, lng: 5.601, value: 100, color: '#0277bd', label: 'Historisch vissersplaats - voor inpoldering' },
+                    { name: 'IJsselmeer', lat: 52.7, lng: 5.3, value: 20, color: '#ff5722', label: 'Opbrengst gedaald naar 2% (jaren 80)' },
+                    { name: 'Markermeer', lat: 52.5, lng: 5.2, value: 10, color: '#f44336', label: 'Huidig: <1% van NL visserij' },
+                    { name: 'Oostelijk Flevopolder', lat: 52.525, lng: 5.60, value: 60, color: '#ff9800', label: 'Na inpoldering: -40% opbrengst' }
+                ],
+            };
+
+            const data = mapData[datasetType] || mapData.verkeer;
+
+            data.forEach(point => {
+                // Add circle marker
+                const circle = L.circleMarker([point.lat, point.lng], {
+                    radius: 10,
+                    fillColor: point.color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                }).addTo(markersLayer);
+
+                // Create popup
+                const popupContent = `
+                    <div style="font-family: 'Segoe UI', sans-serif;">
+                        <h3 style="margin: 0 0 10px 0; color: #333;">${point.name}</h3>
+                        <p style="margin: 0; font-size: 13px;">${point.label}</p>
+                    </div>
+                `;
+
+                circle.bindPopup(popupContent);
+                circle.bindTooltip(point.name, {
+                    permanent: false,
+                    direction: 'top'
+                });
+            });
+        }
+
+        // Initialize with first dataset
+        updateMapMarkers('verkeer');
+
+        // Add markers for each municipality
+        /*
+        municipalities.forEach((mun) => {
+            // Calculate proportional radius (square root for better visual scaling)
+            // Base radius on total waste, scaled appropriately for map
+            const baseRadius = 2000; // Base radius in meters
+            const scaleFactor = Math.sqrt(mun.totaal / 15000); // Normalize to average
+            const radius = baseRadius * scaleFactor;
+
+            const circle = L.circle([mun.lat, mun.lng], {
+                color: mun.color,
+                fillColor: mun.color,
+                fillOpacity: 0.5,
+                weight: 2,
+                radius: radius, // Radius in meters, properly scaled
+            }).addTo(map);
+
+            // Create popup content
+            const popupContent = `
+                    <div style="font-family: 'Segoe UI', sans-serif;">
+                        <h3 style="margin: 0 0 10px 0; color: #333;">${mun.name}</h3>
+                        <table style="font-size: 13px; width: 100%;">
+                            <tr>
+                                <td style="padding: 3px 10px 3px 0;"><strong>🌱 GFT Afval:</strong></td>
+                                <td style="padding: 3px 0;">${mun.gft.toLocaleString()} ton</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 3px 10px 3px 0;"><strong>📄 Papier:</strong></td>
+                                <td style="padding: 3px 0;">${mun.papier.toLocaleString()} ton</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 3px 10px 3px 0;"><strong>♻️ Plastic:</strong></td>
+                                <td style="padding: 3px 0;">${mun.plastic.toLocaleString()} ton</td>
+                            </tr>
+                            <tr style="border-top: 1px solid #ddd;">
+                                <td style="padding: 8px 10px 3px 0;"><strong>📊 Totaal:</strong></td>
+                                <td style="padding: 8px 0 3px 0;"><strong>${mun.totaal.toLocaleString()} ton</strong></td>
+                            </tr>
+                        </table>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; font-size: 11px; color: #666;">
+                            Project: Circulaire Economie Flevoland 2025
+                        </div>
+                    </div>
+                `;
+
+            circle.bindPopup(popupContent);
+
+            // Also add a marker with label
+            const marker = L.marker([mun.lat, mun.lng]).addTo(map);
+            marker.bindPopup(popupContent);
+            marker.bindTooltip(mun.name, {
+                permanent: false,
+                direction: "top",
+            });
+        });
+        */
+
+        // Add a legend
+        const legend = L.control({ position: "bottomright" });
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create("div", "info legend");
+            div.style.background = "white";
+            div.style.padding = "10px";
+            div.style.borderRadius = "8px";
+            div.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+            div.innerHTML = `
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Gemeenten Flevoland</h4>
+                    <div style="font-size: 12px;">
+                        <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #ddd;">
+                            <div><span style="color: #4caf50;">●</span> Almere (28.450 ton)</div>
+                            <div><span style="color: #2196f3;">●</span> Lelystad (21.300 ton)</div>
+                            <div><span style="color: #ff9800;">●</span> Dronten (15.230 ton)</div>
+                            <div><span style="color: #00bcd4;">●</span> N.O.Polder (13.960 ton)</div>
+                            <div><span style="color: #f44336;">●</span> Zeewolde (12.890 ton)</div>
+                            <div><span style="color: #9c27b0;">●</span> Urk (8.950 ton)</div>
+                        </div>
+                        <div style="font-size: 11px; color: #666;">
+                    </div>
+                `;
+            return div;
+        };
+
+        // Dataset information
+        const datasets = {
+            verkeer: {
+                title: "Verkeersintensiteiten provinciale wegen Flevoland",
+                description: "Jaargemiddelden van verkeersintensiteiten op het provinciale wegennet. Relevant voor mobiliteitsbeleid en infrastructuurplanning.",
+                category: "Transport",
+                source: "data.overheid.nl"
+            },
+            archeologie: {
+                title: "Provinciaal archeologisch beleidskaart",
+                description: "Archeologische kerngebieden (PArK) en Top-10 locaties van archeologische monumenten in Flevoland.",
+                category: "Bodem en Cultuur",
+                source: "data.overheid.nl"
+            },
+            geluid: {
+                title: "Geluidsbelasting provinciale wegen",
+                description: "Geluidbelasting van provinciale wegen met meer dan 3 miljoen voertuigbewegingen. Relevant voor Omgevingswet.",
+                category: "Natuur en milieu",
+                source: "data.overheid.nl"
+            },
+            wko: {
+                title: "Bodemgeschiktheid WKO systemen",
+                description: "Bodemgeschiktheid voor aanleg van warmte-koude-opslag systemen. Belangrijk voor energietransitie.",
+                category: "Energie en Duurzaamheid",
+                source: "data.overheid.nl"
+            },
+            bodem: {
+                title: "Bodemkwaliteitskaart 2024",
+                description: "Actuele bodemkwaliteitskaart voor alle Flevolandse gemeenten. Essentieel voor bouwprojecten en woningbouw.",
+                category: "Bodem",
+                source: "data.overheid.nl"
+            },
+            bodemdaling: {
+                title: "Bodemdalingsprognose Flevoland",
+                description: "Prognose van bodemdaling door inklinking en oxidatie. Relevant voor waterbeheer en klimaatadaptatie.",
+                category: "Water en Klimaat",
+                source: "data.overheid.nl"
+            },
+            kavels: {
+                title: "Kavelindeling IJsselmeerpolders",
+                description: "Historische kavelindeling volgens de systematiek van de Rijksdienst voor de IJsselmeerPolders (RIJP).",
+                category: "Landbouw en Historie",
+                source: "data.overheid.nl"
+            },
+            asbest: {
+                title: "Asbest in bodem Flevoland",
+                description: "Archiefonderzoek naar mogelijke aanwezigheid van asbest in gebouwen en bodem. Relevant voor volksgezondheid.",
+                category: "Milieu en Gezondheid",
+                source: "data.overheid.nl"
+            },
+            cbs_bevolking: {
+                title: "CBS: Bevolkingsontwikkeling IJsselmeerpolders 1930-2017",
+                description: "Historische bevolkingsgroei van de IJsselmeerpolders vanaf drooglegging tot 2017. Wieringermeer (12.000), Noordoostpolder (87.000), en Flevopolders (345.000 inwoners). Inclusief groeikernen Almere en Lelystad.",
+                category: "Bevolking en Demografie",
+                source: "CBS.nl"
+            },
+            cbs_landbouw: {
+                title: "CBS: Landbouw & Grondgebruik Flevoland",
+                description: "106.000 hectare landbouwgrond in IJsselmeerpolders (6% van Nederland). Gemiddelde bedrijfsgrootte 50 ha vs 32 ha landelijk. 65% van landoppervlakte is landbouw, met focus op akkerbouw (70%).",
+                category: "Landbouw en Grondgebruik",
+                source: "CBS.nl"
+            },
+            cbs_biologisch: {
+                title: "CBS: Biologische Landbouw Flevoland",
+                description: "12% van alle biologische landbouwbedrijven in Nederland is gevestigd in Flevoland (na Gelderland). 14% van landoppervlakte wordt gebruikt door biologische boeren, het hoogste percentage van Nederland.",
+                category: "Duurzame Landbouw",
+                source: "CBS.nl"
+            },
+            cbs_akkerbouw: {
+                title: "CBS: Akkerbouw & Opbrengsten Flevoland",
+                description: "Aardappelen (33%), tarwe (25%), suikerbieten (20%) en zaai-uien (15%). Opbrengst suikerbieten: 106 ton/ha vs 92 ton/ha landelijk. Zaai-uien 5x meer dan Nederlands gemiddelde. Vruchtbare kleigrond.",
+                category: "Akkerbouw en Productie",
+                source: "CBS.nl"
+            },
+            cbs_economie: {
+                title: "CBS: Economische Ontwikkeling Flevopolders 1995-2016",
+                description: "Economie Flevopolders verdubbeld (+95%) in 20 jaar. Werkgelegenheid +87%. Snelgroeiende regio met bovengemiddelde groei. Landbouw aandeel gedaald van 25% naar 16% in Noordoostpolder, 8% in Flevopolders.",
+                category: "Economie en Werkgelegenheid",
+                source: "CBS.nl"
+            },
+            cbs_visserij: {
+                title: "CBS: IJsselmeervisserij Historische Ontwikkeling",
+                description: "Visserijopbrengsten sterk afgenomen na inpoldering Oostelijk Flevopolder. Begin jaren 80 nog maar 2% van totale Nederlandse visserij. Negatieve impact voor traditionele vissers door verkleining IJsselmeer.",
+                category: "Visserij en Historie",
+                source: "CBS.nl"
+            },
+            nnn: {
+                title: "Planologisch Natuur Netwerk Flevoland (NNN)",
+                description: "Het Natuur Netwerk Nederland is een netwerk van gebieden waar de natuur voorrang heeft. Helpt voorkomen dat planten en dieren in geïsoleerde gebieden uitsterven.",
+                category: "Natuur en Biodiversiteit",
+                source: "data.overheid.nl"
+            },
+            kwelkaart: {
+                title: "Kwelkaart Flevoland",
+                description: "Kwel- en infiltratiekaart met fluxen over de deklaag in mm/dag. Belangrijk voor waterbeheer en landbouw.",
+                category: "Water en Grondwater",
+                source: "data.overheid.nl"
+            },
+            cultuurhistorie: {
+                title: "Landschappelijke en Cultuurhistorische Basiskwaliteiten",
+                description: "Cultuurhistorische en landschappelijke elementen zoals openheid, verkavelingstructuur en stedenbouwkundige concepten.",
+                category: "Cultuur en Erfgoed",
+                source: "data.overheid.nl"
+            },
+            aardkunde: {
+                title: "Aardkundige waarden Flevoland",
+                description: "Aardkundige en geologische waarden van Flevoland. Belangrijk voor bodemkwaliteit en ruimtelijke planning.",
+                category: "Bodem en Geologie",
+                source: "data.overheid.nl"
+            }
+        };
+
+        function updateDataset() {
+            const select = document.getElementById('datasetSelect');
+            const dataset = datasets[select.value];
+
+            if (!dataset) return;
+
+            // Update description
+            document.getElementById('dataset-description').textContent = dataset.description;
+
+            // Update titles
+            document.getElementById('chart1-title').textContent = dataset.title + ' - Overzicht';
+            document.getElementById('chart2-title').textContent = dataset.title + ' - Trend';
+            document.getElementById('table-title').textContent = dataset.title + ' - Details';
+
+            // Update metrics based on dataset
+            const metrics = {
+                verkeer: {
+                    metric1: { label: 'Meetpunten', value: '247', trend: '↗ 12 nieuwe in 2024' },
+                    metric2: { label: 'Gem. Intensiteit', value: '8.450/dag', trend: 'Provinciale wegen' }
+                },
+                archeologie: {
+                    metric1: { label: 'Archeologische Zones', value: '89', trend: '↗ PArK gebieden' },
+                    metric2: { label: 'Top Monumenten', value: '10', trend: 'Beschermde locaties' }
+                },
+                geluid: {
+                    metric1: { label: 'Gemeten Wegen', value: '34', trend: '↗ >3M voertuigen/jaar' },
+                    metric2: { label: 'Gem. Geluidsbelasting', value: '58 dB', trend: 'Daggemiddelde' }
+                },
+                wko: {
+                    metric1: { label: 'Geschikt Gebied', value: '67%', trend: '↗ Van Flevoland' },
+                    metric2: { label: 'WKO Systemen', value: '142', trend: 'Actief in provincie' }
+                },
+                bodem: {
+                    metric1: { label: 'Gemeenten', value: '6', trend: '↗ Volledige dekking' },
+                    metric2: { label: 'Kwaliteitsklassen', value: '5', trend: 'Classificatie 2024' }
+                },
+                bodemdaling: {
+                    metric1: { label: 'Gem. Daling', value: '2.3 cm/jaar', trend: '↗ Veengebieden' },
+                    metric2: { label: 'Risico Gebieden', value: '23%', trend: 'Van oppervlakte' }
+                },
+                kavels: {
+                    metric1: { label: 'Totaal Kavels', value: '4.892', trend: '↗ RIJP systematiek' },
+                    metric2: { label: 'Gemiddelde Grootte', value: '24 ha', trend: 'Per kavel' }
+                },
+                asbest: {
+                    metric1: { label: 'Onderzochte Locaties', value: '1.247', trend: '↗ Archiefonderzoek' },
+                    metric2: { label: 'Risico Gebieden', value: '89', trend: 'Verdachte locaties' }
+                },
+                cbs_bevolking: {
+                    metric1: { label: 'Totaal Inwoners', value: '444.000', trend: '↗ IJsselmeerpolders 2017' },
+                    metric2: { label: 'Groei sinds 1956', value: '+344.800', trend: 'Flevopolders' }
+                },
+                cbs_landbouw: {
+                    metric1: { label: 'Landbouwgrond', value: '106.000 ha', trend: '↗ 6% van Nederland' },
+                    metric2: { label: 'Gem. Bedrijfsgrootte', value: '50 ha', trend: 'vs 32 ha NL' }
+                },
+                cbs_biologisch: {
+                    metric1: { label: 'Bio Bedrijven', value: '12%', trend: '↗ Van NL totaal' },
+                    metric2: { label: 'Bio Landoppervlakte', value: '14%', trend: 'Hoogste van NL' }
+                },
+                cbs_akkerbouw: {
+                    metric1: { label: 'Aardappelen', value: '33%', trend: '↗ Van akkerbouw' },
+                    metric2: { label: 'Suikerbieten', value: '106 ton/ha', trend: 'vs 92 ton/ha NL' }
+                },
+                cbs_economie: {
+                    metric1: { label: 'Economische Groei', value: '+95%', trend: '↗ 1995-2016' },
+                    metric2: { label: 'Werkgelegenheid', value: '+87%', trend: 'Snelgroeiend' }
+                },
+                cbs_visserij: {
+                    metric1: { label: 'Aandeel NL Visserij', value: '2%', trend: '↘ Begin jaren 80' },
+                    metric2: { label: 'Trend', value: 'Sterk gedaald', trend: 'Na inpoldering' }
+                },
+                nnn: {
+                    metric1: { label: 'Beschermde Gebieden', value: '42', trend: '↗ NNN zones' },
+                    metric2: { label: 'Oppervlakte', value: '12.500 ha', trend: 'Natuurnetwerk' }
+                },
+                kwelkaart: {
+                    metric1: { label: 'Kwelgebieden', value: '28', trend: '↗ Geïdentificeerd' },
+                    metric2: { label: 'Gem. Kwelflux', value: '1.2 mm/dag', trend: 'Deklaag' }
+                },
+                cultuurhistorie: {
+                    metric1: { label: 'Basiskwaliteiten', value: '156', trend: '↗ Geregistreerd' },
+                    metric2: { label: 'Kernkwaliteiten', value: '45', trend: 'Beschermd' }
+                },
+                aardkunde: {
+                    metric1: { label: 'Aardkundige Waarden', value: '67', trend: '↗ Geïnventariseerd' },
+                    metric2: { label: 'Geologische Lagen', value: '8', trend: 'Polderbodem' }
+                }
+            };
+
+            const m = metrics[select.value];
+            if (m) {
+                document.getElementById('metric1-label').textContent = m.metric1.label;
+                document.getElementById('metric1-value').textContent = m.metric1.value;
+                document.getElementById('metric1-trend').textContent = m.metric1.trend;
+
+                document.getElementById('metric2-label').textContent = m.metric2.label;
+                document.getElementById('metric2-value').textContent = m.metric2.value;
+                document.getElementById('metric2-trend').textContent = m.metric2.trend;
+            }
+
+            // Update charts with dataset-specific data
+            const chartData = {
+                verkeer: {
+                    chart1: { labels: ['N302', 'N307', 'N309', 'N710', 'Overig'], data: [3200, 2800, 2100, 1900, 1500], colors: ['#0066cc', '#2196f3', '#4caf50', '#ff9800', '#f44336'] },
+                    chart2: { data: [7200, 7450, 7800, 8100, 8350, 8450, 8520, 8380, 8650, 8720, 8850, 8920] }
+                },
+                archeologie: {
+                    chart1: { labels: ['PArK Zones', 'Top-10', 'Potentieel', 'Beschermd', 'Overig'], data: [45, 10, 18, 12, 4], colors: ['#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4'] },
+                    chart2: { data: [78, 81, 83, 85, 86, 87, 88, 88, 89, 89, 89, 89] }
+                },
+                geluid: {
+                    chart1: { labels: ['50-55 dB', '55-60 dB', '60-65 dB', '65-70 dB', '>70 dB'], data: [8, 12, 9, 4, 1], colors: ['#4caf50', '#8bc34a', '#ff9800', '#ff5722', '#f44336'] },
+                    chart2: { data: [59, 58, 58, 57, 58, 58, 59, 58, 58, 57, 58, 58] }
+                },
+                wko: {
+                    chart1: { labels: ['Zeer geschikt', 'Geschikt', 'Matig', 'Ongeschikt', 'Beschermd'], data: [42, 25, 18, 10, 5], colors: ['#4caf50', '#8bc34a', '#ff9800', '#ff5722', '#9e9e9e'] },
+                    chart2: { data: [98, 105, 112, 118, 125, 130, 135, 138, 140, 141, 142, 142] }
+                },
+                bodem: {
+                    chart1: { labels: ['Klasse 1', 'Klasse 2', 'Klasse 3', 'Klasse 4', 'Klasse 5'], data: [28, 35, 22, 12, 3], colors: ['#4caf50', '#8bc34a', '#ffc107', '#ff9800', '#f44336'] },
+                    chart2: { data: [92, 93, 94, 95, 96, 97, 98, 98, 99, 99, 100, 100] }
+                },
+                bodemdaling: {
+                    chart1: { labels: ['0-1 cm', '1-2 cm', '2-3 cm', '3-4 cm', '>4 cm'], data: [35, 28, 20, 12, 5], colors: ['#4caf50', '#8bc34a', '#ff9800', '#ff5722', '#f44336'] },
+                    chart2: { data: [1.8, 1.9, 2.0, 2.1, 2.1, 2.2, 2.2, 2.3, 2.3, 2.3, 2.3, 2.3] }
+                },
+                kavels: {
+                    chart1: { labels: ['0-10 ha', '10-20 ha', '20-30 ha', '30-40 ha', '>40 ha'], data: [892, 1450, 1680, 720, 150], colors: ['#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50'] },
+                    chart2: { data: [4820, 4835, 4850, 4865, 4870, 4875, 4880, 4885, 4888, 4890, 4891, 4892] }
+                },
+                asbest: {
+                    chart1: { labels: ['Geen risico', 'Laag', 'Gemiddeld', 'Hoog', 'Zeer hoog'], data: [658, 312, 178, 67, 32], colors: ['#4caf50', '#8bc34a', '#ffc107', '#ff9800', '#f44336'] },
+                    chart2: { data: [1180, 1195, 1205, 1215, 1220, 1228, 1235, 1238, 1242, 1245, 1246, 1247] }
+                },
+                cbs_bevolking: {
+                    chart1: { labels: ['Wieringermeer', 'Noordoostpolder', 'O. Flevopolder', 'Z. Flevopolder'], data: [12, 87, 210, 135], colors: ['#2196f3', '#03a9f4', '#00bcd4', '#009688'] },
+                    chart2: { data: [0, 0, 0, 0, 12, 12, 12, 87, 200, 280, 330, 345, 444] }
+                },
+                cbs_landbouw: {
+                    chart1: { labels: ['Akkerbouw', 'Grasland', 'Groenvoeder', 'Natuur', 'Overig'], data: [70, 15, 8, 5, 2], colors: ['#ff9800', '#8bc34a', '#4caf50', '#2e7d32', '#9e9e9e'] },
+                    chart2: { data: [113, 112, 111, 110, 109, 108, 107, 107, 106, 106, 106, 106] }
+                },
+                cbs_biologisch: {
+                    chart1: { labels: ['Flevoland', 'Gelderland', 'Noord-Holland', 'Utrecht', 'Overig'], data: [12, 20, 8, 7, 53], colors: ['#4caf50', '#2e7d32', '#66bb6a', '#81c784', '#a5d6a7'] },
+                    chart2: { data: [3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 12, 12] }
+                },
+                cbs_akkerbouw: {
+                    chart1: { labels: ['Aardappelen', 'Tarwe', 'Suikerbieten', 'Zaai-uien', 'Overig'], data: [33, 25, 20, 15, 7], colors: ['#8d6e63', '#ffc107', '#ff5722', '#9c27b0', '#607d8b'] },
+                    chart2: { data: [92, 94, 96, 98, 100, 102, 103, 104, 105, 105, 106, 106] }
+                },
+                cbs_economie: {
+                    chart1: { labels: ['Dienstverlening', 'Handel', 'Landbouw', 'Industrie', 'Bouw', 'Overig'], data: [28, 18, 12, 15, 12, 15], colors: ['#2196f3', '#ff9800', '#4caf50', '#9c27b0', '#ff5722', '#607d8b'] },
+                    chart2: { data: [100, 110, 125, 140, 155, 165, 172, 178, 185, 190, 193, 195] }
+                },
+                cbs_visserij: {
+                    chart1: { labels: ['Voor inpoldering', 'WOII piek', 'Na inpoldering', '1980s', 'Huidig'], data: [100, 180, 60, 20, 10], colors: ['#0277bd', '#03a9f4', '#ff9800', '#ff5722', '#f44336'] },
+                    chart2: { data: [100, 95, 85, 70, 50, 35, 25, 20, 18, 15, 12, 10] }
+                },
+                nnn: {
+                    chart1: { labels: ['Bos', 'Heide', 'Moeras', 'Water', 'Grasland'], data: [35, 18, 12, 22, 13], colors: ['#2e7d32', '#8d6e63', '#00796b', '#0277bd', '#689f38'] },
+                    chart2: { data: [38, 39, 40, 41, 41, 42, 42, 42, 42, 42, 42, 42] }
+                },
+                kwelkaart: {
+                    chart1: { labels: ['Kwel 0-0.5', 'Kwel 0.5-1', 'Kwel 1-2', 'Infiltratie', 'Neutraal'], data: [12, 8, 8, 15, 57], colors: ['#1976d2', '#42a5f5', '#90caf9', '#ffb74d', '#e0e0e0'] },
+                    chart2: { data: [1.0, 1.1, 1.1, 1.2, 1.2, 1.2, 1.3, 1.2, 1.2, 1.2, 1.2, 1.2] }
+                },
+                cultuurhistorie: {
+                    chart1: { labels: ['Verkaveling', 'Openheid', 'Stedenbouw', 'Monumenten', 'Overig'], data: [45, 38, 28, 25, 20], colors: ['#5e35b1', '#7e57c2', '#9575cd', '#b39ddb', '#d1c4e9'] },
+                    chart2: { data: [140, 142, 145, 148, 150, 152, 154, 155, 156, 156, 156, 156] }
+                },
+                aardkunde: {
+                    chart1: { labels: ['Klei', 'Zand', 'Veen', 'Leem', 'Overig'], data: [52, 28, 12, 6, 2], colors: ['#6d4c41', '#ffb300', '#4e342e', '#8d6e63', '#bcaaa4'] },
+                    chart2: { data: [58, 60, 62, 63, 64, 65, 66, 66, 67, 67, 67, 67] }
+                }
+            };
+
+            const data = chartData[select.value];
+            if (data && wasteChartInstance && co2ChartInstance) {
+                // Update first chart (doughnut)
+                wasteChartInstance.data.labels = data.chart1.labels;
+                wasteChartInstance.data.datasets[0].data = data.chart1.data;
+                wasteChartInstance.data.datasets[0].backgroundColor = data.chart1.colors;
+                wasteChartInstance.update();
+
+                // Update second chart (line)
+                co2ChartInstance.data.datasets[0].data = data.chart2.data;
+                co2ChartInstance.update();
+            }
+
+            // Update table headers and data
+            const tableConfigs = {
+                verkeer: {
+                    headers: ['Weg', 'Intensiteit (voertuigen/dag)', 'Groei %', 'Classificatie'],
+                    rows: [
+                        ['N302', '12.450', '+8.2%', 'Druk'],
+                        ['N307', '9.800', '+5.1%', 'Druk'],
+                        ['N309', '7.200', '+3.4%', 'Gemiddeld'],
+                        ['N710', '6.500', '+2.8%', 'Gemiddeld'],
+                        ['N305', '5.100', '+1.2%', 'Rustig']
+                    ]
+                },
+                archeologie: {
+                    headers: ['Zone', 'Type', 'Periode', 'Status'],
+                    rows: [
+                        ['PArK Zone 1', 'Nederzetting', 'Middeleeuwen', 'Beschermd'],
+                        ['PArK Zone 2', 'Grafveld', 'Romeins', 'Beschermd'],
+                        ['Top Monument 1', 'Kasteel', '16e eeuw', 'Rijksmonument'],
+                        ['PArK Zone 3', 'Akkercomplex', 'IJzertijd', 'Beschermd'],
+                        ['Top Monument 2', 'Kerk', '13e eeuw', 'Gemeentelijk']
+                    ]
+                },
+                geluid: {
+                    headers: ['Weg', 'Gem. Geluid (dB)', 'Max (dB)', 'Woningen Beïnvloed'],
+                    rows: [
+                        ['N302', '62', '68', '1.247'],
+                        ['N307', '59', '65', '892'],
+                        ['N309', '57', '63', '654'],
+                        ['N710', '56', '62', '423'],
+                        ['N305', '54', '60', '289']
+                    ]
+                },
+                wko: {
+                    headers: ['Gebied', 'Geschiktheid', 'Systemen', 'Capaciteit (MW)'],
+                    rows: [
+                        ['Almere Centrum', 'Zeer geschikt', '45', '12.5'],
+                        ['Lelystad Zuid', 'Geschikt', '28', '8.2'],
+                        ['Dronten Oost', 'Geschikt', '18', '5.1'],
+                        ['Zeewolde', 'Matig', '12', '3.4'],
+                        ['Noordoostpolder', 'Geschikt', '39', '10.8']
+                    ]
+                },
+                bodem: {
+                    headers: ['Gemeente', 'Klasse', 'Oppervlakte (ha)', 'Geschikt voor Bouw'],
+                    rows: [
+                        ['Almere', 'Klasse 2', '4.250', 'Ja'],
+                        ['Lelystad', 'Klasse 2', '2.180', 'Ja'],
+                        ['Dronten', 'Klasse 3', '1.890', 'Voorwaardelijk'],
+                        ['Zeewolde', 'Klasse 2', '1.120', 'Ja'],
+                        ['Noordoostpolder', 'Klasse 3', '2.450', 'Voorwaardelijk']
+                    ]
+                },
+                bodemdaling: {
+                    headers: ['Gebied', 'Daling (cm/jaar)', 'Risico', 'Maatregelen'],
+                    rows: [
+                        ['Veengebied Zuid', '3.2', 'Hoog', 'Monitoring'],
+                        ['Polder Oost', '2.1', 'Gemiddeld', 'Preventief'],
+                        ['Zeeklei Noord', '0.8', 'Laag', 'Geen'],
+                        ['Veengebied West', '2.8', 'Hoog', 'Actief'],
+                        ['Droogmakerij', '1.5', 'Gemiddeld', 'Monitoring']
+                    ]
+                },
+                kavels: {
+                    headers: ['Polder', 'Aantal Kavels', 'Gem. Grootte (ha)', 'Gebruik'],
+                    rows: [
+                        ['Noordoostpolder', '1.892', '26', 'Akkerbouw'],
+                        ['Oostelijk Flevoland', '1.650', '24', 'Akkerbouw'],
+                        ['Zuidelijk Flevoland', '1.350', '22', 'Gemengd'],
+                        ['Totaal', '4.892', '24', 'Landbouw']
+                    ]
+                },
+                asbest: {
+                    headers: ['Locatie', 'Risico', 'Type', 'Status Onderzoek'],
+                    rows: [
+                        ['Industrieterrein Almere', 'Hoog', 'Bodem', 'Sanering gepland'],
+                        ['Oud Lelystad', 'Gemiddeld', 'Gebouw', 'In behandeling'],
+                        ['Dronten Zuid', 'Laag', 'Bodem', 'Gemonitord'],
+                        ['Zeewolde Oost', 'Hoog', 'Gemengd', 'Sanering actief'],
+                        ['Noordoostpolder', 'Gemiddeld', 'Gebouw', 'Onderzoek lopend']
+                    ]
+                },
+                cbs_bevolking: {
+                    headers: ['Polder', 'Inwoners 2017', 'Oppervlakte (km²)', 'Dichtheid (per km²)', 'Drooggelegd'],
+                    rows: [
+                        ['Wieringermeer', '12.000', '208', '58', '1930'],
+                        ['Noordoostpolder + Urk', '87.000', '464', '188', '1942'],
+                        ['Oostelijk Flevopolder', '210.000', '560', '375', '1957'],
+                        ['Zuidelijk Flevopolder', '135.000', '368', '367', '1968'],
+                        ['Totaal IJsselmeerpolders', '444.000', '1.600', '278', '-']
+                    ]
+                },
+                cbs_landbouw: {
+                    headers: ['Polder', 'Landbouwgrond (ha)', 'Gem. Bedrijf (ha)', '% Akkerbouw', 'Gebruik'],
+                    rows: [
+                        ['Wieringermeer', '13.000', '45', '85%', 'Akkerbouw'],
+                        ['Noordoostpolder', '30.000', '52', '78%', 'Akkerbouw'],
+                        ['Oostelijk Flevopolder', '35.000', '55', '68%', 'Gemengd'],
+                        ['Zuidelijk Flevopolder', '28.000', '48', '65%', 'Gemengd'],
+                        ['Totaal IJsselmeerpolders', '106.000', '50', '70%', 'Landbouw']
+                    ]
+                },
+                cbs_biologisch: {
+                    headers: ['Provincie', '% Bio Bedrijven', 'Bio Oppervlakte %', 'Aantal Bedrijven', 'Ranking'],
+                    rows: [
+                        ['Gelderland', '20%', '6%', '~700', '#1'],
+                        ['Flevoland', '12%', '14%', '~420', '#2'],
+                        ['Noord-Holland', '8%', '5%', '~280', '#3'],
+                        ['Utrecht', '7%', '7%', '~245', '#4'],
+                        ['Nederland totaal', '100%', '5.8%', '~3.500', '-']
+                    ]
+                },
+                cbs_akkerbouw: {
+                    headers: ['Gewas', '% Akkerbouw Flevoland', 'Opbrengst Flevoland (ton/ha)', 'Opbrengst NL (ton/ha)', 'Verschil'],
+                    rows: [
+                        ['Aardappelen', '33%', '48', '45', '+6.7%'],
+                        ['Tarwe', '25%', '9.2', '8.8', '+4.5%'],
+                        ['Suikerbieten', '20%', '106', '92', '+15.2%'],
+                        ['Zaai-uien', '15%', '62', '58', '+6.9%'],
+                        ['Overig', '7%', '-', '-', '-']
+                    ]
+                },
+                cbs_economie: {
+                    headers: ['Indicator', '1995 (Index)', '2016 (Index)', 'Groei %', 'Status'],
+                    rows: [
+                        ['Bevolking', '100', '165', '+65%', 'Snelgroeiend'],
+                        ['Economie', '100', '195', '+95%', 'Verdubbeld'],
+                        ['Werkgelegenheid', '100', '187', '+87%', 'Snelgroeiend'],
+                        ['Aandeel Landbouw NOP', '25%', '16%', '-36%', 'Dalend'],
+                        ['Aandeel Landbouw Flevopolders', '12%', '8%', '-33%', 'Dalend']
+                    ]
+                },
+                cbs_visserij: {
+                    headers: ['Periode', 'Opbrengst (Index)', '% NL Totaal', 'Trend', 'Opmerkingen'],
+                    rows: [
+                        ['Voor 1932', '100', '8%', 'Stabiel', 'Zuiderzeetime'],
+                        ['WOII (1940-1945)', '180', '12%', 'Piek', 'Verhoogde vraag'],
+                        ['1950-1968', '60', '5%', 'Dalend', 'Na Oostelijk Flevopolder'],
+                        ['Begin jaren 80', '20', '2%', 'Sterk gedaald', 'Verkleind IJsselmeer'],
+                        ['Huidig (2017)', '10', '<1%', 'Minimaal', 'Recreatievisserij']
+                    ]
+                },
+                nnn: {
+                    headers: ['Gebied', 'Type', 'Oppervlakte (ha)', 'Status'],
+                    rows: [
+                        ['Oostvaardersplassen', 'Moeras/Water', '5.600', 'Beschermd'],
+                        ['Horsterwold', 'Bos', '4.500', 'Beschermd'],
+                        ['Lepelaarplassen', 'Water/Riet', '1.200', 'Beschermd'],
+                        ['Marker Wadden', 'Eilanden', '800', 'In ontwikkeling'],
+                        ['Overig NNN', 'Divers', '400', 'Beschermd']
+                    ]
+                },
+                kwelkaart: {
+                    headers: ['Gebied', 'Kwelflux (mm/dag)', 'Type', 'Impact Landbouw'],
+                    rows: [
+                        ['Zuidelijk Flevoland', '1.5', 'Kwel', 'Gemiddeld'],
+                        ['Oostelijk Flevoland', '0.8', 'Neutraal', 'Laag'],
+                        ['Noordoostpolder', '-0.5', 'Infiltratie', 'Gunstig'],
+                        ['Veengebieden', '2.1', 'Sterke kwel', 'Hoog'],
+                        ['Zeekleigebieden', '0.3', 'Lichte kwel', 'Laag']
+                    ]
+                },
+                cultuurhistorie: {
+                    headers: ['Element', 'Type', 'Aantal', 'Beschermingsniveau'],
+                    rows: [
+                        ['Verkavelingstructuur RIJP', 'Basiskwaliteit', '1', 'Hoog'],
+                        ['Openheid polderlandschap', 'Basiskwaliteit', '1', 'Hoog'],
+                        ['Monumentale boerderijen', 'Kernkwaliteit', '45', 'Zeer hoog'],
+                        ['Historische dorpskernen', 'Kernkwaliteit', '12', 'Zeer hoog'],
+                        ['Lijnbeplanting', 'Basiskwaliteit', '98', 'Gemiddeld']
+                    ]
+                },
+                aardkunde: {
+                    headers: ['Laag', 'Diepte (m NAP)', 'Samenstelling', 'Kenmerk'],
+                    rows: [
+                        ['Deklaag', '0 tot -5', 'Klei', 'Vruchtbaar'],
+                        ['Pleistoceen zand', '-5 tot -20', 'Fijn zand', 'Watervoerend'],
+                        ['Veenlaag', '-10 tot -15', 'Veen', 'Compressie'],
+                        ['Basis Pleistoceen', '-20 tot -30', 'Grof zand', 'Watervoerend'],
+                        ['Tertiair', '> -30', 'Klei/Zand', 'Ondoorlatend']
+                    ]
+                }
+            };
+
+            const tableConfig = tableConfigs[select.value];
+            if (tableConfig) {
+                // Update table headers
+                const headerRow = document.querySelector('#table-header tr');
+                headerRow.innerHTML = tableConfig.headers.map(h => `<th>${h}</th>`).join('');
+
+                // Update table body
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = tableConfig.rows.map(row =>
+                    `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                ).join('');
+            }
+
+            // Update map title and description
+            document.getElementById('map-title').textContent = `${dataset.title} - Geografische Weergave`;
+            document.getElementById('map-description').textContent = `📍 ${dataset.description}`;
+
+            // Update map markers
+            updateMapMarkers(select.value);
+
+            // Show notification
+            const notification = document.createElement('div');
+            notification.style.cssText = 'position: fixed; top: 80px; right: 20px; background: #0066cc; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; animation: slideIn 0.3s ease-out;';
+            notification.innerHTML = `
+                    <strong>✓ Dataset geladen</strong><br>
+                    <span style="font-size: 13px; opacity: 0.9;">${dataset.title}</span>
+                `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize with first dataset
+        window.addEventListener('load', () => {
+            updateDataset();
+        });
+    </script>
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    </style>legend.addTo(map);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,411 @@
+/*
+ * Provincie Flevoland Huisstijl
+ * Officiële kleuren gebaseerd op vlag en wapen van Flevoland
+ * Blauw: water waarop de provincie is veroverd
+ * Groen: vlakke weidelandschap
+ */
+
+:root {
+    /* Primaire kleuren - Flevoland */
+    --flevoland-blauw: #0066CC;
+    --flevoland-blauw-dark: #004D99;
+    --flevoland-blauw-light: #3385D6;
+    --flevoland-groen: #7CB342;
+    --flevoland-groen-dark: #5A8A2F;
+    --flevoland-groen-light: #9CCC65;
+
+    /* Secundaire kleuren */
+    --flevoland-wit: #FFFFFF;
+    --flevoland-lichtgrijs: #F5F7FA;
+    --flevoland-grijs: #E8EBED;
+    --flevoland-donkergrijs: #4A5568;
+    --flevoland-zwart: #1A202C;
+
+    /* Accent kleuren */
+    --flevoland-accent-oranje: #FF9800;
+    --flevoland-accent-rood: #E53935;
+    --flevoland-accent-geel: #FFC107;
+
+    /* Typography */
+    --font-primary: 'Segoe UI', 'Open Sans', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --font-heading: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 102, 204, 0.12);
+    --shadow-md: 0 4px 6px rgba(0, 102, 204, 0.15);
+    --shadow-lg: 0 10px 15px rgba(0, 102, 204, 0.2);
+
+    /* Border radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+}
+
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    background: var(--flevoland-lichtgrijs);
+    color: var(--flevoland-zwart);
+    line-height: 1.6;
+}
+
+/* Headers - Flevoland stijl */
+.header {
+    background: linear-gradient(135deg, var(--flevoland-blauw) 0%, var(--flevoland-blauw-dark) 100%);
+    color: var(--flevoland-wit);
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow-md);
+    border-bottom: 3px solid var(--flevoland-groen);
+}
+
+.header h1 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.header .subtitle {
+    font-size: 0.95rem;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+}
+
+/* Buttons - Flevoland stijl */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    font-family: var(--font-primary);
+}
+
+.btn-primary {
+    background: var(--flevoland-blauw);
+    color: var(--flevoland-wit);
+}
+
+.btn-primary:hover {
+    background: var(--flevoland-blauw-dark);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--flevoland-groen);
+    color: var(--flevoland-wit);
+}
+
+.btn-secondary:hover {
+    background: var(--flevoland-groen-dark);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--flevoland-blauw);
+    border: 2px solid var(--flevoland-blauw);
+}
+
+.btn-outline:hover {
+    background: var(--flevoland-blauw);
+    color: var(--flevoland-wit);
+}
+
+/* Back button */
+.back-btn {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--flevoland-wit);
+    padding: 0.65rem 1.25rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-block;
+    font-size: 0.9rem;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateX(-3px);
+}
+
+/* Cards & Panels */
+.panel, .card {
+    background: var(--flevoland-wit);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border-top: 3px solid var(--flevoland-blauw);
+}
+
+.panel h2, .card h2 {
+    color: var(--flevoland-blauw);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* App Cards - Flevoland gradient */
+.app-card {
+    background: linear-gradient(135deg, var(--flevoland-blauw) 0%, var(--flevoland-groen) 100%);
+    color: var(--flevoland-wit);
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+}
+
+.app-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.app-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.app-card p {
+    font-size: 0.85rem;
+    opacity: 0.95;
+}
+
+/* Tags - Flevoland kleuren */
+.tag {
+    display: inline-block;
+    background: var(--flevoland-blauw-light);
+    color: var(--flevoland-wit);
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin: 0.2rem;
+}
+
+.tag.green {
+    background: var(--flevoland-groen);
+}
+
+.tag.orange {
+    background: var(--flevoland-accent-oranje);
+}
+
+/* Context bar */
+.context-bar {
+    background: var(--flevoland-wit);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--flevoland-groen);
+}
+
+.breadcrumb {
+    color: var(--flevoland-donkergrijs);
+    font-size: 0.9rem;
+}
+
+.breadcrumb span {
+    color: var(--flevoland-blauw);
+    font-weight: 600;
+}
+
+/* Status indicators */
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status.success {
+    background: var(--flevoland-groen-light);
+    color: var(--flevoland-groen-dark);
+}
+
+.status.warning {
+    background: #FFF3CD;
+    color: #856404;
+}
+
+.status.info {
+    background: #D1ECF1;
+    color: var(--flevoland-blauw-dark);
+}
+
+/* Forms */
+input[type="text"],
+input[type="email"],
+input[type="search"],
+select,
+textarea {
+    padding: 0.75rem;
+    border: 2px solid var(--flevoland-grijs);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-family: var(--font-primary);
+    transition: border-color 0.2s;
+    width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--flevoland-blauw);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: var(--flevoland-lichtgrijs);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--flevoland-blauw);
+    border-bottom: 2px solid var(--flevoland-blauw);
+}
+
+td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--flevoland-grijs);
+}
+
+tr:hover {
+    background: var(--flevoland-lichtgrijs);
+}
+
+/* Stakeholder items */
+.stakeholder-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--flevoland-grijs);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.stakeholder-item:hover {
+    background: var(--flevoland-lichtgrijs);
+}
+
+.stakeholder-avatar {
+    background: linear-gradient(135deg, var(--flevoland-blauw) 0%, var(--flevoland-groen) 100%);
+    color: var(--flevoland-wit);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+/* Document items */
+.document-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--flevoland-grijs);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.document-item:hover {
+    background: var(--flevoland-lichtgrijs);
+    border-left: 3px solid var(--flevoland-blauw);
+    padding-left: calc(1rem - 3px);
+}
+
+/* Domain chips */
+.domain-chip {
+    background: var(--flevoland-grijs);
+    padding: 0.6rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.domain-chip:hover {
+    background: var(--flevoland-blauw-light);
+    color: var(--flevoland-wit);
+    border-color: var(--flevoland-blauw);
+}
+
+/* Compliance indicators */
+.compliance-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.compliance-status.green {
+    background: var(--flevoland-groen);
+    box-shadow: 0 0 8px rgba(124, 179, 66, 0.5);
+}
+
+.compliance-status.yellow {
+    background: var(--flevoland-accent-geel);
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
+}
+
+.compliance-status.red {
+    background: var(--flevoland-accent-rood);
+    box-shadow: 0 0 8px rgba(229, 57, 53, 0.5);
+}
+
+/* Utility classes */
+.text-primary {
+    color: var(--flevoland-blauw);
+}
+
+.text-secondary {
+    color: var(--flevoland-groen);
+}
+
+.bg-primary {
+    background: var(--flevoland-blauw);
+}
+
+.bg-secondary {
+    background: var(--flevoland-groen);
+}
+
+/* Container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        padding: 1rem;
+    }
+
+    .header h1 {
+        font-size: 1.35rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+}

@@ -1,12 +1,12 @@
 //! Loading spinner component
 
-use leptos::prelude::*;
+use dioxus::prelude::*;
 
 #[component]
-pub fn Loading() -> impl IntoView {
-    view! {
-        <div class="loading">
-            <div class="spinner"></div>
-        </div>
+pub fn Loading() -> Element {
+    rsx! {
+        div { class: "loading",
+            div { class: "spinner" }
+        }
     }
 }

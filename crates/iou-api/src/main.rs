@@ -11,6 +11,7 @@ use axum::{
     Router,
 };
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
@@ -40,8 +41,8 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("DuckDB initialized at: {}", config.database_path);
 
-    // Build router
-    let app = Router::new()
+    // Build API router
+    let api = Router::new()
         // Health check
         .route("/health", get(routes::health::health_check))
         // Context endpoints
@@ -64,7 +65,13 @@ async fn main() -> anyhow::Result<()> {
         .route(
             "/graphrag/communities",
             get(routes::graphrag::list_communities),
-        )
+        );
+
+    // Combine API with static file serving
+    let app = Router::new()
+        .nest("/api", api)
+        // Serve static frontend files
+        .fallback_service(ServeDir::new("static").append_index_html_on_directories(true))
         // CORS layer
         .layer(
             CorsLayer::new()

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../flevoland-theme.css">
+    <title>Document Generator - Provincie Flevoland</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .context-info {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .wizard {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+        }
+
+        .step.active .step-circle {
+            background: #0066CC;
+            color: white;
+        }
+
+        .step.completed .step-circle {
+            background: #4caf50;
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .ai-suggestion {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .ai-suggestion strong {
+            color: #1976d2;
+        }
+
+        .tag-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-height: 50px;
+        }
+
+        .tag {
+            background: #0066CC;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: #0066CC;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .compliance-check {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .compliance-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .check-icon {
+            color: #4caf50;
+            font-size: 20px;
+        }
+
+        .preview {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 30px;
+            border-radius: 8px;
+            min-height: 400px;
+            font-family: 'Times New Roman', serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 Document Generator</h1>
+        <a href="../context_dashboard.html" class="back-btn">← Terug</a>
+    </div>
+
+    <div class="container">
+        <div class="context-info">
+            Context: <strong>Zaak: Subsidieaanvraag Groene Energie BV</strong> |
+            Gebruiker: <strong>Maria Jansen</strong>
+        </div>
+
+        <div class="wizard">
+            <div class="steps">
+                <div class="step active">
+                    <div class="step-circle">1</div>
+                    <div>Document Type</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">2</div>
+                    <div>Inhoud</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    <div>Metadata</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">4</div>
+                    <div>Compliance</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">5</div>
+                    <div>Preview</div>
+                </div>
+            </div>
+
+            <div id="step1" class="step-content">
+                <h2 style="margin-bottom: 20px;">Selecteer Document Type</h2>
+
+                <div class="form-group">
+                    <label>Document Template</label>
+                    <select id="docType">
+                        <option>Adviesbrief</option>
+                        <option>Besluit Subsidieverlening</option>
+                        <option>Afwijzingsbrief</option>
+                        <option>Aanvullende Informatiebrief</option>
+                        <option>Raadsvoorstel</option>
+                        <option>Collegebesluit</option>
+                        <option>Memo</option>
+                    </select>
+                </div>
+
+                <div class="ai-suggestion">
+                    <strong>🤖 AI Suggestie:</strong> Op basis van de context "Subsidieaanvraag Groene Energie BV"
+                    wordt aanbevolen: <strong>Besluit Subsidieverlening</strong>
+                </div>
+
+                <div class="form-group">
+                    <label>Titel</label>
+                    <input type="text" id="title" value="Besluit Subsidieverlening Groene Energie BV" placeholder="Documenttitel...">
+                </div>
+
+                <div class="metadata-grid">
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" value="2025-02-15">
+                    </div>
+                    <div class="form-group">
+                        <label>Referentie</label>
+                        <input type="text" value="SUB-2025-0142" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step2" class="step-content" style="display:none;">
+                <h2 style="margin-bottom: 20px;">Document Inhoud</h2>
+
+                <div class="form-group">
+                    <label>Samenvatting</label>
+                    <textarea placeholder="Korte samenvatting...">Besluit tot subsidieverlening aan Groene Energie BV voor plaatsing zonnepanelen op bedrijfspand.</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Volledige Tekst</label>
+                    <textarea style="min-height: 250px;">Besluit
+
+Het college van Gedeputeerde Staten van Flevoland,
+
+Gelet op:
+- De subsidieaanvraag van Groene Energie BV d.d. 15 januari 2025
+- De Subsidieregeling Duurzame Energie Flevoland 2025
+- Het advies van de afdeling Economie & Duurzaamheid
+
+Besluit:
+
+1. Subsidie te verlenen aan Groene Energie BV tot een bedrag van € 125.000
+2. De subsidie betreft de plaatsing van 500 m² zonnepanelen
+3. Het project dient uiterlijk 31 december 2025 te zijn afgerond
+
+Ondertekening:
+Maria Jansen
+Beleidsmedewerker Duurzaamheid</textarea>
+                </div>
+
+                <div class="ai-suggestion">
+                    <strong>🤖 AI Suggestie:</strong> Wil je automatisch relevante juridische verwijzingen toevoegen?
+                    <button class="btn" style="margin-left: 10px;" onclick="alert('Juridische basis toegevoegd!')">✨ Voeg toe</button>
+                </div>
+            </div>
+
+            <div id="step3" class="step-content" style="display:none;">
+                <h2 style="margin-bottom: 20px;">Metadata (Automatisch Gegenereerd)</h2>
+
+                <div class="ai-suggestion">
+                    <strong>🤖 AI heeft metadata gedetecteerd uit document:</strong>
+                    <ul style="margin-top: 10px; line-height: 1.8;">
+                        <li>✓ Document type: Besluit</li>
+                        <li>✓ Betrokken partij: Groene Energie BV</li>
+                        <li>✓ Locatie: Flevoland</li>
+                        <li>✓ Bedrag: € 125.000</li>
+                        <li>✓ Deadline: 31 december 2025</li>
+                    </ul>
+                </div>
+
+                <div class="metadata-grid">
+                    <div class="form-group">
+                        <label>Classificatie</label>
+                        <select>
+                            <option>Intern</option>
+                            <option>Openbaar</option>
+                            <option>Vertrouwelijk</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bewaartermijn (AI Voorstel: 7 jaar)</label>
+                        <input type="number" value="7">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tags (AI Voorgesteld)</label>
+                    <div class="tag-input" id="tags">
+                        <span class="tag">subsidie <span class="tag-remove">×</span></span>
+                        <span class="tag">zonnepanelen <span class="tag-remove">×</span></span>
+                        <span class="tag">duurzaam <span class="tag-remove">×</span></span>
+                        <span class="tag">besluit <span class="tag-remove">×</span></span>
+                    </div>
+                </div>
+
+                <div class="metadata-grid">
+                    <div class="form-group">
+                        <label>Auteur</label>
+                        <input type="text" value="Maria Jansen" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Afdeling</label>
+                        <input type="text" value="Economie & Duurzaamheid" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step4" class="step-content" style="display:none;">
+                <h2 style="margin-bottom: 20px;">Compliance Check</h2>
+
+                <div class="compliance-check">
+                    <h3 style="margin-bottom: 15px;">Automatische Checks</h3>
+
+                    <div class="compliance-item">
+                        <span class="check-icon">✓</span>
+                        <div>
+                            <strong>Archiefwet</strong><br>
+                            <small>Bewaartermijn 7 jaar is correct voor subsidiebesluiten</small>
+                        </div>
+                    </div>
+
+                    <div class="compliance-item">
+                        <span class="check-icon">✓</span>
+                        <div>
+                            <strong>Woo (Wet Open Overheid)</strong><br>
+                            <small>Document is Woo-relevant. Na 6 maanden openbaar (met anonimisering bedrijfsgegevens)</small>
+                        </div>
+                    </div>
+
+                    <div class="compliance-item">
+                        <span class="check-icon">✓</span>
+                        <div>
+                            <strong>AVG</strong><br>
+                            <small>Geen bijzondere persoonsgegevens gedetecteerd</small>
+                        </div>
+                    </div>
+
+                    <div class="compliance-item">
+                        <span class="check-icon">✓</span>
+                        <div>
+                            <strong>Subsidieregeling 2025</strong><br>
+                            <small>Voldoet aan formele vereisten</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-suggestion">
+                    <strong>⚠️ Aandachtspunt:</strong> Dit besluit moet binnen 6 weken aan de aanvrager worden verstuurd
+                    volgens de Algemene wet bestuursrecht. Deadline: <strong>28 februari 2025</strong>
+                </div>
+            </div>
+
+            <div id="step5" class="step-content" style="display:none;">
+                <h2 style="margin-bottom: 20px;">Preview & Opslaan</h2>
+
+                <div class="preview">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='40'%3E%3Ctext x='0' y='30' font-size='24' fill='%23667eea'%3EFlevoland%3C/text%3E%3C/svg%3E" alt="Logo">
+                    </div>
+
+                    <h3>Besluit Subsidieverlening Groene Energie BV</h3>
+                    <p style="margin: 20px 0;"><strong>Referentie:</strong> SUB-2025-0142 | <strong>Datum:</strong> 15 februari 2025</p>
+
+                    <p style="line-height: 1.8;">
+                        Het college van Gedeputeerde Staten van Flevoland,<br><br>
+
+                        <strong>Gelet op:</strong><br>
+                        - De subsidieaanvraag van Groene Energie BV d.d. 15 januari 2025<br>
+                        - De Subsidieregeling Duurzame Energie Flevoland 2025<br>
+                        - Het advies van de afdeling Economie & Duurzaamheid<br><br>
+
+                        <strong>Besluit:</strong><br><br>
+
+                        1. Subsidie te verlenen aan Groene Energie BV tot een bedrag van € 125.000<br>
+                        2. De subsidie betreft de plaatsing van 500 m² zonnepanelen<br>
+                        3. Het project dient uiterlijk 31 december 2025 te zijn afgerond<br><br>
+
+                        <strong>Ondertekening:</strong><br>
+                        Maria Jansen<br>
+                        Beleidsmedewerker Duurzaamheid
+                    </p>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn" onclick="alert('Document opgeslagen in zaak SUB-2025-0142')">💾 Opslaan in Zaak</button>
+                    <button class="btn" onclick="alert('PDF wordt gegenereerd...')">📄 Download PDF</button>
+                    <button class="btn" onclick="alert('Document ter ondertekening verstuurd')">✍️ Verstuur ter Ondertekening</button>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-secondary" id="prevBtn" onclick="changeStep(-1)" style="display:none;">← Vorige</button>
+                <button class="btn" id="nextBtn" onclick="changeStep(1)">Volgende →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        function changeStep(direction) {
+            // Hide current step
+            document.getElementById(`step${currentStep}`).style.display = 'none';
+
+            // Update step number
+            currentStep += direction;
+
+            // Show new step
+            document.getElementById(`step${currentStep}`).style.display = 'block';
+
+            // Update step indicators
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index + 1 < currentStep) {
+                    step.classList.add('completed');
+                } else if (index + 1 === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+
+            // Update buttons
+            document.getElementById('prevBtn').style.display = currentStep === 1 ? 'none' : 'block';
+            document.getElementById('nextBtn').textContent = currentStep === 5 ? 'Opslaan' : 'Volgende →';
+
+            if (currentStep === 5 && direction === 1) {
+                document.getElementById('nextBtn').onclick = () => {
+                    alert('Document succesvol opgeslagen in zaak SUB-2025-0142!\n\nMetadata automatisch toegepast:\n- Woo-relevant: Ja\n- Bewaartermijn: 7 jaar\n- Classificatie: Intern\n\nDocument is nu beschikbaar voor alle betrokkenen.');
+                    window.location.href = '../context_dashboard.html';
+                };
+            } else {
+                document.getElementById('nextBtn').onclick = () => changeStep(1);
+            }
+        }
+
+        // Tag removal
+        document.querySelectorAll('.tag-remove').forEach(btn => {
+            btn.onclick = function() {
+                this.parentElement.remove();
+            };
+        });
+    </script>
+</body>
+</html>

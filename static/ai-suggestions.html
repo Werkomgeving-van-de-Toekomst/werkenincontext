@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="nl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="flevoland-theme.css">
+    <title>AI Suggesties - Provincie Flevoland</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .ai-header {
+                background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+                color: white;
+                padding: 2rem;
+                border-radius: 8px;
+                margin-bottom: 2rem;
+            }
+
+            .ai-header h1 {
+                margin: 0 0 0.5rem 0;
+                font-size: 1.8rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .ai-header p {
+                margin: 0;
+                opacity: 0.9;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .stat-card {
+                background: white;
+                border-radius: 8px;
+                padding: 1.25rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .stat-value {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #0066CC;
+                margin: 0.5rem 0;
+            }
+
+            .stat-label {
+                font-size: 0.85rem;
+                color: #718096;
+            }
+
+            .filter-bar {
+                background: white;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+
+            .filter-group {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+            }
+
+            .filter-group label {
+                font-size: 0.9rem;
+                color: #4a5568;
+                font-weight: 500;
+            }
+
+            .filter-group select {
+                padding: 0.5rem;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                font-size: 0.9rem;
+                background: white;
+                cursor: pointer;
+            }
+
+            .suggestion-card {
+                background: white;
+                border-radius: 8px;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+            }
+
+            .suggestion-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            }
+
+            .suggestion-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: start;
+                margin-bottom: 1rem;
+            }
+
+            .suggestion-title {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .suggestion-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+            }
+
+            .suggestion-icon.metadata {
+                background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+            }
+            .suggestion-icon.classification {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .suggestion-icon.compliance {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            }
+            .suggestion-icon.relation {
+                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            }
+
+            .suggestion-info h3 {
+                margin: 0 0 0.25rem 0;
+                font-size: 1.1rem;
+                color: #2d3748;
+            }
+
+            .suggestion-meta {
+                display: flex;
+                gap: 1rem;
+                font-size: 0.85rem;
+                color: #718096;
+            }
+
+            .confidence-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.3rem;
+                padding: 0.3rem 0.6rem;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: 600;
+            }
+
+            .confidence-badge.high {
+                background: #c6f6d5;
+                color: #22543d;
+            }
+            .confidence-badge.medium {
+                background: #fef5e7;
+                color: #975a16;
+            }
+            .confidence-badge.low {
+                background: #fed7d7;
+                color: #742a2a;
+            }
+
+            .suggestion-content {
+                margin: 1rem 0;
+                padding: 1rem;
+                background: #f7fafc;
+                border-radius: 6px;
+                border-left: 3px solid #0066CC;
+            }
+
+            .suggestion-content h4 {
+                margin: 0 0 0.5rem 0;
+                font-size: 0.9rem;
+                color: #4a5568;
+            }
+
+            .suggestion-details {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 0.75rem;
+            }
+
+            .detail-item {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .detail-label {
+                font-size: 0.75rem;
+                color: #718096;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 0.25rem;
+            }
+
+            .detail-value {
+                font-size: 0.9rem;
+                color: #2d3748;
+                font-weight: 500;
+            }
+
+            .suggestion-reasoning {
+                margin: 1rem 0;
+                font-size: 0.9rem;
+                color: #4a5568;
+                line-height: 1.6;
+            }
+
+            .suggestion-actions {
+                display: flex;
+                gap: 0.75rem;
+                margin-top: 1rem;
+            }
+
+            .btn {
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                font-size: 0.9rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                border: none;
+            }
+
+            .btn-accept {
+                background: #48bb78;
+                color: white;
+            }
+
+            .btn-accept:hover {
+                background: #38a169;
+            }
+
+            .btn-reject {
+                background: #f56565;
+                color: white;
+            }
+
+            .btn-reject:hover {
+                background: #e53e3e;
+            }
+
+            .btn-modify {
+                background: #4299e1;
+                color: white;
+            }
+
+            .btn-modify:hover {
+                background: #3182ce;
+            }
+
+            .btn-details {
+                background: #e2e8f0;
+                color: #4a5568;
+            }
+
+            .btn-details:hover {
+                background: #cbd5e0;
+            }
+
+            .tag-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+            }
+
+            .tag {
+                padding: 0.3rem 0.6rem;
+                background: #e6f0ff;
+                color: #0066CC;
+                border-radius: 4px;
+                font-size: 0.8rem;
+            }
+
+            .applied-banner {
+                background: #c6f6d5;
+                color: #22543d;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                font-size: 0.85rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .rejected-banner {
+                background: #fed7d7;
+                color: #742a2a;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                font-size: 0.85rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .bulk-actions {
+                background: white;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                display: flex;
+                gap: 1rem;
+                align-items: center;
+            }
+
+            .bulk-actions-label {
+                font-size: 0.9rem;
+                color: #4a5568;
+                font-weight: 500;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="ai-header">
+                <h1>🤖 AI Suggesties</h1>
+                <p>
+                    Intelligente metadata en compliance aanbevelingen voor uw
+                    informatie-objecten
+                </p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Nieuwe Suggesties</div>
+                    <div class="stat-value">12</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Geaccepteerd Vandaag</div>
+                    <div class="stat-value">8</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Hoge Zekerheid</div>
+                    <div class="stat-value">9</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Tijd Bespaard</div>
+                    <div class="stat-value">2.5u</div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>Type:</label>
+                    <select id="typeFilter" onchange="filterSuggestions()">
+                        <option value="all">Alle</option>
+                        <option value="metadata">Metadata</option>
+                        <option value="classification">Classificatie</option>
+                        <option value="compliance">Compliance</option>
+                        <option value="relation">Relaties</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Zekerheid:</label>
+                    <select
+                        id="confidenceFilter"
+                        onchange="filterSuggestions()"
+                    >
+                        <option value="all">Alle</option>
+                        <option value="high">Hoog</option>
+                        <option value="medium">Gemiddeld</option>
+                        <option value="low">Laag</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status:</label>
+                    <select id="statusFilter" onchange="filterSuggestions()">
+                        <option value="pending">In afwachting</option>
+                        <option value="all">Alle</option>
+                        <option value="applied">Toegepast</option>
+                        <option value="rejected">Afgewezen</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bulk-actions">
+                <span class="bulk-actions-label">Bulk acties:</span>
+                <button class="btn btn-accept" onclick="acceptAll()">
+                    ✓ Accepteer Hoge Zekerheid
+                </button>
+                <button class="btn btn-reject" onclick="rejectAll()">
+                    ✗ Wijs Alles Af
+                </button>
+            </div>
+
+            <div id="suggestionsList">
+                <!-- Suggestion 1: Metadata Extractie -->
+                <div
+                    class="suggestion-card"
+                    data-type="metadata"
+                    data-confidence="high"
+                    data-status="pending"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon metadata">📝</div>
+                            <div class="suggestion-info">
+                                <h3>
+                                    Metadata Extractie - Projectplan Circulaire
+                                    Economie
+                                </h3>
+                                <div class="suggestion-meta">
+                                    <span
+                                        >📄
+                                        Projectplan_Circulaire_Economie_2025.pdf</span
+                                    >
+                                    <span>🕐 2 minuten geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge high"
+                            >🎯 98% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="suggestion-content">
+                        <h4>Voorgestelde Metadata:</h4>
+                        <div class="suggestion-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Onderwerp</span>
+                                <span class="detail-value"
+                                    >Duurzaamheid & Milieu</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Documenttype</span>
+                                <span class="detail-value">Projectplan</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Bewaartermijn</span>
+                                <span class="detail-value">10 jaar</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Vertrouwelijkheid</span
+                                >
+                                <span class="detail-value">Openbaar</span>
+                            </div>
+                        </div>
+                        <div class="tag-list">
+                            <span class="tag">Circulaire Economie</span>
+                            <span class="tag">Duurzaamheid</span>
+                            <span class="tag">Flevoland</span>
+                            <span class="tag">Project 2025</span>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-reasoning">
+                        <strong>Redenering:</strong> Document bevat
+                        projectstructuur, doelstellingen, budget en planning.
+                        Geïdentificeerde wettelijke basis: Omgevingswet, Wet
+                        Milieubeheer. Detectie van meerdere stakeholders en
+                        financiële informatie duidt op strategisch
+                        projectdocument.
+                    </div>
+
+                    <div class="suggestion-actions">
+                        <button
+                            class="btn btn-accept"
+                            onclick="acceptSuggestion(this, 1)"
+                        >
+                            ✓ Accepteren
+                        </button>
+                        <button
+                            class="btn btn-modify"
+                            onclick="modifySuggestion(1)"
+                        >
+                            ✏️ Aanpassen
+                        </button>
+                        <button
+                            class="btn btn-reject"
+                            onclick="rejectSuggestion(this, 1)"
+                        >
+                            ✗ Afwijzen
+                        </button>
+                        <button
+                            class="btn btn-details"
+                            onclick="showDetails(1)"
+                        >
+                            ℹ️ Meer Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Suggestion 2: Classificatie -->
+                <div
+                    class="suggestion-card"
+                    data-type="classification"
+                    data-confidence="high"
+                    data-status="pending"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon classification">🏷️</div>
+                            <div class="suggestion-info">
+                                <h3>Classificatie - Woo Besluit Windpark</h3>
+                                <div class="suggestion-meta">
+                                    <span
+                                        >📄 Woo_Besluit_Windpark_2024.pdf</span
+                                    >
+                                    <span>🕐 15 minuten geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge high"
+                            >🎯 95% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="suggestion-content">
+                        <h4>Voorgestelde Classificatie:</h4>
+                        <div class="suggestion-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Zaaktype</span>
+                                <span class="detail-value">Woo Verzoek</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Procesfase</span>
+                                <span class="detail-value">Besluitvorming</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Wettelijke Grondslag</span
+                                >
+                                <span class="detail-value"
+                                    >Wet open overheid</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Publicatieplicht</span
+                                >
+                                <span class="detail-value"
+                                    >Ja - Platform Open Overheid</span
+                                >
+                            </div>
+                        </div>
+                        <div class="tag-list">
+                            <span class="tag">Woo</span>
+                            <span class="tag">Openbaarheid</span>
+                            <span class="tag">Windenergie</span>
+                            <span class="tag">Bezwaar</span>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-reasoning">
+                        <strong>Redenering:</strong> Document geïdentificeerd
+                        als formeel besluit op Woo-verzoek. Bevat wettelijke
+                        termijnen, bezwaarmogelijkheden en verwijzingen naar Wet
+                        open overheid art. 4.1 en 5.1. Automatische publicatie
+                        vereist binnen 2 weken.
+                    </div>
+
+                    <div class="suggestion-actions">
+                        <button
+                            class="btn btn-accept"
+                            onclick="acceptSuggestion(this, 2)"
+                        >
+                            ✓ Accepteren
+                        </button>
+                        <button
+                            class="btn btn-modify"
+                            onclick="modifySuggestion(2)"
+                        >
+                            ✏️ Aanpassen
+                        </button>
+                        <button
+                            class="btn btn-reject"
+                            onclick="rejectSuggestion(this, 2)"
+                        >
+                            ✗ Afwijzen
+                        </button>
+                        <button
+                            class="btn btn-details"
+                            onclick="showDetails(2)"
+                        >
+                            ℹ️ Meer Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Suggestion 3: Compliance Check -->
+                <div
+                    class="suggestion-card"
+                    data-type="compliance"
+                    data-confidence="medium"
+                    data-status="pending"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon compliance">⚖️</div>
+                            <div class="suggestion-info">
+                                <h3>
+                                    AVG Compliance - Enquête Resultaten Bewoners
+                                </h3>
+                                <div class="suggestion-meta">
+                                    <span>📄 Enquete_Smart_City_2024.xlsx</span>
+                                    <span>🕐 1 uur geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge medium"
+                            >⚠️ 78% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="suggestion-content">
+                        <h4>Gedetecteerde Privacy Issues:</h4>
+                        <div class="suggestion-details">
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Persoonsgegevens</span
+                                >
+                                <span class="detail-value">15 kolommen</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Bijzondere Categorieën</span
+                                >
+                                <span class="detail-value"
+                                    >Gezondheidsgegevens (2x)</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">DPIA Vereist</span>
+                                <span class="detail-value">Mogelijk</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Bewaartermijn</span>
+                                <span class="detail-value">Max 2 jaar</span>
+                            </div>
+                        </div>
+                        <div class="tag-list">
+                            <span class="tag">AVG</span>
+                            <span class="tag">Persoonsgegevens</span>
+                            <span class="tag">DPIA</span>
+                            <span class="tag">Privacy</span>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-reasoning">
+                        <strong>Redenering:</strong> Dataset bevat directe en
+                        indirecte identificeerbare persoonsgegevens (naam,
+                        adres, geboortedatum) en mogelijk bijzondere categorieën
+                        (gezondheid). DPIA wordt geadviseerd vanwege
+                        systematische verwerking en profiling. Anonimisatie of
+                        pseudonimisering aanbevolen voor analyse.
+                    </div>
+
+                    <div class="suggestion-actions">
+                        <button
+                            class="btn btn-accept"
+                            onclick="acceptSuggestion(this, 3)"
+                        >
+                            ✓ Start DPIA
+                        </button>
+                        <button
+                            class="btn btn-modify"
+                            onclick="modifySuggestion(3)"
+                        >
+                            ✏️ Aanpassen
+                        </button>
+                        <button
+                            class="btn btn-reject"
+                            onclick="rejectSuggestion(this, 3)"
+                        >
+                            ✗ Afwijzen
+                        </button>
+                        <button
+                            class="btn btn-details"
+                            onclick="showDetails(3)"
+                        >
+                            ℹ️ Meer Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Suggestion 4: Relatie Detectie -->
+                <div
+                    class="suggestion-card"
+                    data-type="relation"
+                    data-confidence="high"
+                    data-status="pending"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon relation">🔗</div>
+                            <div class="suggestion-info">
+                                <h3>
+                                    Relatie Detectie - Raadsbesluit Circulaire
+                                    Inkoop
+                                </h3>
+                                <div class="suggestion-meta">
+                                    <span
+                                        >📄
+                                        Raadsbesluit_Circulaire_Inkoop_2024.pdf</span
+                                    >
+                                    <span>🕐 3 uren geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge high"
+                            >🎯 92% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="suggestion-content">
+                        <h4>Gedetecteerde Relaties:</h4>
+                        <div class="suggestion-details">
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Gerelateerde Projecten</span
+                                >
+                                <span class="detail-value"
+                                    >Circulaire Economie Flevoland (2)</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Beleidsonderwerpen</span
+                                >
+                                <span class="detail-value"
+                                    >Circulaire Economie Beleid (1)</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Stakeholders</span>
+                                <span class="detail-value">3 organisaties</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Eerdere Documenten</span
+                                >
+                                <span class="detail-value">5 gerelateerd</span>
+                            </div>
+                        </div>
+                        <div class="tag-list">
+                            <span class="tag"
+                                >Circulaire Economie Flevoland 2025</span
+                            >
+                            <span class="tag">Circulaire Economie Beleid</span>
+                            <span class="tag"
+                                >Verduurzaming Overheidsgebouwen</span
+                            >
+                        </div>
+                    </div>
+
+                    <div class="suggestion-reasoning">
+                        <strong>Redenering:</strong> Document refereert
+                        expliciet aan project "Circulaire Economie Flevoland
+                        2025" en implementeert beleidslijnen uit "Circulaire
+                        Economie Beleid". Gemeenschappelijke stakeholders
+                        gedetecteerd: Provincie Flevoland, MKB Nederland,
+                        Cirkelstad. Semantische analyse toont sterke overlap met
+                        5 eerdere documenten.
+                    </div>
+
+                    <div class="suggestion-actions">
+                        <button
+                            class="btn btn-accept"
+                            onclick="acceptSuggestion(this, 4)"
+                        >
+                            ✓ Koppel Relaties
+                        </button>
+                        <button
+                            class="btn btn-modify"
+                            onclick="modifySuggestion(4)"
+                        >
+                            ✏️ Selecteer
+                        </button>
+                        <button
+                            class="btn btn-reject"
+                            onclick="rejectSuggestion(this, 4)"
+                        >
+                            ✗ Afwijzen
+                        </button>
+                        <button
+                            class="btn btn-details"
+                            onclick="showDetails(4)"
+                        >
+                            ℹ️ Meer Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Suggestion 5: Woo Dataset Classification -->
+                <div
+                    class="suggestion-card"
+                    data-type="classification"
+                    data-confidence="high"
+                    data-status="pending"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon classification">🏷️</div>
+                            <div class="suggestion-info">
+                                <h3>
+                                    Woo Classificatie - Basiskaart Agrarische
+                                    Bedrijfssituatie
+                                </h3>
+                                <div class="suggestion-meta">
+                                    <span
+                                        >📊
+                                        Basiskaart_Agrarische_Bedrijfssituatie_2021.xlsx</span
+                                    >
+                                    <span>🕐 5 minuten geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge high"
+                            >🎯 99% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="suggestion-content">
+                        <h4>Voorgestelde Woo Classificatie:</h4>
+                        <div class="suggestion-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Documenttype</span>
+                                <span class="detail-value"
+                                    >Woo-besluit met Dataset</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Wettelijke Grondslag</span
+                                >
+                                <span class="detail-value"
+                                    >Wet open overheid</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"
+                                    >Publicatieplicht</span
+                                >
+                                <span class="detail-value"
+                                    >Ja - Actief openbaar gemaakt</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Bewaartermijn</span>
+                                <span class="detail-value"
+                                    >Permanent (archiefwaardig)</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Privacy Status</span>
+                                <span class="detail-value"
+                                    >Geanonimiseerd conform AVG</span
+                                >
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Hergebruik</span>
+                                <span class="detail-value"
+                                    >Open Data - Toegestaan</span
+                                >
+                            </div>
+                        </div>
+                        <div class="tag-list">
+                            <span class="tag">Woo</span>
+                            <span class="tag">Landbouw</span>
+                            <span class="tag">Diergezondheid</span>
+                            <span class="tag">Ministerie LNV</span>
+                            <span class="tag">RVO</span>
+                            <span class="tag">Transparantie</span>
+                            <span class="tag">Open Data</span>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-reasoning">
+                        <strong>Redenering:</strong> Document herkend als
+                        officieel Woo-besluit gepubliceerd op rijksoverheid.nl
+                        (UUID: 140b872e-26a2-433e-96d5-3d74f7fa981d). Detectie
+                        van formele besluitstructuur, verwijzingen naar Wet open
+                        overheid, en publicatie op officieel overheidsplatform.
+                        Dataset bevat landbouwgegevens uit 2021 met >12.000
+                        bedrijven. Juridische documenten gedetecteerd:
+                        Woo-besluit (04-05-2023), Staatscourant bekendmaking
+                        (2023/4842), en Privacy Impact Assessment. Automatische
+                        compliance check bevestigt AVG-waarborgen en
+                        archiefwaarde.
+                    </div>
+
+                    <div class="suggestion-actions">
+                        <button
+                            class="btn btn-accept"
+                            onclick="acceptSuggestion(this, 5)"
+                        >
+                            ✓ Accepteren
+                        </button>
+                        <button
+                            class="btn btn-modify"
+                            onclick="modifySuggestion(5)"
+                        >
+                            ✏️ Aanpassen
+                        </button>
+                        <button
+                            class="btn btn-reject"
+                            onclick="rejectSuggestion(this, 5)"
+                        >
+                            ✗ Afwijzen
+                        </button>
+                        <button
+                            class="btn btn-details"
+                            onclick="window.location.href='document-detail-woo.html'"
+                        >
+                            📄 Bekijk Document
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Applied Example -->
+                <div
+                    class="suggestion-card"
+                    data-type="metadata"
+                    data-confidence="high"
+                    data-status="applied"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon metadata">📝</div>
+                            <div class="suggestion-info">
+                                <h3>
+                                    Metadata Extractie - Jaarrapportage 2023
+                                </h3>
+                                <div class="suggestion-meta">
+                                    <span
+                                        >📄
+                                        Jaarrapportage_Flevoland_2023.pdf</span
+                                    >
+                                    <span>🕐 1 dag geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge high"
+                            >🎯 96% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="applied-banner">
+                        ✓ Toegepast door Maria Jansen op 15-10-2025 om 14:23
+                    </div>
+                </div>
+
+                <!-- Rejected Example -->
+                <div
+                    class="suggestion-card"
+                    data-type="classification"
+                    data-confidence="low"
+                    data-status="rejected"
+                >
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">
+                            <div class="suggestion-icon classification">🏷️</div>
+                            <div class="suggestion-info">
+                                <h3>Classificatie - Concept Notitie</h3>
+                                <div class="suggestion-meta">
+                                    <span>📄 Concept_Notitie_Q2.docx</span>
+                                    <span>🕐 2 dagen geleden</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="confidence-badge low"
+                            >⚠️ 62% Zekerheid</span
+                        >
+                    </div>
+
+                    <div class="rejected-banner">
+                        ✗ Afgewezen door Jan de Vries op 14-10-2025 - Reden:
+                        "Document is nog in concept fase"
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; text-align: center">
+                <button
+                    onclick="window.location.href='context_dashboard.html'"
+                    style="
+                        background: #0066CC;
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                    "
+                >
+                    ← Terug naar Dashboard
+                </button>
+            </div>
+        </div>
+
+        <script>
+            function filterSuggestions() {
+                const typeFilter = document.getElementById("typeFilter").value;
+                const confidenceFilter =
+                    document.getElementById("confidenceFilter").value;
+                const statusFilter =
+                    document.getElementById("statusFilter").value;
+
+                const cards = document.querySelectorAll(".suggestion-card");
+
+                cards.forEach((card) => {
+                    const type = card.dataset.type;
+                    const confidence = card.dataset.confidence;
+                    const status = card.dataset.status;
+
+                    const typeMatch =
+                        typeFilter === "all" || type === typeFilter;
+                    const confidenceMatch =
+                        confidenceFilter === "all" ||
+                        confidence === confidenceFilter;
+                    const statusMatch =
+                        statusFilter === "all" || status === statusFilter;
+
+                    if (typeMatch && confidenceMatch && statusMatch) {
+                        card.style.display = "block";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+            }
+
+            function acceptSuggestion(button, id) {
+                const card = button.closest(".suggestion-card");
+                const actionsDiv = card.querySelector(".suggestion-actions");
+
+                // Create applied banner
+                const banner = document.createElement("div");
+                banner.className = "applied-banner";
+                banner.innerHTML = "✓ Suggestie geaccepteerd en toegepast";
+
+                // Replace actions with banner
+                actionsDiv.replaceWith(banner);
+
+                // Update card status
+                card.dataset.status = "applied";
+
+                // Show success message
+                showNotification("Suggestie succesvol toegepast!", "success");
+            }
+
+            function rejectSuggestion(button, id) {
+                const reason = prompt("Reden voor afwijzing (optioneel):");
+                const card = button.closest(".suggestion-card");
+                const actionsDiv = card.querySelector(".suggestion-actions");
+
+                // Create rejected banner
+                const banner = document.createElement("div");
+                banner.className = "rejected-banner";
+                const reasonText = reason ? ` - Reden: "${reason}"` : "";
+                banner.innerHTML = `✗ Suggestie afgewezen${reasonText}`;
+
+                // Replace actions with banner
+                actionsDiv.replaceWith(banner);
+
+                // Update card status
+                card.dataset.status = "rejected";
+
+                // Show notification
+                showNotification("Suggestie afgewezen", "info");
+            }
+
+            function modifySuggestion(id) {
+                alert(
+                    "Wijzigingsmodus wordt geopend...\n(In een volledige implementatie zou hier een formulier verschijnen)",
+                );
+            }
+
+            function showDetails(id) {
+                alert(
+                    "Gedetailleerde analyse wordt weergegeven...\n(In een volledige implementatie zou hier een uitgebreide analyse verschijnen met bronteksten, confidence scores per veld, etc.)",
+                );
+            }
+
+            function acceptAll() {
+                const highConfidenceCards = document.querySelectorAll(
+                    '.suggestion-card[data-confidence="high"][data-status="pending"]',
+                );
+
+                if (highConfidenceCards.length === 0) {
+                    showNotification(
+                        "Geen suggesties met hoge zekerheid gevonden",
+                        "info",
+                    );
+                    return;
+                }
+
+                if (
+                    confirm(
+                        `Weet u zeker dat u alle ${highConfidenceCards.length} suggesties met hoge zekerheid wilt accepteren?`,
+                    )
+                ) {
+                    highConfidenceCards.forEach((card) => {
+                        const button = card.querySelector(".btn-accept");
+                        if (button) {
+                            const id =
+                                Array.from(card.parentElement.children).indexOf(
+                                    card,
+                                ) + 1;
+                            acceptSuggestion(button, id);
+                        }
+                    });
+                    showNotification(
+                        `${highConfidenceCards.length} suggesties toegepast!`,
+                        "success",
+                    );
+                }
+            }
+
+            function rejectAll() {
+                const pendingCards = document.querySelectorAll(
+                    '.suggestion-card[data-status="pending"]',
+                );
+
+                if (pendingCards.length === 0) {
+                    showNotification("Geen suggesties in afwachting", "info");
+                    return;
+                }
+
+                if (
+                    confirm(
+                        `Weet u zeker dat u alle ${pendingCards.length} suggesties wilt afwijzen?`,
+                    )
+                ) {
+                    const reason = prompt("Reden voor afwijzing (optioneel):");
+                    pendingCards.forEach((card) => {
+                        const button = card.querySelector(".btn-reject");
+                        if (button) {
+                            const actionsDiv = card.querySelector(
+                                ".suggestion-actions",
+                            );
+                            const banner = document.createElement("div");
+                            banner.className = "rejected-banner";
+                            const reasonText = reason
+                                ? ` - Reden: "${reason}"`
+                                : "";
+                            banner.innerHTML = `✗ Bulk afgewezen${reasonText}`;
+                            actionsDiv.replaceWith(banner);
+                            card.dataset.status = "rejected";
+                        }
+                    });
+                    showNotification(
+                        `${pendingCards.length} suggesties afgewezen`,
+                        "info",
+                    );
+                }
+            }
+
+            function showNotification(message, type) {
+                // Simple notification (in production, use a proper notification library)
+                const notification = document.createElement("div");
+                notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                background: ${type === "success" ? "#48bb78" : "#4299e1"};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+            `;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.animation = "slideOut 0.3s ease-out";
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+            // Add CSS animations
+            const style = document.createElement("style");
+            style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+            }
+        `;
+            document.head.appendChild(style);
+        </script>
+    </body>
+</html>

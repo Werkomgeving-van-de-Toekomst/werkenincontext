@@ -1,35 +1,32 @@
 //! Header component
 
-use leptos::prelude::*;
+use dioxus::prelude::*;
 
 use crate::state::AppState;
 
 #[component]
-pub fn Header() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState must be provided");
+pub fn Header() -> Element {
+    let state = use_context::<Signal<AppState>>();
+    let user = state.read().user.clone();
 
-    view! {
-        <header class="header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h1>"IOU-Modern"</h1>
-                    <p class="subtitle">"Informatie Ondersteunde Werkomgeving"</p>
-                </div>
+    rsx! {
+        header { class: "header",
+            div { style: "display: flex; justify-content: space-between; align-items: center;",
+                div {
+                    h1 { "IOU-Modern" }
+                    p { class: "subtitle", "Informatie Ondersteunde Werkomgeving" }
+                }
 
-                {move || {
-                    state.user.get().map(|user| {
-                        view! {
-                            <div class="user-info">
-                                <div>
-                                    <div style="font-weight: 600;">{user.name}</div>
-                                    <div style="font-size: 0.875rem; opacity: 0.9;">{user.organization}</div>
-                                </div>
-                                <div class="user-avatar">{user.initials}</div>
-                            </div>
+                if let Some(user) = user {
+                    div { class: "user-info",
+                        div {
+                            div { style: "font-weight: 600;", "{user.name}" }
+                            div { style: "font-size: 0.875rem; opacity: 0.9;", "{user.organization}" }
                         }
-                    })
-                }}
-            </div>
-        </header>
+                        div { class: "user-avatar", "{user.initials}" }
+                    }
+                }
+            }
+        }
     }
 }

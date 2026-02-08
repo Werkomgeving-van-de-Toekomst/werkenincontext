@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="flevoland-theme.css">
+    <title>Woo-besluit Basiskaart Agrarische Bedrijfssituatie 2021 - Provincie Flevoland</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .document-header {
+            background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .document-header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.8rem;
+        }
+
+        .document-status {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            margin: 0 0 1rem 0;
+            font-size: 1.2rem;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metadata-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .metadata-table tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .metadata-table td {
+            padding: 0.75rem 0;
+            font-size: 0.9rem;
+        }
+
+        .metadata-table td:first-child {
+            color: #718096;
+            width: 40%;
+        }
+
+        .metadata-table td:last-child {
+            color: #2d3748;
+            font-weight: 500;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e6f0ff;
+            color: #0066CC;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin: 0.2rem;
+        }
+
+        .preview-box {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .preview-box h2 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+            font-size: 1.3rem;
+        }
+
+        .woo-notice {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .woo-notice strong {
+            color: #856404;
+        }
+
+        .activity-item {
+            padding: 1rem;
+            border-left: 3px solid #0066CC;
+            margin-bottom: 1rem;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+
+        .activity-item h4 {
+            margin: 0 0 0.5rem 0;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        .activity-meta {
+            font-size: 0.85rem;
+            color: #718096;
+        }
+
+        .compliance-panel {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .compliance-panel h3 {
+            margin: 0 0 0.5rem 0;
+            color: #15803d;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .compliance-panel p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #166534;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #0066CC;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .related-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .related-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .related-item:hover {
+            background: #f7fafc;
+        }
+
+        .related-item h4 {
+            margin: 0 0 0.3rem 0;
+            font-size: 0.9rem;
+            color: #2d3748;
+        }
+
+        .related-item p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .access-info {
+            background: #e6f0ff;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .access-info h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.95rem;
+            color: #2d3748;
+        }
+
+        .access-info ul {
+            margin: 0;
+            padding-left: 1.5rem;
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+
+        .dataset-preview {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            overflow-x: auto;
+        }
+
+        .dataset-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .dataset-preview th {
+            background: #f7fafc;
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .dataset-preview td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="document-header">
+            <h1>📊 Woo-besluit Basiskaart Agrarische Bedrijfssituatie 2021</h1>
+            <div class="document-status">✓ Openbaar | Woo-besluit</div>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
+                Ministerie van Landbouw, Natuur en Voedselkwaliteit - Gepubliceerd 07-10-2025
+            </p>
+        </div>
+
+        <div class="woo-notice">
+            <strong>⚖️ Wet open overheid (Woo)</strong><br>
+            Dit document is openbaar gemaakt op basis van een Woo-verzoek. Conform de Wet open overheid
+            zijn deze gegevens toegankelijk gemaakt voor transparantie en openbaarheid van bestuur.
+        </div>
+
+        <div class="content-grid">
+            <div>
+                <div class="card">
+                    <h2>📋 Document Informatie</h2>
+                    <table class="metadata-table">
+                        <tr>
+                            <td>Documenttype</td>
+                            <td>Woo-besluit met dataset</td>
+                        </tr>
+                        <tr>
+                            <td>Bestandsformaat</td>
+                            <td>XLSX (Spreadsheet, Open Standaard)</td>
+                        </tr>
+                        <tr>
+                            <td>Bestandsgrootte</td>
+                            <td>3.8 MB</td>
+                        </tr>
+                        <tr>
+                            <td>Publicatiedatum</td>
+                            <td>07-10-2025</td>
+                        </tr>
+                        <tr>
+                            <td>Besluitdatum Woo</td>
+                            <td>04-05-2023</td>
+                        </tr>
+                        <tr>
+                            <td>Verantwoordelijke</td>
+                            <td>Ministerie van LNV</td>
+                        </tr>
+                        <tr>
+                            <td>Onderwerp</td>
+                            <td>Landbouwbedrijven, Diergezondheid, Dierenwelzijn, Veehouderij</td>
+                        </tr>
+                        <tr>
+                            <td>UUID</td>
+                            <td>140b872e-26a2-433e-96d5-3d74f7fa981d</td>
+                        </tr>
+                        <tr>
+                            <td>Wettelijke Grondslag</td>
+                            <td>Wet open overheid (Woo)</td>
+                        </tr>
+                        <tr>
+                            <td>Bewaartermijn</td>
+                            <td>Permanent (archiefwaardig)</td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-top: 1rem;">
+                        <strong style="font-size: 0.9rem; color: #4a5568;">Tags:</strong><br>
+                        <span class="tag">Woo</span>
+                        <span class="tag">Landbouw</span>
+                        <span class="tag">Diergezondheid</span>
+                        <span class="tag">Dierenwelzijn</span>
+                        <span class="tag">Veehouderij</span>
+                        <span class="tag">Openbaar</span>
+                        <span class="tag">Dataset</span>
+                        <span class="tag">Transparantie</span>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>📄 Inhoud & Context</h2>
+
+                    <h3 style="margin-top: 0; font-size: 1rem;">Over het Woo-verzoek</h3>
+                    <p style="line-height: 1.6; color: #4a5568;">
+                        Dit besluit betreft de openbaarmaking van de Basiskaart Agrarische Bedrijfssituatie (BAB)
+                        van 2021. De BAB bevat gedetailleerde informatie over agrarische bedrijven in Nederland,
+                        inclusief gegevens over dierenwelzijn, diergezondheid en veehouderij praktijken.
+                    </p>
+
+                    <h3 style="margin-top: 1.5rem; font-size: 1rem;">Achtergrond</h3>
+                    <p style="line-height: 1.6; color: #4a5568;">
+                        In februari 2023 ontving de Rijksdienst voor Ondernemend Nederland (RVO) meerdere
+                        Woo-verzoeken van journalisten voor toegang tot landbouwgegevens uit de Landbouwtelling.
+                        Deze verzoeken waren gericht op het verkrijgen van inzicht in de agrarische bedrijfssituatie
+                        in Nederland voor transparantie en maatschappelijk debat.
+                    </p>
+
+                    <h3 style="margin-top: 1.5rem; font-size: 1rem;">Juridische Overwegingen</h3>
+                    <p style="line-height: 1.6; color: #4a5568;">
+                        Bij de openbaarmaking is zorgvuldig afgewogen welke informatie openbaar kon worden gemaakt
+                        conform de Wet open overheid, rekening houdend met de privacy van agrariërs (AVG) en
+                        bedrijfsgevoelige informatie. Bepaalde persoonsgegevens zijn geanonimiseerd of weggelakt.
+                    </p>
+
+                    <div class="dataset-preview">
+                        <h4 style="margin: 0 0 1rem 0;">Dataset Preview (eerste 5 rijen)</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Provincie</th>
+                                    <th>Gemeente</th>
+                                    <th>Bedrijfstype</th>
+                                    <th>Aantal Dieren</th>
+                                    <th>Dierenwelzijn Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Gelderland</td>
+                                    <td>Gemeente A</td>
+                                    <td>Melkveehouderij</td>
+                                    <td>120</td>
+                                    <td>Goed</td>
+                                </tr>
+                                <tr>
+                                    <td>Noord-Brabant</td>
+                                    <td>Gemeente B</td>
+                                    <td>Varkenshouderij</td>
+                                    <td>850</td>
+                                    <td>Voldoende</td>
+                                </tr>
+                                <tr>
+                                    <td>Flevoland</td>
+                                    <td>Almere</td>
+                                    <td>Akkerbouw</td>
+                                    <td>0</td>
+                                    <td>N.v.t.</td>
+                                </tr>
+                                <tr>
+                                    <td>Limburg</td>
+                                    <td>Gemeente C</td>
+                                    <td>Pluimveehouderij</td>
+                                    <td>15000</td>
+                                    <td>Goed</td>
+                                </tr>
+                                <tr>
+                                    <td>Overijssel</td>
+                                    <td>Gemeente D</td>
+                                    <td>Geitenhouderij</td>
+                                    <td>450</td>
+                                    <td>Uitstekend</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #718096; font-style: italic;">
+                            Volledige dataset bevat 12.000+ agrarische bedrijven
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>📅 Activiteiten & Versies</h2>
+
+                    <div class="activity-item">
+                        <h4>🆕 Document Gepubliceerd</h4>
+                        <p style="margin: 0.3rem 0; color: #4a5568; font-size: 0.9rem;">
+                            Document openbaar gemaakt op rijksoverheid.nl conform Woo-besluit
+                        </p>
+                        <div class="activity-meta">
+                            👤 Min. LNV • 🕐 07-10-2025 10:15
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <h4>⚖️ Woo-besluit Genomen</h4>
+                        <p style="margin: 0.3rem 0; color: #4a5568; font-size: 0.9rem;">
+                            Formeel besluit tot openbaarmaking na afweging juridische bezwaren
+                        </p>
+                        <div class="activity-meta">
+                            👤 RVO • 🕐 04-05-2023 14:30
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <h4>📢 Bekendmaking Staatscourant</h4>
+                        <p style="margin: 0.3rem 0; color: #4a5568; font-size: 0.9rem;">
+                            Voornemen tot openbaarmaking gepubliceerd, derde-belanghebbenden geïnformeerd
+                        </p>
+                        <div class="activity-meta">
+                            👤 RVO • 🕐 12-03-2023 09:00
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <h4>📨 Woo-verzoek Ontvangen</h4>
+                        <p style="margin: 0.3rem 0; color: #4a5568; font-size: 0.9rem;">
+                            Verzoeken van journalisten (NRC, FTM, Omroep Gelderland) ontvangen
+                        </p>
+                        <div class="activity-meta">
+                            👤 Journalisten • 🕐 14-02-2023 11:00
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <h2>✅ Compliance Status</h2>
+
+                    <div class="compliance-panel">
+                        <h3>🏛️ Woo Compliance</h3>
+                        <p>✓ Volledig conform Wet open overheid</p>
+                        <p style="margin-top: 0.3rem; font-size: 0.85rem;">
+                            Besluit genomen binnen wettelijke termijn, publicatie op officieel platform
+                        </p>
+                    </div>
+
+                    <div class="compliance-panel">
+                        <h3>🔒 AVG Compliance</h3>
+                        <p>✓ Privacy waarborgen toegepast</p>
+                        <p style="margin-top: 0.3rem; font-size: 0.85rem;">
+                            Persoonsgegevens geanonimiseerd waar nodig, belangen afgewogen
+                        </p>
+                    </div>
+
+                    <div class="compliance-panel">
+                        <h3>📚 Archivering</h3>
+                        <p>✓ Permanent archiefwaardig</p>
+                        <p style="margin-top: 0.3rem; font-size: 0.85rem;">
+                            Opgeslagen conform Archiefwet, toegankelijk via platform
+                        </p>
+                    </div>
+
+                    <div class="compliance-panel">
+                        <h3>🔓 Openbaarheid</h3>
+                        <p>✓ Actief openbaar gemaakt</p>
+                        <p style="margin-top: 0.3rem; font-size: 0.85rem;">
+                            Publicatie op rijksoverheid.nl, vrij toegankelijk voor iedereen
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>🔗 Gerelateerde Documenten</h2>
+                    <ul class="related-list">
+                        <li class="related-item">
+                            <h4>Woo-besluit Gecombineerde Opgaven Landbouw</h4>
+                            <p>📄 PDF • 04-05-2023</p>
+                        </li>
+                        <li class="related-item">
+                            <h4>Bekendmaking Staatscourant 2023/4842</h4>
+                            <p>📜 Staatscourant • 12-03-2023</p>
+                        </li>
+                        <li class="related-item">
+                            <h4>Privacy Impact Assessment Landbouwdata</h4>
+                            <p>📄 PDF • 15-02-2023</p>
+                        </li>
+                        <li class="related-item">
+                            <h4>Juridisch Advies Woo-verzoeken RVO</h4>
+                            <p>📄 DOCX • 20-02-2023</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>👥 Betrokken Partijen</h2>
+
+                    <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 0.3rem 0; font-size: 0.9rem;">Ministerie van LNV</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: #718096;">Verantwoordelijk ministerie</p>
+                    </div>
+
+                    <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 0.3rem 0; font-size: 0.9rem;">Rijksdienst voor Ondernemend Nederland</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: #718096;">Uitvoerende organisatie</p>
+                    </div>
+
+                    <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 0.3rem 0; font-size: 0.9rem;">NRC, FTM, Omroep Gelderland</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: #718096;">Verzoekers (journalisten)</p>
+                    </div>
+
+                    <div>
+                        <h4 style="margin: 0 0 0.3rem 0; font-size: 0.9rem;">Agrarische Sector</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: #718096;">Derde-belanghebbenden</p>
+                    </div>
+                </div>
+
+                <div class="access-info">
+                    <h4>🔓 Toegang & Gebruik</h4>
+                    <ul>
+                        <li>Openbaar toegankelijk voor iedereen</li>
+                        <li>Hergebruik toegestaan (Open Data)</li>
+                        <li>Bronvermelding verplicht</li>
+                        <li>Download via rijksoverheid.nl</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ Acties</h2>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.open('https://www.rijksoverheid.nl/documenten/publicaties/2025/10/07/openbaargemaakt-document-bij-besluit-woo-verzoek-over-basiskaart-agrarische-bedrijfssituatie-2021', '_blank')">
+                    📥 Download Dataset
+                </button>
+                <button class="btn btn-secondary" onclick="window.open('https://www.rijksoverheid.nl/documenten/woo-besluiten/2023/05/04/besluit-op-woo-verzoek-over-de-basiskaart-agrarische-bedrijfssituatie-van-2021', '_blank')">
+                    📄 Bekijk Woo-besluit
+                </button>
+                <button class="btn btn-secondary">
+                    📧 Verstuur via Email
+                </button>
+                <button class="btn btn-secondary">
+                    🔗 Deel Link
+                </button>
+                <button class="btn btn-secondary">
+                    📊 Exporteer Metadata
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <button onclick="window.location.href='context_dashboard.html'"
+                    style="background: #0066CC; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                ← Terug naar Dashboard
+            </button>
+        </div>
+    </div>
+</body>
+</html>
