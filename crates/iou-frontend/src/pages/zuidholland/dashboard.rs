@@ -6,9 +6,62 @@ use crate::components::{AppCard, Header, Panel};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
 
+struct WooDoc {
+    titel: &'static str,
+    samenvatting: &'static str,
+    datum: &'static str,
+    soort: &'static str,
+    bron_id: &'static str,
+    url: &'static str,
+}
+
+const WOO_DOCS: &[WooDoc] = &[
+    WooDoc {
+        titel: "Omgevingsvergunning stremmen Delftse Schie \u{2014} Warmtenet Delft",
+        samenvatting: "Aanvraag omgevingsvergunning voor het stremmen van de Delftse Schie ten behoeve van het uitvoeren van werkzaamheden aan Warmtenet Delft. De stremming is nodig voor de aanleg van warmteleidingen onder de vaarweg.",
+        datum: "6 feb 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-2027",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-2027.html",
+    },
+    WooDoc {
+        titel: "Beschikking Wet Natuurbescherming Zuid-Holland",
+        samenvatting: "Beschikking wet Natuurbescherming voor de gehele provincie Zuid-Holland, met uitzondering van natuurgebieden in beheer bij Natuurmonumenten, Staatsbosbeheer en Zuid-Hollands Landschap, Natura 2000-gebieden en ganzen-rustgebieden.",
+        datum: "6 feb 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-2033",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-2033.html",
+    },
+    WooDoc {
+        titel: "Omgevingsvergunning stremmen Rijn-Schiekanaal 14 mei 2026",
+        samenvatting: "Aanvraag omgevingsvergunning voor het stremmen en belemmeren van de scheepvaart op het Rijn-Schiekanaal op 14 mei 2026. Betreft werkzaamheden aan de provinciale vaarweg.",
+        datum: "6 feb 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-2031",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-2031.html",
+    },
+    WooDoc {
+        titel: "Herstel telecommunicatiekabel N209 Bleiswijk",
+        samenvatting: "Aanvraag omgevingsvergunning voor het herstellen van een telecommunicatiekabel langs de N209 Overbuurtseweg te Bleiswijk. Betreft kabelherstel in de provinciale wegberm.",
+        datum: "6 feb 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1972",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1972.html",
+    },
+    WooDoc {
+        titel: "Kennisgeving beschikking omgevingsvergunning Wassenaar",
+        samenvatting: "Kennisgeving van de beschikking op een aanvraag omgevingsvergunning, Meijendelseweg 28 te Wassenaar. Het besluit is genomen in het kader van de Omgevingswet.",
+        datum: "6 feb 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-2002",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-2002.html",
+    },
+];
+
 #[component]
 pub fn ZuidHolland() -> Element {
     let mut state = use_context::<Signal<AppState>>();
+    let mut selected_doc = use_signal(|| None::<usize>);
 
     use_effect(move || {
         state.write().user = Some(UserInfo::zuidholland());
@@ -119,47 +172,43 @@ pub fn ZuidHolland() -> Element {
 
                     // Center Column - Documents
                     div {
-                        Panel { title: "Recente Documenten".to_string(),
+                        Panel { title: "Recente Woo-documenten (open.overheid.nl)".to_string(),
                             ul { class: "document-list",
-                                li { class: "document-item",
-                                    div { class: "document-icon", "\u{1F4C4}" }
-                                    div { class: "document-info",
-                                        h4 { "Besluit MIRT-verlening A16 Rotterdam" }
-                                        div { class: "meta", "Besluit \u{2022} 1 dag geleden" }
+                                for (i, doc) in WOO_DOCS.iter().enumerate() {
+                                    li {
+                                        class: "document-item",
+                                        style: if *selected_doc.read() == Some(i) { "background: #fce4ec; cursor: pointer;" } else { "cursor: pointer;" },
+                                        onclick: move |_| {
+                                            if *selected_doc.read() == Some(i) {
+                                                selected_doc.set(None);
+                                            } else {
+                                                selected_doc.set(Some(i));
+                                            }
+                                        },
+                                        div { class: "document-icon", "\u{1F4C4}" }
+                                        div { class: "document-info",
+                                            h4 { "{doc.titel}" }
+                                            div { class: "meta", "{doc.soort} \u{2022} {doc.datum} \u{2022} {doc.bron_id}" }
+                                        }
+                                        span { class: "tag woo", "Woo" }
                                     }
-                                    span { class: "tag woo", "Woo" }
-                                }
-                                li { class: "document-item",
-                                    div { class: "document-icon", "\u{1F4CA}" }
-                                    div { class: "document-info",
-                                        h4 { "Monitor Havenbedrijf Rotterdam 2025" }
-                                        div { class: "meta", "Rapportage \u{2022} 3 dagen geleden" }
+                                    if *selected_doc.read() == Some(i) {
+                                        li { style: "padding: 15px; background: #fef6f8; border-left: 3px solid #E31837;",
+                                            p { style: "font-size: 0.875rem; color: #444; line-height: 1.6; margin-bottom: 12px;",
+                                                "{doc.samenvatting}"
+                                            }
+                                            div { style: "display: flex; gap: 10px; align-items: center;",
+                                                a {
+                                                    href: "{doc.url}",
+                                                    target: "_blank",
+                                                    class: "btn btn-primary",
+                                                    style: "text-decoration: none; font-size: 0.8rem;",
+                                                    "Bekijk op open.overheid.nl \u{2197}"
+                                                }
+                                                span { style: "font-size: 0.75rem; color: #888;", "{doc.bron_id}" }
+                                            }
+                                        }
                                     }
-                                    span { class: "tag", "Economie" }
-                                }
-                                li { class: "document-item",
-                                    div { class: "document-icon", "\u{1F4E7}" }
-                                    div { class: "document-info",
-                                        h4 { "Re: Voortgang programmeers Wmo" }
-                                        div { class: "meta", "Email \u{2022} 4 dagen geleden" }
-                                    }
-                                    span { class: "tag", "Wmo" }
-                                }
-                                li { class: "document-item",
-                                    div { class: "document-icon", "\u{1F3A2}" }
-                                    div { class: "document-info",
-                                        h4 { "Kwetsbaarheid Hoofdwegennet" }
-                                        div { class: "meta", "Analyse \u{2022} 1 week geleden" }
-                                    }
-                                    span { class: "tag", "Mobiliteit" }
-                                }
-                                li { class: "document-item",
-                                    div { class: "document-icon", "\u{1F4CA}" }
-                                    div { class: "document-info",
-                                        h4 { "Dataset verkeersintensiteit ZH" }
-                                    div { class: "meta", "Data \u{2022} 2 weken geleden" }
-                                    }
-                                    span { class: "tag", "CBS" }
                                 }
                             }
                         }

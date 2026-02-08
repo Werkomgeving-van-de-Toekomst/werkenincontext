@@ -6,9 +6,62 @@ use crate::components::{AppCard, Header, Panel};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
 
+struct WooDoc {
+    titel: &'static str,
+    samenvatting: &'static str,
+    datum: &'static str,
+    soort: &'static str,
+    bron_id: &'static str,
+    url: &'static str,
+}
+
+const WOO_DOCS: &[WooDoc] = &[
+    WooDoc {
+        titel: "Kennisgeving Projectbesluit en MER Rondweg Lelystad-Zuid",
+        samenvatting: "Kennisgeving van het projectbesluit en milieueffectrapport voor de Rondweg Lelystad-Zuid (Laan van Nieuw Land \u{2013} Verlengde Westerdreef). Betreft de aanleg van een nieuwe provinciale weg ter verbetering van de bereikbaarheid.",
+        datum: "30 jan 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1767",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1767.html",
+    },
+    WooDoc {
+        titel: "Besluit omgevingsvergunning Natura 2000 zandwinning IJsselmeer",
+        samenvatting: "Besluit (positieve) weigering omgevingsvergunning voor een Natura 2000-activiteit zandwinning vaargeul Amsterdam-Lemmer (VAL5) in het IJsselmeer. De vergunning is geweigerd vanwege mogelijke impact op beschermde natuur.",
+        datum: "28 jan 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1405",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1405.html",
+    },
+    WooDoc {
+        titel: "Ontheffing helikopterlanding provincie Flevoland 2026",
+        samenvatting: "Wet Luchtvaart generieke ontheffing Tijdelijk en Uitzonderlijk Gebruik kalenderjaar 2026 in de provincie Flevoland voor het landen en stijgen met een helikopter.",
+        datum: "29 jan 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1457",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1457.html",
+    },
+    WooDoc {
+        titel: "Ondermandaat Bedrijfsvoering Omgevingsdienst Flevoland",
+        samenvatting: "Gewijzigd ondermandaat voor de bedrijfsvoering van de Omgevingsdienst Flevoland & Gooi en Vechtstreek. Regelt de bevoegdheidsverdeling voor operationele beslissingen.",
+        datum: "4 feb 2026",
+        soort: "Blad gemeenschappelijke regeling",
+        bron_id: "bgr-2026-301",
+        url: "https://zoek.officielebekendmakingen.nl/bgr-2026-301.html",
+    },
+    WooDoc {
+        titel: "Last onder bestuursdwang vaartuigen Hoge Vaart",
+        samenvatting: "Handhavingsbesluit last onder bestuursdwang voor vaartuigen in de berm langs de Hoge Vaart. Eigenaren worden gesommeerd de vaartuigen te verwijderen.",
+        datum: "5 feb 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1953",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1953.html",
+    },
+];
+
 #[component]
 pub fn Dashboard() -> Element {
     let mut state = use_context::<Signal<AppState>>();
+    let mut selected_doc = use_signal(|| None::<usize>);
 
     use_effect(move || {
         state.write().user = Some(UserInfo::flevoland());
@@ -112,38 +165,43 @@ pub fn Dashboard() -> Element {
 
                 // Center Column - Documents
                 div {
-                    Panel { title: "Recente Documenten".to_string(),
+                    Panel { title: "Recente Woo-documenten (open.overheid.nl)".to_string(),
                         ul { class: "document-list",
-                            li { class: "document-item",
-                                div { class: "document-icon", "\u{1F4C4}" }
-                                div { class: "document-info",
-                                    h4 { "Besluit subsidieverlening windpark" }
-                                    div { class: "meta", "Besluit \u{2022} 2 dagen geleden" }
+                            for (i, doc) in WOO_DOCS.iter().enumerate() {
+                                li {
+                                    class: "document-item",
+                                    style: if *selected_doc.read() == Some(i) { "background: #f0ebff; cursor: pointer;" } else { "cursor: pointer;" },
+                                    onclick: move |_| {
+                                        if *selected_doc.read() == Some(i) {
+                                            selected_doc.set(None);
+                                        } else {
+                                            selected_doc.set(Some(i));
+                                        }
+                                    },
+                                    div { class: "document-icon", "\u{1F4C4}" }
+                                    div { class: "document-info",
+                                        h4 { "{doc.titel}" }
+                                        div { class: "meta", "{doc.soort} \u{2022} {doc.datum} \u{2022} {doc.bron_id}" }
+                                    }
+                                    span { class: "tag woo", "Woo" }
                                 }
-                                span { class: "tag woo", "Woo" }
-                            }
-                            li { class: "document-item",
-                                div { class: "document-icon", "\u{1F4E7}" }
-                                div { class: "document-info",
-                                    h4 { "Re: Voortgang projectplan duurzaamheid" }
-                                    div { class: "meta", "Email \u{2022} 3 dagen geleden" }
+                                if *selected_doc.read() == Some(i) {
+                                    li { style: "padding: 15px; background: #f8f6ff; border-left: 3px solid #5B3CC4;",
+                                        p { style: "font-size: 0.875rem; color: #444; line-height: 1.6; margin-bottom: 12px;",
+                                            "{doc.samenvatting}"
+                                        }
+                                        div { style: "display: flex; gap: 10px; align-items: center;",
+                                            a {
+                                                href: "{doc.url}",
+                                                target: "_blank",
+                                                class: "btn btn-primary",
+                                                style: "text-decoration: none; font-size: 0.8rem;",
+                                                "Bekijk op open.overheid.nl \u{2197}"
+                                            }
+                                            span { style: "font-size: 0.75rem; color: #888;", "{doc.bron_id}" }
+                                        }
+                                    }
                                 }
-                            }
-                            li { class: "document-item",
-                                div { class: "document-icon", "\u{1F4C4}" }
-                                div { class: "document-info",
-                                    h4 { "Advies Omgevingsdienst Flevoland" }
-                                    div { class: "meta", "Document \u{2022} 1 week geleden" }
-                                }
-                                span { class: "tag", "advies" }
-                            }
-                            li { class: "document-item",
-                                div { class: "document-icon", "\u{1F4CA}" }
-                                div { class: "document-info",
-                                    h4 { "Dataset energieverbruik gemeenten" }
-                                    div { class: "meta", "Data \u{2022} 2 weken geleden" }
-                                }
-                                span { class: "tag", "CBS" }
                             }
                         }
                     }
