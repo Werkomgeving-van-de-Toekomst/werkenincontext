@@ -252,6 +252,7 @@ mod tests {
     use super::*;
 
     /// Smoke test — vereist netwerkverbinding
+    #[cfg(feature = "tokio")]
     #[tokio::test]
     #[ignore = "vereist netwerkverbinding"]
     async fn test_zoek_regels_integratie() {
@@ -261,6 +262,7 @@ mod tests {
         assert!(regels[0].uri.starts_with("https://"));
     }
 
+    #[cfg(feature = "tokio")]
     #[tokio::test]
     #[ignore = "vereist netwerkverbinding"]
     async fn test_beschikbare_regelsets() {

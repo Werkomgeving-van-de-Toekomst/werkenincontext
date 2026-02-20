@@ -23,8 +23,8 @@ chrono.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 
-# Async runtime
-tokio.workspace = true
+# Async runtime (only used for native tests)
+tokio = { version = "1.43", optional = true, default-features = false }
 
 # Logging
 tracing.workspace = true
