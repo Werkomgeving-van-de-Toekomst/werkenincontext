@@ -4,6 +4,7 @@ members = [
     "crates/iou-core",
     "crates/iou-api",
     "crates/iou-ai",
+    "crates/iou-regels",
     "crates/iou-frontend",
 ]
 
@@ -27,6 +28,9 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0"
 anyhow = "1.0"
 
+# HTTP client
+reqwest = { version = "0.11", features = ["json"] }
+
 # Async runtime
 tokio = { version = "1.43", features = ["full"] }
 
@@ -45,6 +49,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Internal crates
 iou-core = { path = "crates/iou-core" }
 iou-ai = { path = "crates/iou-ai" }
+iou-regels = { path = "crates/iou-regels" }
 
 [profile.release]
 lto = true

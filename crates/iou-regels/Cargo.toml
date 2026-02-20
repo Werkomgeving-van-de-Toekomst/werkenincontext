@@ -1,0 +1,36 @@
+[package]
+name = "iou-regels"
+version.workspace = true
+edition = "2024"
+description = "Open Regels integratie voor IOU-Modern: SPARQL client, regelspecificaties en agentic tools"
+
+[dependencies]
+# Internal
+iou-core.workspace = true
+
+# HTTP client
+reqwest.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Types
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async runtime
+tokio.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# Enum string serialization
+strum = { version = "0.26", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1.43", features = ["full", "macros"] }

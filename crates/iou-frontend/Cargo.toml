@@ -7,6 +7,7 @@ description = "Dioxus WebAssembly frontend for IOU-Modern"
 [dependencies]
 # Internal
 iou-core.workspace = true
+iou-regels.workspace = true
 
 # Dioxus framework
 dioxus = { version = "0.7", features = ["router"] }

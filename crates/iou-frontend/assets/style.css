@@ -806,3 +806,315 @@ body {
     background: #fce4ec;
     color: #E31837;
 }
+
+/* ===== Timeline Component ===== */
+
+.timeline-container {
+    width: 100%;
+}
+
+.timeline-description-toggle {
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: var(--flevoland-blauw);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+    transition: color 0.2s;
+}
+
+.timeline-description-toggle:hover {
+    color: var(--flevoland-blauw-dark);
+}
+
+.timeline-toggle-btn.expanded,
+.timeline-toggle-btn.collapsed {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--flevoland-blauw);
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.timeline-toggle-btn:hover {
+    background: rgba(91, 60, 196, 0.1);
+    color: var(--flevoland-blauw-dark);
+}
+
+.timeline-toggle-btn.expanded::before {
+    content: "▼";
+    font-size: 0.6rem;
+}
+
+.timeline-toggle-btn.collapsed::before {
+    content: "▶";
+    font-size: 0.6rem;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.timeline-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.timeline-context {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    display: flex;
+    gap: var(--spacing-md);
+    position: relative;
+}
+
+.timeline-item.expanded .timeline-content {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    padding: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+}
+
+.timeline-item:last-child .timeline-line {
+    display: none;
+}
+
+.timeline-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.timeline-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--flevoland-blauw);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-line {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(180deg, var(--flevoland-blauw) 0%, var(--border) 100%);
+    min-height: 40px;
+    margin-top: 4px;
+}
+
+.timeline-content {
+    flex: 1;
+    padding: var(--spacing-sm) 0;
+    padding-bottom: var(--spacing-md);
+}
+
+.timeline-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.timeline-event-type {
+    display: inline-block;
+    font-size: 0.625rem;
+    background: #e3f2fd;
+    color: var(--flevoland-blauw);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+}
+
+.timeline-title-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.timeline-description {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: #f8f9fa;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--flevoland-blauw);
+}
+
+.timeline-description p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: var(--spacing-sm);
+}
+
+.timeline-link-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--flevoland-blauw);
+    text-decoration: none;
+    cursor: pointer;
+    transition: text-decoration 0.2s;
+}
+
+.timeline-link-title:hover {
+    text-decoration: underline;
+}
+
+.timeline-content > .timeline-link-title {
+    margin-bottom: var(--spacing-xs);
+}
+
+.timeline-link {
+    font-size: 0.75rem;
+    color: var(--flevoland-blauw);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.timeline-link:hover {
+    text-decoration: underline;
+}
+
+.timeline-actions {
+    margin-top: var(--spacing-sm);
+}
+
+.timeline-toggle {
+    background: none;
+    border: none;
+    font-size: 0.75rem;
+    color: var(--flevoland-blauw);
+    cursor: pointer;
+    padding: 0;
+    font-weight: 500;
+}
+
+.timeline-toggle:hover {
+    text-decoration: underline;
+}
+
+/* Timeline event type colors */
+.timeline-doc .timeline-dot {
+    background: var(--flevoland-blauw);
+}
+
+.timeline-email .timeline-dot {
+    background: #7CB342;
+}
+
+.timeline-chat .timeline-dot {
+    background: #7C4DFF;
+}
+
+.timeline-besluit .timeline-dot {
+    background: #E17000;
+}
+
+.timeline-milestone .timeline-dot {
+    background: #E31837;
+}
+
+.timeline-note .timeline-dot {
+    background: #666;
+}
+
+/* Organization-specific timeline colors */
+
+/* MinFin */
+.minfin .timeline-doc .timeline-dot {
+    background: #154273;
+}
+
+.minfin .timeline-besluit .timeline-dot {
+    background: #E17000;
+}
+
+.minfin .timeline-event-type {
+    background: #e8f0f8;
+    color: #154273;
+}
+
+.minfin .timeline-description {
+    border-left-color: #154273;
+}
+
+.minfin .timeline-link,
+.minfin .timeline-toggle {
+    color: #154273;
+}
+
+/* Concept */
+.concept .timeline-doc .timeline-dot {
+    background: #37474F;
+}
+
+.concept .timeline-milestone .timeline-dot {
+    background: #7C4DFF;
+}
+
+.concept .timeline-event-type {
+    background: #ede7f6;
+    color: #37474F;
+}
+
+.concept .timeline-description {
+    border-left-color: #7C4DFF;
+}
+
+.concept .timeline-link,
+.concept .timeline-toggle {
+    color: #7C4DFF;
+}
+
+/* Zuid-Holland */
+.zuidholland .timeline-doc .timeline-dot {
+    background: #E31837;
+}
+
+.zuidholland .timeline-besluit .timeline-dot {
+    background: #B91C1C;
+}
+
+.zuidholland .timeline-milestone .timeline-dot {
+    background: #FFD700;
+}
+
+.zuidholland .timeline-event-type {
+    background: #fce4ec;
+    color: #E31837;
+}
+
+.zuidholland .timeline-description {
+    border-left-color: #E31837;
+}
+
+.zuidholland .timeline-link,
+.zuidholland .timeline-toggle {
+    color: #E31837;
+}

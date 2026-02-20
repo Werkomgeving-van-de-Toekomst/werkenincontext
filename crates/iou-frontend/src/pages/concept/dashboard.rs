@@ -5,7 +5,7 @@
 
 use dioxus::prelude::*;
 
-use crate::components::{AppCard, Header, Panel};
+use crate::components::{AppCard, Header, Panel, TimelineEvent, TimelineEventType, Timeline};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
 
@@ -267,21 +267,58 @@ pub fn ConceptDashboard() -> Element {
 
                         div { style: "height: 20px;" }
 
-                        Panel { title: "Tijdlijn".to_string(),
-                            div { class: "compliance-indicator ok",
-                                div { class: "icon", "\u{1F4C5}" }
-                                div { class: "label", "Nieuwe Archiefwet" }
-                                div { class: "value", "1 jan 2027" }
-                            }
-                            div { class: "compliance-indicator ok",
-                                div { class: "icon", "\u{1F4C5}" }
-                                div { class: "label", "Landelijke governance" }
-                                div { class: "value", "2026" }
-                            }
-                            div { class: "compliance-indicator ok",
-                                div { class: "icon", "\u{1F4C5}" }
-                                div { class: "label", "Open voor Iedereen 2.0" }
-                                div { class: "value", "2026\u{2013}2030" }
+                        Panel { title: "Tijdlijn: IOU-Modern".to_string(),
+                            Timeline {
+                                title: String::new(),
+                                events: vec![
+                                    TimelineEvent {
+                                        id: "1".to_string(),
+                                        title: "Nieuwe Archiefwet van kracht".to_string(),
+                                        date: "2027-01-01".to_string(),
+                                        date_display: "1 jan 2027".to_string(),
+                                        description: "De nieuwe Archiefwet vervangt de Archiefwet 1995. Digitale duurzame bewaring wordt verplicht.".to_string(),
+                                        event_type: TimelineEventType::ProjectMilestone,
+                                        url: None,
+                                    },
+                                    TimelineEvent {
+                                        id: "2".to_string(),
+                                        title: "E-mailarchivering rijksbreed".to_string(),
+                                        date: "2026-07-01".to_string(),
+                                        date_display: "Zomer 2026".to_string(),
+                                        description: "Rijksbrede voorziening voor automatische e-mailarchivering operationeel.".to_string(),
+                                        event_type: TimelineEventType::Email,
+                                        url: None,
+                                    },
+                                    TimelineEvent {
+                                        id: "3".to_string(),
+                                        title: "Generieke Woo-voorziening (GWV) live".to_string(),
+                                        date: "2026-06-01".to_string(),
+                                        date_display: "Juni 2026".to_string(),
+                                        description: "De Generieke Woo-voorziening maakt actieve openbaarmaking mogelijk voor alle overheidsorganisaties.".to_string(),
+                                        event_type: TimelineEventType::ProjectMilestone,
+                                        url: None,
+                                    },
+                                    TimelineEvent {
+                                        id: "4".to_string(),
+                                        title: "Meerjarenplan Openbaarheid 2026-2030".to_string(),
+                                        date: "2026-01-01".to_string(),
+                                        date_display: "Januari 2026".to_string(),
+                                        description: "Publicatie van de meerjarenplannen voor alle bestuurslagen (Rijk, VNG, IPO, UvW).".to_string(),
+                                        event_type: TimelineEventType::Document,
+                                        url: Some("https://www.rijksoverheid.nl".to_string()),
+                                    },
+                                    TimelineEvent {
+                                        id: "5".to_string(),
+                                        title: "Wet open overheid volledig in werking".to_string(),
+                                        date: "2022-05-01".to_string(),
+                                        date_display: "Mei 2022".to_string(),
+                                        description: "De Woo volledig in werking getreden voor bestuurslagen.".to_string(),
+                                        event_type: TimelineEventType::Besluit,
+                                        url: None,
+                                    },
+                                ],
+                                max_items: 5,
+                                context_label: Some("Meerjarenplan 2026-2030".to_string()),
                             }
                         }
                     }

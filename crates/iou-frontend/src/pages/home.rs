@@ -41,7 +41,7 @@ pub fn Home() -> Element {
                     }
                 }
 
-                Link { to: Route::Dashboard,
+                Link { to: Route::FlevolandDashboard,
                     div { class: "home-card flevoland",
                         div { class: "home-card-accent" }
                         div { class: "home-card-body",

@@ -12,6 +12,7 @@ mod nalevingscontrole;
 mod minfin;
 mod concept;
 mod zuidholland;
+mod flevoland;
 
 pub use home::Home;
 pub use dashboard::Dashboard;
@@ -25,3 +26,4 @@ pub use nalevingscontrole::Nalevingscontrole;
 pub use minfin::*;
 pub use concept::*;
 pub use zuidholland::*;
+pub use flevoland::*;

@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 
-use crate::components::{AppCard, Header, Panel};
+use crate::components::{AppCard, Header, Panel, TimelineEvent, TimelineEventType, Timeline};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
 
@@ -153,8 +153,65 @@ pub fn MinFinDashboard() -> Element {
                         }
                     }
 
-                    // Center Column - Documents
+                    // Center Column - Timeline & Documents
                     div {
+                        Panel { title: "Tijdlijn: Rijksbegroting 2026".to_string(),
+                            Timeline {
+                                title: String::new(),
+                                events: vec![
+                                    TimelineEvent {
+                                        id: "1".to_string(),
+                                        title: "Besluit van 28 januari 2026".to_string(),
+                                        date: "2026-01-28".to_string(),
+                                        date_display: "28 jan 2026".to_string(),
+                                        description: "Staatscourant besluit over de rijksbegroting van 28 januari (nr. 6).".to_string(),
+                                        event_type: TimelineEventType::Besluit,
+                                        url: Some("https://www.rijksoverheid.nl".to_string()),
+                                    },
+                                    TimelineEvent {
+                                        id: "2".to_string(),
+                                        title: "Wijzigingen Besluit inrichtingsbesluit".to_string(),
+                                        date: "2026-01-21".to_string(),
+                                        date_display: "21 jan 2026".to_string(),
+                                        description: "Publicatie van de wijzigingen besluit inrichtingsbesluit voor het jaar 2026.".to_string(),
+                                        event_type: TimelineEventType::Document,
+                                        url: Some("https://www.rijksoverheid.nl".to_string()),
+                                    },
+                                    TimelineEvent {
+                                        id: "3".to_string(),
+                                        title: "Najaarsnota 2025".to_string(),
+                                        date: "2025-09-18".to_string(),
+                                        date_display: "18 sep 2025".to_string(),
+                                        description: "Miljoennota 2025 over de uitvoering van het begrotingsbeleid en fiscale hervormingen.".to_string(),
+                                        event_type: TimelineEventType::Document,
+                                        url: Some("https://www.rijksoverheid.nl".to_string()),
+                                    },
+                                    TimelineEvent {
+                                        id: "4".to_string(),
+                                        title: "Voorjaarsnota 2026".to_string(),
+                                        date: "2025-09-17".to_string(),
+                                        date_display: "17 sep 2025".to_string(),
+                                        description: "Begroting op hoofdlijnen voor het begrotingsjaar 2026.".to_string(),
+                                        event_type: TimelineEventType::ProjectMilestone,
+                                        url: Some("https://www.rijksoverheid.nl".to_string()),
+                                    },
+                                    TimelineEvent {
+                                        id: "5".to_string(),
+                                        title: "Aanname Wet open overheid van kracht".to_string(),
+                                        date: "2022-05-11".to_string(),
+                                        date_display: "11 mei 2022".to_string(),
+                                        description: "De Wet open overheid tradt op 11 mei 2022 in werking en vervangt de Wet openbaarheid van bestuur.".to_string(),
+                                        event_type: TimelineEventType::Besluit,
+                                        url: Some("https://www.rijksoverheid.nl".to_string()),
+                                    },
+                                ],
+                                max_items: 5,
+                                context_label: Some("Fiscaal Beleid".to_string()),
+                            }
+                        }
+
+                        div { style: "height: 20px;" }
+
                         Panel { title: "Recente Woo-documenten (open.overheid.nl)".to_string(),
                             ul { class: "document-list",
                                 for (i, doc) in WOO_DOCS.iter().enumerate() {

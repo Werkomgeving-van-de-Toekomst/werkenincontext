@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 
-use crate::components::{AppCard, Header, Panel};
+use crate::components::{AppCard, Header, Panel, TimelineEvent, TimelineEventType, Timeline};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
 
@@ -18,7 +18,7 @@ struct WooDoc {
 const WOO_DOCS: &[WooDoc] = &[
     WooDoc {
         titel: "Kennisgeving Projectbesluit en MER Rondweg Lelystad-Zuid",
-        samenvatting: "Kennisgeving van het projectbesluit en milieueffectrapport voor de Rondweg Lelystad-Zuid (Laan van Nieuw Land \u{2013} Verlengde Westerdreef). Betreft de aanleg van een nieuwe provinciale weg ter verbetering van de bereikbaarheid.",
+        samenvatting: "Kennisgeving van het projectbesluit en milieueffectrapport voor de Rondweg Lelystad-Zuid (Laan van Nieuw Land - Verlengde Westerdreef). Betreft de aanleg van een nieuwe provinciale weg ter verbetering van de bereikbaarheid.",
         datum: "30 jan 2026",
         soort: "Provinciaal blad",
         bron_id: "prb-2026-1767",
@@ -41,7 +41,7 @@ const WOO_DOCS: &[WooDoc] = &[
         url: "https://zoek.officielebekendmakingen.nl/prb-2026-1457.html",
     },
     WooDoc {
-        titel: "Ondermandaat Bedrijfsvoering Omgevingsdienst Flevoland",
+        titel: "Ondermandaat Bedrijfsvoering ODFL",
         samenvatting: "Gewijzigd ondermandaat voor de bedrijfsvoering van de Omgevingsdienst Flevoland & Gooi en Vechtstreek. Regelt de bevoegdheidsverdeling voor operationele beslissingen.",
         datum: "4 feb 2026",
         soort: "Blad gemeenschappelijke regeling",
@@ -75,7 +75,7 @@ pub fn Dashboard() -> Element {
             div { class: "context-bar",
                 div { class: "breadcrumb",
                     span { "Provincie Flevoland" }
-                    span { " \u{203A} " }
+                    span { "  " }
                     span { class: "current", "Duurzaamheid & Energie" }
                 }
 
@@ -146,12 +146,12 @@ pub fn Dashboard() -> Element {
 
                     Panel { title: "Compliance Status".to_string(),
                         div { class: "compliance-indicator ok",
-                            div { class: "icon", "\u{2713}" }
+                            div { class: "icon", "" }
                             div { class: "label", "Woo Compliance" }
                             div { class: "value", "98%" }
                         }
                         div { class: "compliance-indicator ok",
-                            div { class: "icon", "\u{2713}" }
+                            div { class: "icon", "" }
                             div { class: "label", "AVG Compliance" }
                             div { class: "value", "100%" }
                         }
@@ -159,6 +159,64 @@ pub fn Dashboard() -> Element {
                             div { class: "icon", "!" }
                             div { class: "label", "Bewaartermijnen" }
                             div { class: "value", "3 acties" }
+                        }
+                    }
+
+                    div { style: "height: 20px;" }
+
+                    // Timeline Panel
+                    Panel { title: "Tijdlijn: Duurzaamheid & Energie".to_string(),
+                        Timeline {
+                            title: String::new(),
+                            events: vec![
+                                TimelineEvent {
+                                    id: "1".to_string(),
+                                    title: "Last onder bestuursdwang vaartuigen Hoge Vaart".to_string(),
+                                    date: "2026-02-05".to_string(),
+                                    date_display: "5 feb 2026".to_string(),
+                                    description: "Handhavingsbesluit voor vaartuigen in de berm langs de Hoge Vaart.".to_string(),
+                                    event_type: TimelineEventType::Besluit,
+                                    url: Some("https://zoek.officielebekendmakingen.nl/prb-2026-1953.html".to_string()),
+                                },
+                                TimelineEvent {
+                                    id: "2".to_string(),
+                                    title: "Ondermandaat Bedrijfsvoering ODFL".to_string(),
+                                    date: "2026-02-04".to_string(),
+                                    date_display: "4 feb 2026".to_string(),
+                                    description: "Gewijzigd ondermandaat voor de bedrijfsvoering van de Omgevingsdienst Flevoland.".to_string(),
+                                    event_type: TimelineEventType::Document,
+                                    url: Some("https://zoek.officielebekendmakingen.nl/bgr-2026-301.html".to_string()),
+                                },
+                                TimelineEvent {
+                                    id: "3".to_string(),
+                                    title: "Kennisgeving Projectbesluit Rondweg Lelystad-Zuid".to_string(),
+                                    date: "2026-01-30".to_string(),
+                                    date_display: "30 jan 2026".to_string(),
+                                    description: "Kennisgeving van projectbesluit en milieueffectrapport voor Rondweg Lelystad-Zuid.".to_string(),
+                                    event_type: TimelineEventType::ProjectMilestone,
+                                    url: Some("https://zoek.officielebekendmakingen.nl/prb-2026-1767.html".to_string()),
+                                },
+                                TimelineEvent {
+                                    id: "4".to_string(),
+                                    title: "Ontheffing helikopterlanding 2026".to_string(),
+                                    date: "2026-01-29".to_string(),
+                                    date_display: "29 jan 2026".to_string(),
+                                    description: "Wet Luchtvaart generieke ontheffing voor helikopterlandingen in Flevoland.".to_string(),
+                                    event_type: TimelineEventType::Besluit,
+                                    url: Some("https://zoek.officielebekendmakingen.nl/prb-2026-1457.html".to_string()),
+                                },
+                                TimelineEvent {
+                                    id: "5".to_string(),
+                                    title: "Omgevingsvergunning Natura 2000 geweigerd".to_string(),
+                                    date: "2026-01-28".to_string(),
+                                    date_display: "28 jan 2026".to_string(),
+                                    description: "Vergunning geweigerd voor zandwinning vaargeul Amsterdam-Lemmer vanwege mogelijke impact op beschermde natuur.".to_string(),
+                                    event_type: TimelineEventType::Besluit,
+                                    url: Some("https://zoek.officielebekendmakingen.nl/prb-2026-1405.html".to_string()),
+                                },
+                            ],
+                            max_items: 5,
+                            context_label: Some("Duurzaamheid & Energie".to_string()),
                         }
                     }
                 }
@@ -178,10 +236,10 @@ pub fn Dashboard() -> Element {
                                             selected_doc.set(Some(i));
                                         }
                                     },
-                                    div { class: "document-icon", "\u{1F4C4}" }
+                                    div { class: "document-icon", "" }
                                     div { class: "document-info",
                                         h4 { "{doc.titel}" }
-                                        div { class: "meta", "{doc.soort} \u{2022} {doc.datum} \u{2022} {doc.bron_id}" }
+                                        div { class: "meta", "{doc.soort}  {doc.datum}  {doc.bron_id}" }
                                     }
                                     span { class: "tag woo", "Woo" }
                                 }
@@ -196,7 +254,7 @@ pub fn Dashboard() -> Element {
                                                 target: "_blank",
                                                 class: "btn btn-primary",
                                                 style: "text-decoration: none; font-size: 0.8rem;",
-                                                "Bekijk op open.overheid.nl \u{2197}"
+                                                "Bekijk op open.overheid.nl "
                                             }
                                             span { style: "font-size: 0.75rem; color: #888;", "{doc.bron_id}" }
                                         }
@@ -223,21 +281,21 @@ pub fn Dashboard() -> Element {
                     Panel { title: "Stakeholders".to_string(),
                         ul { class: "document-list",
                             li { class: "document-item",
-                                div { class: "document-icon", style: "background: #7CB342;", "\u{1F464}" }
+                                div { class: "document-icon", style: "background: #7CB342;", "" }
                                 div { class: "document-info",
                                     h4 { "Gemeente Almere" }
                                     div { class: "meta", "Mede-initiatiefnemer" }
                                 }
                             }
                             li { class: "document-item",
-                                div { class: "document-icon", style: "background: #7CB342;", "\u{1F464}" }
+                                div { class: "document-icon", style: "background: #7CB342;", "" }
                                 div { class: "document-info",
                                     h4 { "Omgevingsdienst Flevoland" }
                                     div { class: "meta", "Adviseur" }
                                 }
                             }
                             li { class: "document-item",
-                                div { class: "document-icon", style: "background: #7CB342;", "\u{1F464}" }
+                                div { class: "document-icon", style: "background: #7CB342;", "" }
                                 div { class: "document-info",
                                     h4 { "Vattenfall NL" }
                                     div { class: "meta", "Aanvrager" }
@@ -250,7 +308,7 @@ pub fn Dashboard() -> Element {
 
                     Panel { title: "AI Suggesties".to_string(),
                         div { class: "compliance-indicator ok",
-                            div { class: "icon", "\u{1F916}" }
+                            div { class: "icon", "" }
                             div { class: "label", "3 nieuwe metadata suggesties" }
                         }
                         p { style: "font-size: 0.875rem; color: #666; margin-top: 10px;",
