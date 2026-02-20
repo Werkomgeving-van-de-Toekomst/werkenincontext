@@ -280,6 +280,7 @@ pub struct GraphStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use iou_core::graphrag::RelationshipType;
 
     fn create_test_entity(name: &str, entity_type: EntityType) -> Entity {
         Entity {

@@ -301,7 +301,7 @@ mod tests {
         let assessor = ComplianceAssessor::new();
 
         assert_eq!(
-            assessor.assess_privacy_level("Gewone tekst zonder persoonsgegevens"),
+            assessor.assess_privacy_level("Gewone tekst zonder gevoelige informatie"),
             PrivacyLevel::Geen
         );
 

@@ -238,6 +238,6 @@ mod tests {
     fn test_entity_type_serialization() {
         let et = EntityType::Organization;
         let json = serde_json::to_string(&et).unwrap();
-        assert_eq!(json, "\"ORG\"");
+        assert_eq!(json, "\"ORGANIZATION\"");
     }
 }
