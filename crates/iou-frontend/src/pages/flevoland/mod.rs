@@ -8,12 +8,205 @@
 
 use dioxus::prelude::*;
 use iou_regels::{
-    PetraCategorie, ProvisaSelectielijst, HotspotRegister,
+    PetraCategorie, ProvisaSelectielijst, HotspotRegister, Archiefwaarde,
 };
 
 use crate::components::{AppCard, Header, Panel, TimelineEvent, TimelineEventType, Timeline};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
+
+/// Document met PROVISA-beoordeling
+struct ProvisaDocument {
+    titel: &'static str,
+    samenvatting: &'static str,
+    datum: &'static str,
+    soort: &'static str,
+    bron_id: &'static str,
+    url: &'static str,
+    /// PETRA categorie
+    categorie: PetraCategorie,
+    /// Bewaartermijn in jaren (None = permanent)
+    bewaartermijn: Option<u32>,
+    /// Archiefwaarde volgens PROVISA
+    archiefwaarde: Archiefwaarde,
+    /// Vernietigingsdatum (indien van toepassing)
+    vernietigingsdatum: Option<&'static str>,
+    /// Overbrengingsdatum (indien permanent)
+    overbrengingsdatum: Option<&'static str>,
+}
+
+impl ProvisaDocument {
+    /// Formatted bewaartermijn tekst
+    fn bewaartermijn_tekst(&self) -> String {
+        match self.bewaartermijn {
+            None => "Permanent".to_string(),
+            Some(jaren) => format!("{} jaar", jaren),
+        }
+    }
+
+    /// CSS class voor archiefwaarde badge
+    fn archief_class(&self) -> String {
+        match self.archiefwaarde {
+            Archiefwaarde::Permanent => "badge-success".to_string(),
+            Archiefwaarde::Tijdelijk => "badge-info".to_string(),
+        }
+    }
+
+    /// Of het document actie vereist
+    fn actie_vereist(&self) -> bool {
+        self.vernietigingsdatum.is_some() || self.overbrengingsdatum.is_some()
+    }
+
+    /// Achtergrondkleur voor icon
+    fn icon_kleur(&self) -> String {
+        match self.archiefwaarde {
+            Archiefwaarde::Permanent => "#0066CC".to_string(),
+            Archiefwaarde::Tijdelijk => "#F59E0B".to_string(),
+        }
+    }
+
+    /// CSS class voor archiefwaarde tag
+    fn archief_tag_class(&self) -> String {
+        match self.archiefwaarde {
+            Archiefwaarde::Permanent => "tag success".to_string(),
+            Archiefwaarde::Tijdelijk => "tag warning".to_string(),
+        }
+    }
+}
+
+/// Concrete Woo-documenten van Flevoland met PROVISA-beoordeling
+const PROVISA_DOCUMENTEN: &[ProvisaDocument] = &[
+    ProvisaDocument {
+        titel: "Kennisgeving Projectbesluit en MER Rondweg Lelystad-Zuid",
+        samenvatting: "Kennisgeving van het projectbesluit en milieueffectrapport voor de Rondweg Lelystad-Zuid. Een grote infrastructuurproject met significante ruimtelijke impact.",
+        datum: "30 jan 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1767",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1767.html",
+        categorie: PetraCategorie::RuimtelijkePlanning,
+        bewaartermijn: None,  // Permanent
+        archiefwaarde: Archiefwaarde::Permanent,
+        vernietigingsdatum: None,
+        overbrengingsdatum: Some("2036"),  // 10 jaar na creatie
+    },
+    ProvisaDocument {
+        titel: "Provinciale Ruimtelijke Verordening Flevoland 2024-2028",
+        samenvatting: "De PRV geeft het ruimtelijk beleid weer voor de gehele provincie, inclusief zonering voor windenergie en zonne-energie.",
+        datum: "15 jan 2024",
+        soort: "Provinciale Verordening",
+        bron_id: "prv-2024",
+        url: "https://zoek.officielebekendmakingen.nl/prv-2024.html",
+        categorie: PetraCategorie::RuimtelijkePlanning,
+        bewaartermijn: None,  // Permanent
+        archiefwaarde: Archiefwaarde::Permanent,
+        vernietigingsdatum: None,
+        overbrengingsdatum: Some("2034"),  // 10 jaar na creatie
+    },
+    ProvisaDocument {
+        titel: "Besluit omgevingsvergunning Natura 2000 zandwinning IJsselmeer",
+        samenvatting: "Besluit tot weigering van omgevingsvergunning voor zandwinning in Natura 2000 gebied.",
+        datum: "28 jan 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1405",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1405.html",
+        categorie: PetraCategorie::NatuurLandschap,
+        bewaartermijn: None,  // Permanent - natuurwetgeving is altijd permanent
+        archiefwaarde: Archiefwaarde::Permanent,
+        vernietigingsdatum: None,
+        overbrengingsdatum: Some("2036"),
+    },
+    ProvisaDocument {
+        titel: "Collegebesluit 15 april 2024 - Duurzaamheidsagenda",
+        samenvatting: "Besluit van Gedeputeerde Staten vaststelling van de duurzaamheidsagenda 2024-2030.",
+        datum: "15 apr 2024",
+        soort: "Collegebesluit",
+        bron_id: "gs-2024-089",
+        url: "https://zoek.officielebekendmakingen.nl/gs-2024-089.html",
+        categorie: PetraCategorie::EnergieKlimaat,
+        bewaartermijn: None,  // Permanent
+        archiefwaarde: Archiefwaarde::Permanent,
+        vernietigingsdatum: None,
+        overbrengingsdatum: Some("2034"),
+    },
+    ProvisaDocument {
+        titel: "Subsidiebeschikking Duurzaam Flevoland 2024-123",
+        samenvatting: "Beschikking in het kader van de subsidieregeling Duurzaam Flevoland voor energiebesparende maatregelen bij MKB-bedrijf.",
+        datum: "8 feb 2024",
+        soort: "Subsidiebeschikking",
+        bron_id: "subsidie-2024-123",
+        url: "https://zoek.officielebekendmakingen.nl/subsidie-2024-123.html",
+        categorie: PetraCategorie::Economie,
+        bewaartermijn: Some(5),  // 5 jaar voor subsidiebeschikkingen
+        archiefwaarde: Archiefwaarde::Tijdelijk,
+        vernietigingsdatum: Some("2029-02-08"),
+        overbrengingsdatum: None,
+    },
+    ProvisaDocument {
+        titel: "Ontheffing helikopterlanding provincie Flevoland 2026",
+        samenvatting: "Wet Luchtvaart generieke ontheffing voor helikopterlandingen in Flevoland.",
+        datum: "29 jan 2026",
+        soort: "Provinciaal blad",
+        bron_id: "prb-2026-1457",
+        url: "https://zoek.officielebekendmakingen.nl/prb-2026-1457.html",
+        categorie: PetraCategorie::VerkeerVervoer,
+        bewaartermijn: Some(10),  // 10 jaar
+        archiefwaarde: Archiefwaarde::Tijdelijk,
+        vernietigingsdatum: Some("2036-01-29"),
+        overbrengingsdatum: None,
+    },
+    ProvisaDocument {
+        titel: "Ondermandaat Bedrijfsvoering ODFL",
+        samenvatting: "Gewijzigd ondermandaat voor de bedrijfsvoering van de Omgevingsdienst Flevoland & Gooi en Vechtstreek.",
+        datum: "4 feb 2026",
+        soort: "Blad gemeenschappelijke regeling",
+        bron_id: "bgr-2026-301",
+        url: "https://zoek.officielebekendmakingen.nl/bgr-2026-301.html",
+        categorie: PetraCategorie::Bestuur,
+        bewaartermijn: None,  // Permanent
+        archiefwaarde: Archiefwaarde::Permanent,
+        vernietigingsdatum: None,
+        overbrengingsdatum: Some("2036"),
+    },
+    ProvisaDocument {
+        titel: "Klachtenregistratie Q1 2020",
+        samenvatting: "Overzicht van ontvangen klachten in het eerste kwartaal van 2020.",
+        datum: "1 apr 2020",
+        soort: "Interne registratie",
+        bron_id: "klacht-2020-q1",
+        url: "#",
+        categorie: PetraCategorie::Communicatie,
+        bewaartermijn: Some(5),  // 5 jaar voor klachtenregistratie
+        archiefwaarde: Archiefwaarde::Tijdelijk,
+        vernietigingsdatum: Some("2025-04-01"),  // Reeds vernietigbaar!
+        overbrengingsdatum: None,
+    },
+    ProvisaDocument {
+        titel: "Beleidsnotities mobiliteit 2014",
+        samenvatting: "Verzameling van beleidsnotities over provinciaal mobiliteitsbeleid uit 2014.",
+        datum: "31 dec 2014",
+        soort: "Beleidsnotities",
+        bron_id: "beleid-2014-mob",
+        url: "#",
+        categorie: PetraCategorie::Strategie,
+        bewaartermijn: Some(10),  // 10 jaar voor beleidsnotities
+        archiefwaarde: Archiefwaarde::Tijdelijk,
+        vernietigingsdatum: Some("2025-01-01"),  // Reeds vernietigbaar!
+        overbrengingsdatum: None,
+    },
+    ProvisaDocument {
+        titel: "Subsidieaanvragen 2015-2016",
+        samenvatting: "Geweigerde en goedgekeurde subsidieaanvragen uit de periode 2015-2016.",
+        datum: "31 dec 2016",
+        soort: "Interne registratie",
+        bron_id: "subsidie-2015-2016",
+        url: "#",
+        categorie: PetraCategorie::Economie,
+        bewaartermijn: Some(5),  // 5 jaar voor subsidieadministratie
+        archiefwaarde: Archiefwaarde::Tijdelijk,
+        vernietigingsdatum: Some("2022-01-01"),  // Reeds vernietigbaar!
+        overbrengingsdatum: None,
+    },
+];
 
 struct FlevolandDoc {
     titel: &'static str,
@@ -662,20 +855,108 @@ pub fn FlevolandProvisa() -> Element {
 
                         div { style: "height: 20px;" }
 
-                        Panel { title: "Acties Vereist".to_string(),
-                            div { class: "compliance-indicator warning",
-                                div { class: "icon", "!" }
-                                div { class: "label", "17 documenten vernietigbaar" }
-                                div { class: "value", "Nu" }
+                        Panel { title: "PROVISA Statistieken".to_string(),
+                            div { class: "compliance-indicator ok",
+                                div { class: "icon", "\u{1F4C1}" }
+                                div { class: "label", "Totaal beoordeeld" }
+                                div { class: "value", "{PROVISA_DOCUMENTEN.len()}" }
+                            }
+                            div { class: "compliance-indicator ok",
+                                div { class: "icon", "\u{2713}" }
+                                div { class: "label", "Permanent" }
+                                div { class: "value",
+                                    "{PROVISA_DOCUMENTEN.iter().filter(|d| d.archiefwaarde == Archiefwaarde::Permanent).count()}"
+                                }
                             }
                             div { class: "compliance-indicator warning",
+                                div { class: "icon", "\u{23F1}" }
+                                div { class: "label", "Tijdelijk" }
+                                div { class: "value",
+                                    "{PROVISA_DOCUMENTEN.iter().filter(|d| d.archiefwaarde == Archiefwaarde::Tijdelijk).count()}"
+                                }
+                            }
+                            div { class: "compliance-indicator alert",
                                 div { class: "icon", "!" }
-                                div { class: "label", "12 documenten naar archief" }
-                                div { class: "value", "Binnen 3 maanden" }
+                                div { class: "label", "Actie vereist" }
+                                div { class: "value",
+                                    "{PROVISA_DOCUMENTEN.iter().filter(|d| d.actie_vereist()).count()}"
+                                }
+                            }
+                        }
+
+                        div { style: "height: 20px;" }
+
+                        Panel { title: "Acties Vereist".to_string(),
+                            p { style: "font-size: 0.875rem; color: #666; margin-bottom: 10px;",
+                                "Documenten die onmiddellijke actie vereisten."
+                            }
+                            for doc in PROVISA_DOCUMENTEN.iter().filter(|d| d.actie_vereist()) {
+                                div { class: "compliance-indicator alert",
+                                    div { class: "icon", "!" }
+                                    div { class: "label", "{doc.titel}" }
+                                    div { class: "value",
+                                        if doc.vernietigingsdatum.is_some() {
+                                            "Vernietigen"
+                                        } else {
+                                            "Overbrengen"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     div {
+                        Panel { title: "Documenten met PROVISA Beoordeling".to_string(),
+                            p { style: "font-size: 0.875rem; color: #666; margin-bottom: 15px;",
+                                "Concrete Woo-documenten met toegepaste PROVISA selectielijst beoordeling."
+                            }
+                            ul { class: "document-list",
+                                for doc in PROVISA_DOCUMENTEN {
+                                    li {
+                                        class: if doc.actie_vereist() { "document-item urgent" } else { "document-item" },
+                                        div { class: "document-icon",
+                                            style: "background: {doc.icon_kleur()};",
+                                        }
+                                        div { class: "document-info",
+                                            h4 { "{doc.titel}" }
+                                            div { class: "meta",
+                                                "{doc.soort} \u{2022} {doc.datum} \u{2022} {doc.bron_id}"
+                                            }
+                                            div { style: "margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap;",
+                                                span {
+                                                    class: "tag provincie",
+                                                    "{doc.categorie}"
+                                                }
+                                                span {
+                                                    class: "{doc.archief_tag_class()}",
+                                                    "{doc.archiefwaarde}"
+                                                }
+                                                span { class: "tag info", "Bewaartermijn: {doc.bewaartermijn_tekst()}" }
+                                                if let Some(vernietiging) = doc.vernietigingsdatum {
+                                                    span { class: "tag alert", "Vernietigen: {vernietiging}" }
+                                                }
+                                                if let Some(overbrenging) = doc.overbrengingsdatum {
+                                                    span { class: "tag success", "Overbrengen: {overbrenging}" }
+                                                }
+                                            }
+                                            p { style: "font-size: 0.85rem; color: #666; margin-top: 6px;",
+                                                "{doc.samenvatting}"
+                                            }
+                                        }
+                                        a {
+                                            href: "{doc.url}",
+                                            target: "_blank",
+                                            class: "btn btn-small btn-outline",
+                                            style: "text-decoration: none;",
+                                            "Bekijk \u{2197}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        div { style: "height: 20px;" }
+
                         Panel { title: "Concordans".to_string(),
                             p { style: "font-size: 0.875rem; color: #666;",
                                 "De concordans koppelt provinciale procescategorieën (PETRA) aan de juiste bewaartermijnen uit de selectielijst."
