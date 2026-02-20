@@ -2,26 +2,36 @@
 //!
 //! Biedt een dunne wrapper om SPARQL SELECT en CONSTRUCT queries
 //! te sturen naar regels.overheid.nl of de acc-omgeving.
+//!
+//! Dit is een native-only module (niet beschikbaar voor WASM builds).
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::HashMap;
 
+#[cfg(not(target_arch = "wasm32"))]
 use anyhow::Result;
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use tracing::{debug, instrument};
 
 // ── SPARQL response types ────────────────────────────────────────────────────
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Deserialize)]
 pub(crate) struct SparqlResponse {
     pub results: SparqlResults,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Deserialize)]
 pub(crate) struct SparqlResults {
     pub bindings: Vec<HashMap<String, SparqlValue>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Deserialize, Clone)]
 pub struct SparqlValue {
     pub value: String,
@@ -29,6 +39,7 @@ pub struct SparqlValue {
     pub kind: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub type Bindings = Vec<HashMap<String, SparqlValue>>;
 
 // ── Client ───────────────────────────────────────────────────────────────────
@@ -39,12 +50,14 @@ pub type Bindings = Vec<HashMap<String, SparqlValue>>;
 ///
 /// Gebruik `OpenRegelsClient::acc()` tijdens ontwikkeling en
 /// `OpenRegelsClient::productie()` voor productiegebruik.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone)]
 pub struct OpenRegelsClient {
     http: Client,
     pub endpoint: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl OpenRegelsClient {
     /// Maak een client aan voor de **acceptatieomgeving** (veilig om mee te experimenteren)
     pub fn acc() -> Self {

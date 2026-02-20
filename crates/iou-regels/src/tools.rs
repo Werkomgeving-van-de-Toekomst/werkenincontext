@@ -14,10 +14,13 @@
 //!   → [RegelDetail met JSON-LD] → LLM redeneert over toepassing
 //! ```
 
+#[cfg(not(target_arch = "wasm32"))]
 use anyhow::Result;
 use tracing::info;
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::client::OpenRegelsClient;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::model::{Regel, RegelDetail, bindings_naar_regels};
 
 /// Verzameling van agentic tools voor het Open Regels regelregister
@@ -26,9 +29,11 @@ use crate::model::{Regel, RegelDetail, bindings_naar_regels};
 /// [`OpenRegelsTools::productie()`] voor productiegebruik.
 #[derive(Clone)]
 pub struct OpenRegelsTools {
+    #[cfg(not(target_arch = "wasm32"))]
     client: OpenRegelsClient,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl OpenRegelsTools {
     /// Gebruik de acceptatieomgeving (aanbevolen tijdens ontwikkeling)
     pub fn acc() -> Self {
@@ -162,7 +167,7 @@ LIMIT 30
     /// Gebruik dit nadat `zoek_regels` of `regels_voor_wet` een
     /// interessante URI heeft opgeleverd. De JSON-LD payload bevat
     /// de volledige FLINT- of DMN-logica die de agent kan gebruiken
-    /// voor redenering en uitleg.
+    /// voor redeneren en uitleg.
     pub async fn haal_regel_details(&self, regel_uri: &str) -> Result<RegelDetail> {
         info!("haal_regel_details: '{regel_uri}'");
 
@@ -247,7 +252,7 @@ LIMIT 50
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use super::*;
 

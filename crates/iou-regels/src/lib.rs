@@ -30,14 +30,22 @@
 //! - **Acceptatie**: `https://acc.linkeddata.open-regels.nl/sparql`
 //!   (gebruik dit voor ontwikkeling en experimenteren)
 
-pub mod client;
-pub mod model;
-pub mod tools;
 pub mod compliance;
 pub mod provisa;
 
+// HTTP client and tools are only available for native builds
+#[cfg(not(target_arch = "wasm32"))]
+pub mod client;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod model;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod tools;
+
+#[cfg(not(target_arch = "wasm32"))]
 pub use client::OpenRegelsClient;
+#[cfg(not(target_arch = "wasm32"))]
 pub use model::{Regel, RegelDetail, RegelType, JuriconnectRef};
+#[cfg(not(target_arch = "wasm32"))]
 pub use tools::OpenRegelsTools;
 pub use provisa::{
     ProvisaVersion, ProvincieOrgaan, PetraCategorie, BesluitType,
