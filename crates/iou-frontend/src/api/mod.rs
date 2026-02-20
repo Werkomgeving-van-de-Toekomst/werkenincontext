@@ -78,13 +78,17 @@ async fn fetch_json_impl<T: DeserializeOwned>(url: &str) -> Result<T, String> {
         return Err(format!("HTTP error: {}", response.status()));
     }
 
-    let text_value = JsFuture::from(response.text())
+    // response.text() returns a Promise<JsValue>
+    let text_promise = response.text()
+        .map_err(|e| format!("Failed to get text promise: {e:?}"))?;
+
+    let text_value = JsFuture::from(text_promise)
         .await
         .map_err(|e| format!("Failed to get response text: {e:?}"))?;
 
-    let text: String = text_value
-        .dyn_into()
-        .map_err(|e| format!("Invalid text type: {e:?}"))?;
+    // The JsValue should be a String - convert using as_string()
+    let text = text_value.as_string()
+        .ok_or_else(|| "Response text is not a string".to_string())?;
 
     serde_json::from_str(&text).map_err(|e| format!("JSON parse error: {e}"))
 }

@@ -4,8 +4,13 @@
 //! informatie die past in het bestaande iou-core compliance model.
 
 use iou_core::compliance::{ComplianceIssue, IssueSeverity, RetentionPolicy, ArchivalValue};
-use crate::model::{Regel, RegelType};
+
+// PROVISA conversion is always available (WASM-compatible)
 use crate::provisa::{ProvisaBeoordeling, Archiefwaarde as Provisawaarde};
+
+// Open Regels model integration is only available for native builds
+#[cfg(not(target_arch = "wasm32"))]
+use crate::model::{Regel, RegelType};
 
 /// Converteer PROVISA beoordeling naar iou-core RetentionPolicy
 impl From<ProvisaBeoordeling> for RetentionPolicy {
@@ -75,8 +80,10 @@ pub fn provisa_compliance_issues(beoordeling: &ProvisaBeoordeling, _creatie_datu
 
 /// Beoordeelt of een regelspecificatie relevant is voor een bepaald
 /// compliance domein op basis van de juridische bron en het regeltype
+#[cfg(not(target_arch = "wasm32"))]
 pub struct RegelComplianceMapper;
 
+#[cfg(not(target_arch = "wasm32"))]
 impl RegelComplianceMapper {
     pub fn new() -> Self {
         Self
@@ -135,6 +142,7 @@ impl RegelComplianceMapper {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Default for RegelComplianceMapper {
     fn default() -> Self {
         Self::new()
