@@ -471,6 +471,13 @@ pub fn FlevolandDashboard() -> Element {
                                         badge: "Alert".to_string(),
                                     }
                                 }
+                                Link { to: Route::FlevolandArchitectuur,
+                                    AppCard {
+                                        name: "IOU Architectuur".to_string(),
+                                        description: "DMN regels en CPSV integratie".to_string(),
+                                        badge: "Nieuw".to_string(),
+                                    }
+                                }
                             }
                         }
 
@@ -705,6 +712,330 @@ impl FlevolandUserInfo for UserInfo {
             initials: "AF".to_string(),
             organization: "Provincie Flevoland".to_string(),
             role: "Archiefmedewerker".to_string(),
+        }
+    }
+}
+
+/// IOU Architectuur integratie voor PROVISA
+#[component]
+pub fn FlevolandArchitectuur() -> Element {
+    let mut state = use_context::<Signal<AppState>>();
+
+    use_effect(move || {
+        state.write().user = Some(UserInfo::flevoland());
+    });
+
+    rsx! {
+        div { class: "flevoland",
+            Header {}
+            main { class: "container",
+                div { class: "context-bar",
+                    div { class: "breadcrumb",
+                        Link { to: Route::FlevolandDashboard, span { "Provincie Flevoland" } }
+                        span { " \u{203A} " }
+                        span { class: "current", "IOU Architectuur" }
+                    }
+                }
+
+                div { class: "concept-intro",
+                    h2 { "IOU Architectuur voor PROVISA" }
+                    p {
+                        "Hoe de IOU architectuur PROVISA compliance automatiseert via "
+                        strong { "DMN regels, CPSV Editor en Linked Data" }
+                        "."
+                    }
+                }
+
+                // Architectuur diagram
+                Panel { title: "PROVISA in IOU Architectuur".to_string(),
+                    div { style: "background: #f8f6ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;",
+                        h3 { style: "margin-top: 0;", "\u{1F4C1} Architectuur Overzicht" }
+                        pre { style: "background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;",
+r#"graph TB
+    subgraph "Flevoland PROVISA Workflow"
+        A[Ambtenaar] -->|CPSV Editor| B[CPSV-AP Dienst]
+        B -->|TTL/RDF| C[TriplyDB KG]
+        D[PROVISA DMN Rules] -->|Deploy| E[Operaton Engine]
+        F[Business API] -->|REST| E
+        E -->|Evaluate| G[Archiefwaarde]
+        H[Linked Data Explorer] -->|SPARQL| C
+        A -->|Document Upload| F
+    end
+
+    subgraph "IOU Platform"
+        I[Keycloak IAM] -->|OIDC Token| F
+        J[Orchestration Service] -->|DMN Deploy| E
+    end
+
+    style B fill:#7C4DFF
+    style C fill:#00BCD4
+    style D fill:#4CAF50
+    style E fill:#FF9800
+    style G fill:#4CAF50"#
+                        }
+                    }
+
+                    div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 20px;",
+                        // Left column - Components
+                        div {
+                            h4 { "Componenten" }
+                            ul { class: "document-list",
+                                li { class: "document-item",
+                                    div { class: "document-icon", "\u{1F4CB}" }
+                                    div { class: "document-info",
+                                        h4 { "CPSV Editor" }
+                                        div { class: "meta", "Maakt CPSV-AP 3.2.0 bestanden met PROVISA metadata" }
+                                        a {
+                                            href: "https://cpsv-editor.open-regels.nl",
+                                            target: "_blank",
+                                            class: "tag woo",
+                                            "cpsv-editor.open-regels.nl \u{2197}"
+                                        }
+                                    }
+                                }
+                                li { class: "document-item",
+                                    div { class: "document-icon", "\u{2696}" }
+                                    div { class: "document-info",
+                                        h4 { "PROVISA DMN Rules" }
+                                        div { class: "meta", "Decision tables voor bewaartermijn bepaling" }
+                                        a {
+                                            href: "https://operaton.open-regels.nl",
+                                            target: "_blank",
+                                            class: "tag woo",
+                                            "operaton.open-regels.nl \u{2197}"
+                                        }
+                                    }
+                                }
+                                li { class: "document-item",
+                                    div { class: "document-icon", "\u{1F517}" }
+                                    div { class: "document-info",
+                                        h4 { "Linked Data Explorer" }
+                                        div { class: "meta", "SPARQL queries op PROVISA kennisgraaf" }
+                                        a {
+                                            href: "https://linkeddata.open-regels.nl",
+                                            target: "_blank",
+                                            class: "tag woo",
+                                            "linkeddata.open-regels.nl \u{2197}"
+                                        }
+                                    }
+                                }
+                                li { class: "document-item",
+                                    div { class: "document-icon", "\u{1F3E2}" }
+                                    div { class: "document-info",
+                                        h4 { "Business API" }
+                                        div { class: "meta", "Secure gateway met Keycloak authenticatie" }
+                                        a {
+                                            href: "https://backend.linkeddata.open-regels.nl",
+                                            target: "_blank",
+                                            class: "tag woo",
+                                            "backend.linkeddata.open-regels.nl \u{2197}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Right column - Flow
+                        div {
+                            h4 { "PROVISA Workflow" }
+                            div { class: "workflow-steps",
+                                div { class: "workflow-step",
+                                    div { class: "step-number", "1" }
+                                    div { class: "step-content",
+                                        h5 { "Document Aanbieden" }
+                                        p { "Ambtenaar upload document via CPSV Editor" }
+                                    }
+                                }
+                                div { class: "workflow-step",
+                                    div { class: "step-number", "2" }
+                                    div { class: "step-content",
+                                        h5 { "Classificatie" }
+                                        p { "Systeem classificeert volgens PETRA categorie" }
+                                    }
+                                }
+                                div { class: "workflow-step",
+                                    div { class: "step-number", "3" }
+                                    div { class: "step-content",
+                                        h5 { "PROVISA DMN Evaluate" }
+                                        p { "DMN engine bepaalt bewaartermijn en archiefwaarde" }
+                                    }
+                                }
+                                div { class: "workflow-step",
+                                    div { class: "step-number", "4" }
+                                    div { class: "step-content",
+                                        h5 { "Resultaat Opslaan" }
+                                        p { "Bewaartermijn opslaan in TriplyDB kennisgraaf" }
+                                    }
+                                }
+                                div { class: "workflow-step",
+                                    div { class: "step-number", "5" }
+                                    div { class: "step-content",
+                                        h5 { "Actie (Vernietigen/Overbrengen)" }
+                                        p { "Automatische melding voor actie vereist" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                div { style: "height: 20px;" }
+
+                // Standaarden
+                Panel { title: "Standaarden Mapping".to_string(),
+                    div { style: "display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;",
+                        div { class: "standard-card",
+                            div { class: "standard-header", style: "background: #7C4DFF;",
+                                        h4 { "PROVISA" }
+                                        span { "Provinciaal" }
+                                    }
+                                    ul { style: "margin: 10px 0; padding-left: 20px; font-size: 0.9rem;",
+                                        li { "PETRA categorieën" }
+                                        li { "Bewaartermijnen" }
+                                        li { "Concordans" }
+                                        li { "Hotspots" }
+                                    }
+                                }
+                                div { class: "standard-card",
+                                    div { class: "standard-header", style: "background: #00BCD4;",
+                                        h4 { "CPSV-AP 3.2.0" }
+                                        span { "Europees" }
+                                    }
+                                    ul { style: "margin: 10px 0; padding-left: 20px; font-size: 0.9rem;",
+                                        li { "Public Service Vocabulary" }
+                                        li { "Dienst metadata" }
+                                        li { "Regel koppeling" }
+                                    }
+                                }
+                                div { class: "standard-card",
+                                    div { class: "standard-header", style: "background: #4CAF50;",
+                                        h4 { "DMN 1.4" }
+                                        span { "OMG" }
+                                    }
+                                    ul { style: "margin: 10px 0; padding-left: 20px; font-size: 0.9rem;",
+                                        li { "Decision Tables" }
+                                        li { "FEEL expressies" }
+                                        li { "Hit Policy" }
+                                    }
+                                }
+                            }
+                }
+
+                div { style: "height: 20px;" }
+
+                // Voorbeelden
+                Panel { title: "PROVISA DMN Voorbeelden".to_string(),
+                    p { style: "margin-bottom: 15px; color: #666;",
+                        "Concrete DMN decision tables voor PROVISA implementatie."
+                    }
+                    div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 15px;",
+                        // DMN Example 1
+                        div { class: "dmn-example",
+                            h4 { "Bewaartermijn Ruimtelijke Planning" }
+                            div { style: "background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.8rem;",
+                                table { style: "width: 100%; border-collapse: collapse;",
+                                    thead {
+                                        tr { style: "background: #ddd;",
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "Input" }
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "PRV?" }
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "Besluit?" }
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "Bewaartermijn" }
+                                        }
+                                    }
+                                    tbody {
+                                        tr { style: "border-bottom: 1px solid #ddd;",
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Structuurplan" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center;", "\u{2705}" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center;", "\u{2705}" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; color: #0066CC;", "Permanent" }
+                                        }
+                                        tr { style: "border-bottom: 1px solid #ddd;",
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Omgevingsvergunning" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center;", "\u{2705}" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center;", "\u{2705}" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; color: #0066CC;", "Permanent" }
+                                        }
+                                        tr { style: "border-bottom: 1px solid #ddd;",
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Beleidsnotitie" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center;", "\u{274C}" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center;", "\u{2705}" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; color: #F59E0B;", "10 jaar" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // DMN Example 2
+                        div { class: "dmn-example",
+                            h4 { "Hotspot Upgrade Check" }
+                            div { style: "background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.8rem;",
+                                table { style: "width: 100%; border-collapse: collapse;",
+                                    thead {
+                                        tr { style: "background: #ddd;",
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "Document" }
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "Hotspot?" }
+                                            th { style: "border: 1px solid #999; padding: 8px; text-align: left;", "Upgrade" }
+                                        }
+                                    }
+                                    tbody {
+                                        tr { style: "border-bottom: 1px solid #ddd;",
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Lelystad Airport" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center; color: #4CAF50;", "Actief" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; color: #0066CC;", "Ja" }
+                                        }
+                                        tr { style: "border-bottom: 1px solid #ddd;",
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Almere Stad" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center; color: #4CAF50;", "Actief" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; color: #0066CC;", "Ja" }
+                                        }
+                                        tr { style: "border-bottom: 1px solid #ddd;",
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Routine vergunning" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px; text-align: center; color: #999;", "Nee" }
+                                            td { style: "border: 1px solid #ddd; padding: 8px;", "Nee" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                div { style: "height: 20px;" }
+
+                // Call to action
+                Panel { title: "Aan de Slag".to_string(),
+                    div { style: "display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;",
+                        a {
+                            href: "https://cpsv-editor.open-regels.nl",
+                            target: "_blank",
+                            class: "app-card",
+                            style: "text-decoration: none; display: block;",
+                            div { class: "document-icon", style: "background: #7C4DFF;", "\u{270F}" }
+                            h4 { "Start CPSV Editor" }
+                            p { "Maak PROVISA diensten" }
+                        }
+                        a {
+                            href: "https://linkeddata.open-regels.nl",
+                            target: "_blank",
+                            class: "app-card",
+                            style: "text-decoration: none; display: block;",
+                            div { class: "document-icon", style: "background: #00BCD4;", "\u{1F50D}" }
+                            h4 { "Linked Data Explorer" }
+                            p { "Query PROVISA graaf" }
+                        }
+                        a {
+                            href: "https://iou-architectuur.open-regels.nl",
+                            target: "_blank",
+                            class: "app-card",
+                            style: "text-decoration: none; display: block;",
+                            div { class: "document-icon", style: "background: #4CAF50;", "\u{1F4DD}" }
+                            h4 { "IOU Documentatie" }
+                            p { "Architectuur details" }
+                        }
+                    }
+                }
+            }
         }
     }
 }

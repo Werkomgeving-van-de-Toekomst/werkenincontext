@@ -26,6 +26,8 @@ pub enum Route {
     FlevolandHotspots,
     #[route("/flevoland/archief")]
     FlevolandArchief,
+    #[route("/flevoland/architectuur")]
+    FlevolandArchitectuur,
     #[route("/context/:id")]
     ContextDetail { id: String },
     #[route("/documents/:id")]

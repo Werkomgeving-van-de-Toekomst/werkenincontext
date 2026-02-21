@@ -1118,3 +1118,140 @@ body {
 .zuidholland .timeline-toggle {
     color: #E31837;
 }
+
+/* ===== IOU Architecture / PROVISA Integration ===== */
+
+.workflow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.workflow-step {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+}
+
+.step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--flevoland-blauw);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.step-content h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.step-content p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.standard-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.standard-header {
+    padding: var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.standard-header h4 {
+    margin: 0;
+    color: white;
+    font-size: 1rem;
+}
+
+.standard-header span {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.dmn-example {
+    background: #f8f9fa;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+}
+
+.dmn-example h4 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Badge variants */
+.badge-success {
+    background: var(--success);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.badge-info {
+    background: var(--info);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.badge-warning {
+    background: var(--warning);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+/* Tag variants */
+.tag.info {
+    background: #e3f2fd;
+    color: var(--info);
+}
+
+.tag.success {
+    background: #e8f5e9;
+    color: var(--success);
+}
+
+.tag.warning {
+    background: #fff3e0;
+    color: var(--warning);
+}
+
+.tag.alert {
+    background: #ffebee;
+    color: var(--error);
+}
+
+.tag.hotspot {
+    background: #fce4ec;
+    color: #E91E63;
+}
+
+.tag.provincie {
+    background: #e3f2fd;
+    color: var(--flevoland-blauw);
+}
