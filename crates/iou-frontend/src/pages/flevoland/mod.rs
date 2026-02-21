@@ -1003,6 +1003,209 @@ r#"graph TB
 
                 div { style: "height: 20px;" }
 
+                // Interactief Workflow Demo met echt Woo-document
+                Panel { title: "Workflow Demo: PRV Rondweg Lelystad-Zuid".to_string(),
+                    p { style: "margin-bottom: 15px; color: #666;",
+                        "Volg een concreet Woo-document door de PROVISA workflow."
+                    }
+
+                    // Document header
+                    div { style: "background: #f8f6ff; padding: 15px; border-radius: 8px; border-left: 4px solid #7C4DFF; margin-bottom: 20px;",
+                        div { style: "display: flex; justify-content: space-between; align-items: start;",
+                            div {
+                                h4 { style: "margin: 0 0 5px 0;", "\u{1F4C4} Kennisgeving Projectbesluit en MER Rondweg Lelystad-Zuid" }
+                                div { style: "font-size: 0.85rem; color: #666;",
+                                    "Provinciaal blad | 30 jan 2026 | prb-2026-1767"
+                                }
+                                a {
+                                    href: "https://zoek.officielebekendmakingen.nl/prb-2026-1767.html",
+                                    target: "_blank",
+                                    style: "color: #0066CC; text-decoration: none; font-size: 0.85rem;",
+                                    "Bekijk op open.overheid.nl \u{2197}"
+                                }
+                            }
+                            span { class: "tag woo", "Woo Document" }
+                        }
+                    }
+
+                    // Workflow interactief
+                    div { style: "display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;",
+                        // Links - Workflow stappen
+                        div {
+                            h4 { "PROVISA Workflow Stappen" }
+                            div { class: "workflow-demo",
+                                // Stap 1
+                                div { class: "workflow-demo-step completed",
+                                    div { class: "workflow-demo-header",
+                                        div { class: "step-number-small", "1" }
+                                        div { class: "step-title", "CPSV Editor: Dienst Aanmaken" }
+                                        div { class: "step-status", "\u{2705}" }
+                                    }
+                                    div { class: "workflow-demo-content",
+                                        p { style: "margin: 5px 0; font-size: 0.85rem;",
+                                            "Dienst: projectbesluit-ruimtelijke-planning"
+                                        }
+                                        div { style: "margin-top: 8px;",
+                                            span { class: "tag provincie", "PETRA: Ruimtelijke Planning" }
+                                            span { class: "tag woo", "CPSV-AP 3.2.0" }
+                                        }
+                                        div { style: "margin-top: 5px; font-size: 0.8rem; color: #888;",
+                                            "a href=\"cpsv-editor.open-regels.nl\" \u{2192}"
+                                        }
+                                    }
+                                }
+
+                                // Stap 2
+                                div { class: "workflow-demo-step completed",
+                                    div { class: "workflow-demo-header",
+                                        div { class: "step-number-small", "2" }
+                                        div { class: "step-title", "Classificatie: PETRA" }
+                                        div { class: "step-status", "\u{2705}" }
+                                    }
+                                    div { class: "workflow-demo-content",
+                                        p { style: "margin: 5px 0; font-size: 0.85rem;",
+                                            "Systeem detecteert: Projectbesluit MER"
+                                        }
+                                        div { style: "margin-top: 8px;",
+                                            span { class: "tag success", "PRV relevant" }
+                                            span { class: "tag info", "Besluit formaliteit" }
+                                        }
+                                    }
+                                }
+
+                                // Stap 3
+                                div { class: "workflow-demo-step completed",
+                                    div { class: "workflow-demo-header",
+                                        div { class: "step-number-small", "3" }
+                                        div { class: "step-title", "PROVISA DMN: Evaluate" }
+                                        div { class: "step-status", "\u{2705}" }
+                                    }
+                                    div { class: "workflow-demo-content",
+                                        div { style: "background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; margin-top: 8px;",
+                                            table { style: "width: 100%; border-collapse: collapse;",
+                                                thead {
+                                                    tr { style: "background: #ddd;",
+                                                        th { style: "border: 1px solid #999; padding: 4px; font-size: 0.7rem;", "Input" }
+                                                        th { style: "border: 1px solid #999; padding: 4px; font-size: 0.7rem;", "Type" }
+                                                        th { style: "border: 1px solid #999; padding: 4px; font-size: 0.7rem;", "Resultaat" }
+                                                    }
+                                                }
+                                                tbody {
+                                                    tr {
+                                                        td { style: "border: 1px solid #ddd; padding: 4px;", "PRV document" }
+                                                        td { style: "border: 1px solid #ddd; padding: 4px;", "Projectbesluit" }
+                                                        td { style: "border: 1px solid #ddd; padding: 4px; color: #0066CC; font-weight: 600;", "\u{2192} Permanent" }
+                                                    }
+                                                    tr {
+                                                        td { style: "border: 1px solid #ddd; padding: 4px;", "MER aanwezig" }
+                                                        td { style: "border: 1px solid #ddd; padding: 4px;", "Ja" }
+                                                        td { style: "border: 1px solid #ddd; padding: 4px; color: #0066CC; font-weight: 600;", "\u{2192} Permanent" }
+                                                    }
+                                                    tr {
+                                                        td { style: "border: 1px solid #ddd; padding: 4px;", "Hotspot check" }
+                                                        td { style: "border: 1px solid #ddd; padding: 4px;", "Nee" }
+                                                        td { style: "border: 1px solid #ddd; padding: 4px; color: #666;", "\u{2192} Geen upgrade" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Stap 4
+                                div { class: "workflow-demo-step completed",
+                                    div { class: "workflow-demo-header",
+                                        div { class: "step-number-small", "4" }
+                                        div { class: "step-title", "TriplyDB: Opslaan" }
+                                        div { class: "step-status", "\u{2705}" }
+                                    }
+                                    div { class: "workflow-demo-content",
+                                        pre { style: "background: #2d2d2d; color: #f8f8f2; padding: 10px; border-radius: 4px; font-size: 0.7rem; overflow-x: auto;",
+                                            "@prefix prov: <https://provincie.flevoland.nl/provisa/>
+prov:prb-2026-1767 a prov:Archiefwaarde ;
+    prov:bewaartermijn \"Permanent\" ;
+    prov:petraCategorie prov:RuimtelijkePlanning ;
+    prov:hotspotUpgrade false ."
+                                        }
+                                    }
+                                }
+
+                                // Stap 5
+                                div { class: "workflow-demo-step warning",
+                                    div { class: "workflow-demo-header",
+                                        div { class: "step-number-small", "5" }
+                                        div { class: "step-title", "Actie: Overbrenging NA (2046)" }
+                                        div { class: "step-status", "!" }
+                                    }
+                                    div { class: "workflow-demo-content",
+                                        p { style: "margin: 5px 0; font-size: 0.85rem;",
+                                            "Document is permanent bewaren. Overbrenging naar Nationaal Archief gepland over 20 jaar."
+                                        }
+                                        div { style: "margin-top: 8px;",
+                                            span { class: "tag alert", "Overbrenging: 2046-01-30" }
+                                        }
+                                        div { style: "margin-top: 10px; padding: 10px; background: #fff3e0; border-radius: 4px;",
+                                            div { style: "display: flex; gap: 8px;",
+                                                span { "\u{23F0}" }
+                                                span { style: "font-size: 0.85rem;",
+                                                    strong { "Automatische reminder: " }
+                                                    "20 jaar na publicatie"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Rechts - Resultaat
+                        div {
+                            h4 { "PROVISA Beoordeling Resultaat" }
+                            div { style: "background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px;",
+                                div { style: "text-align: center; margin-bottom: 20px;",
+                                    div { class: "compliance-indicator ok",
+                                        div { class: "icon", "\u{2713}" }
+                                        div { class: "label", "Archiefwaarde" }
+                                        div { class: "value", "PERMANENT" }
+                                    }
+                                }
+
+                                div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 15px;",
+                                    div {
+                                        h5 { "Bewaartermijn" }
+                                        p { style: "font-size: 1.5rem; font-weight: 700; color: #0066CC; margin: 10px 0;",
+                                            "Permanent"
+                                        }
+                                        p { style: "font-size: 0.85rem; color: #666;",
+                                            "Omdat het een Projectbesluit MER betreft in het kader van de PRV."
+                                        }
+                                    }
+                                    div {
+                                        h5 { "Overbrenging" }
+                                        p { style: "font-size: 1.2rem; font-weight: 600; color: #F59E0B; margin: 10px 0;",
+                                            "2046-01-30"
+                                        }
+                                        p { style: "font-size: 0.85rem; color: #666;",
+                                            "20 jaar na publicatie (Archiefwet 1995)"
+                                        }
+                                    }
+                                }
+
+                                div { style: "margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;",
+                                    h5 { "Concordans Referentie" }
+                                    ul { style: "margin: 10px 0; padding-left: 20px; font-size: 0.85rem;",
+                                        li { "PROVISA 2020, categorie 2.1: Ruimtelijke planning" }
+                                        li { "Toelichting: Projectbesluiten en MER zijn permanent" }
+                                        li { "Besluittype: Provinciaal Verordening / Projectbesluit" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                div { style: "height: 20px;" }
+
                 // Call to action
                 Panel { title: "Aan de Slag".to_string(),
                     div { style: "display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;",
