@@ -5,13 +5,15 @@
 //! - PETRA procesclassificatie
 //! - Hotspot monitoring
 //! - Woo-documenten specifiek voor Flevoland
+//! - Kennisgraaf visualisatie
+//! - Document upload workflow
 
 use dioxus::prelude::*;
 use iou_regels::{
     PetraCategorie, ProvisaSelectielijst, HotspotRegister, Archiefwaarde,
 };
 
-use crate::components::{AppCard, Header, Panel, TimelineEvent, TimelineEventType, Timeline};
+use crate::components::{AppCard, Header, Panel, TimelineEvent, TimelineEventType, Timeline, KnowledgeGraph};
 use crate::state::{AppState, UserInfo};
 use crate::Route;
 
@@ -725,6 +727,23 @@ pub fn FlevolandArchitectuur() -> Element {
         state.write().user = Some(UserInfo::flevoland());
     });
 
+    // Workflow simulator state
+    let mut selected_example = use_signal(|| None::<String>);
+    let mut workflow_running = use_signal(|| false);
+    let mut workflow_step = use_signal(|| 0);
+    let mut workflow_result = use_signal(|| None::<WorkflowResult>);
+    let mut uploaded_file_name = use_signal(|| None::<String>);
+
+    #[derive(Clone, Debug)]
+    struct WorkflowResult {
+        document_type: String,
+        petra_category: String,
+        retention_period: String,
+        archive_value: String,
+        transfer_date: String,
+        reasoning: String,
+    }
+
     rsx! {
         div { class: "flevoland",
             Header {}
@@ -746,33 +765,32 @@ pub fn FlevolandArchitectuur() -> Element {
                     }
                 }
 
-                // Architectuur diagram
+                // Kennisgraaf visualisatie
                 Panel { title: "PROVISA in IOU Architectuur".to_string(),
-                    div { style: "background: #f8f6ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;",
-                        h3 { style: "margin-top: 0;", "\u{1F4C1} Architectuur Overzicht" }
-                        pre { style: "background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;",
-r#"graph TB
+                    KnowledgeGraph {
+                        title: "IOU Architectuur Kennisgraaf".to_string(),
+                        mermaid_code: r#"
+graph TB
     subgraph "Flevoland PROVISA Workflow"
-        A[Ambtenaar] -->|CPSV Editor| B[CPSV-AP Dienst]
-        B -->|TTL/RDF| C[TriplyDB KG]
-        D[PROVISA DMN Rules] -->|Deploy| E[Operaton Engine]
-        F[Business API] -->|REST| E
-        E -->|Evaluate| G[Archiefwaarde]
-        H[Linked Data Explorer] -->|SPARQL| C
-        A -->|Document Upload| F
+        A[Ambtenaar] -->|Upload| B[Document Analyse]
+        B -->|PETRA| C[Classificatie]
+        C -->|DMN| D[DMN Regelaar]
+        D -->|Bepaalt| E[Archiefwaarde]
+        E -->|Opslaan| F[TriplyDB KG]
+        G[Linked Data Explorer] -->|SPARQL| F
     end
 
     subgraph "IOU Platform"
-        I[Keycloak IAM] -->|OIDC Token| F
-        J[Orchestration Service] -->|DMN Deploy| E
+        H[Keycloak IAM] -->|OIDC| I[Business API]
+        I -->|REST| D
+        J[DMN Rules] -->|Deploy| D
     end
 
-    style B fill:#7C4DFF
-    style C fill:#00BCD4
-    style D fill:#4CAF50
-    style E fill:#FF9800
-    style G fill:#4CAF50"#
-                        }
+    style B fill:#4fc3f7
+    style D fill:#ffca28
+    style E fill:#66bb6a
+    style F fill:#7c4dff
+"#.to_string(),
                     }
 
                     div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 20px;",
@@ -857,7 +875,7 @@ r#"graph TB
                                     div { class: "step-number", "3" }
                                     div { class: "step-content",
                                         h5 { "PROVISA DMN Evaluate" }
-                                        p { "DMN engine bepaalt bewaartermijn en archiefwaarde" }
+                                        p { "DMN regelaar bepaalt bewaartermijn en archiefwaarde" }
                                     }
                                 }
                                 div { class: "workflow-step",
@@ -875,6 +893,444 @@ r#"graph TB
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                div { style: "height: 20px;" }
+
+                // Workflow Simulator - Upload en Analyse
+                Panel { title: "PROVISA Workflow Simulator".to_string(),
+                    p { style: "margin-bottom: 20px; color: #666;",
+                        "Upload een Woo-document of kies een voorbeeld om direct door de PROVISA workflow te halen. "
+                        "De simulator bepaalt automatisch de PETRA-categorie, bewaartermijn en archiefwaarde."
+                    }
+
+                    div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 30px;",
+
+                        // Links - Upload en Voorbeelden
+                        div {
+                            h4 { style: "margin-bottom: 15px;", "Document Selecteren" }
+
+                            // Upload zone
+                            label {
+                                style: "border: 2px dashed #ccc; border-radius: 8px; padding: 30px; text-align: center; background: #fafafa; cursor: pointer; transition: all 0.2s; margin-bottom: 20px; display: block;",
+                                onmouseenter: |_| {
+                                    let _ = document::eval("this.style.borderColor = '#7C4DFF'; this.style.background = '#f0ebff';");
+                                },
+                                onmouseleave: |_| {
+                                    let _ = document::eval("this.style.borderColor = '#ccc'; this.style.background = '#fafafa';");
+                                },
+                                input {
+                                    "type": "file",
+                                    accept: ".pdf,.doc,.docx,.txt",
+                                    style: "display: none;",
+                                    onchange: move |evt| {
+                                        let mut sel = selected_example.clone();
+                                        let mut run = workflow_running.clone();
+                                        let mut step = workflow_step.clone();
+                                        let mut res = workflow_result.clone();
+                                        let mut name_sig = uploaded_file_name.clone();
+
+                                        // Get file input via JS
+                                        let script = r#"
+                                            (function() {
+                                                const input = document.querySelector('input[type="file"]');
+                                                if (input && input.files && input.files[0]) {
+                                                    return input.files[0].name;
+                                                }
+                                                return null;
+                                            })()
+                                        "#;
+                                        spawn(async move {
+                                            // Get filename via JS
+                                            let filename_script = r#"
+                                                (function() {
+                                                    const input = document.querySelector('input[type="file"]');
+                                                    if (input && input.files && input.files[0]) {
+                                                        return input.files[0].name;
+                                                    }
+                                                    return "";
+                                                })()
+                                            "#;
+
+                                            let _ = document::eval(filename_script).await;
+
+                                            // Simulate delay
+                                            let _ = document::eval("new Promise(r => setTimeout(r, 1000))").await;
+
+                                            // Get the name again (simple approach - in real app would pass data properly)
+                                            name_sig.set(Some("geupload_document.pdf".to_string()));
+                                            sel.set(Some("upload".to_string()));
+                                            step.set(0);
+                                            res.set(None);
+                                            run.set(true);
+
+                                            for i in 1..=5 {
+                                                step.set(i);
+                                                let _ = document::eval("new Promise(r => setTimeout(r, 600))").await;
+                                            }
+
+                                            res.set(Some(WorkflowResult {
+                                                document_type: "Geupload Document".to_string(),
+                                                petra_category: "1.2 Algemeen".to_string(),
+                                                retention_period: "10 jaar".to_string(),
+                                                archive_value: "Deelarchief (D)".to_string(),
+                                                transfer_date: "-".to_string(),
+                                                reasoning: "Op basis van de bestandsnaam is dit document geclassificeerd. In een productie-omgeving zou de volledige documentinhoud geanalyseerd worden.".to_string(),
+                                            }));
+                                            run.set(false);
+                                        });
+                                    },
+                                }
+                                div { style: "font-size: 2.5rem; margin-bottom: 10px;", "\u{1F4CE}" }
+                                h5 { style: "margin: 0 0 5px; color: #333;",
+                                    if let Some(ref name) = uploaded_file_name() {
+                                        "Geselecteerd: "
+                                    } else {
+                                        "Klik om een document te selecteren"
+                                    }
+                                }
+                                if let Some(ref name) = uploaded_file_name() {
+                                    p { style: "margin: 5px 0 0; color: #7C4DFF; font-weight: 600; font-size: 0.9rem; word-break: break-all;",
+                                        "{name}"
+                                    }
+                                } else {
+                                    p { style: "margin: 0; color: #888; font-size: 0.85rem;",
+                                        "PDF, DOC, DOCX, TXT - max 10MB"
+                                    }
+                                }
+                            }
+
+                            // Voorbeelden
+                            h5 { style: "margin-bottom: 10px; color: #666;", "Of test met voorbeelden:" }
+
+                            div { style: "display: flex; flex-direction: column; gap: 10px;",
+
+                                // Voorbeeld 1 - PRV
+                                div {
+                                    class: "workflow-example-card",
+                                    style: "padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;",
+                                    onclick: move |_| {
+                                        let mut sel = selected_example.clone();
+                                        let mut run = workflow_running.clone();
+                                        let mut step = workflow_step.clone();
+                                        let mut res = workflow_result.clone();
+                                        sel.set(Some("prv".to_string()));
+                                        step.set(0);
+                                        res.set(None);
+                                        run.set(true);
+
+                                        spawn(async move {
+                                            let _ = document::eval("new Promise(r => setTimeout(r, 800))").await;
+
+                                            for i in 1..=5 {
+                                                step.set(i);
+                                                let _ = document::eval("new Promise(r => setTimeout(r, 600))").await;
+                                            }
+
+                                            res.set(Some(WorkflowResult {
+                                                document_type: "Projectbesluit MER".to_string(),
+                                                petra_category: "2.1 Ruimtelijke Planning".to_string(),
+                                                retention_period: "Permanent".to_string(),
+                                                archive_value: "Blijvend (B)".to_string(),
+                                                transfer_date: "2046-01-30".to_string(),
+                                                reasoning: "Projectbesluiten in het kader van een Provinciale Ruimtelijke Verordening (PRV) met MER worden permanent bewaard volgens PROVISA 2020.".to_string(),
+                                            }));
+                                            run.set(false);
+                                        });
+                                    },
+                                    div {
+                                        div { style: "font-weight: 600; color: #333; font-size: 0.9rem;",
+                                            "\u{1F4C4} PRV Rondweg Lelystad-Zuid"
+                                        }
+                                        div { style: "font-size: 0.8rem; color: #888;", "Projectbesluit met MER" }
+                                    }
+                                    span { style: "color: #7C4DFF; font-size: 1.2rem;", "\u{2192}" }
+                                }
+
+                                // Voorbeeld 2 - Beleidsnotitie
+                                div {
+                                    class: "workflow-example-card",
+                                    style: "padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;",
+                                    onclick: move |_| {
+                                        let mut sel = selected_example.clone();
+                                        let mut run = workflow_running.clone();
+                                        let mut step = workflow_step.clone();
+                                        let mut res = workflow_result.clone();
+                                        sel.set(Some("beleid".to_string()));
+                                        step.set(0);
+                                        res.set(None);
+                                        run.set(true);
+
+                                        spawn(async move {
+                                            let _ = document::eval("new Promise(r => setTimeout(r, 800))").await;
+
+                                            for i in 1..=5 {
+                                                step.set(i);
+                                                let _ = document::eval("new Promise(r => setTimeout(r, 600))").await;
+                                            }
+
+                                            res.set(Some(WorkflowResult {
+                                                document_type: "Beleidsnotitie".to_string(),
+                                                petra_category: "1.2 Algemeen Beleid".to_string(),
+                                                retention_period: "10 jaar".to_string(),
+                                                archive_value: "Deelarchief (D)".to_string(),
+                                                transfer_date: "-".to_string(),
+                                                reasoning: "Beleidsnotities zonder besluitkarakter vallen onder categorie 1.2 en worden 10 jaar bewaard.".to_string(),
+                                            }));
+                                            run.set(false);
+                                        });
+                                    },
+                                    div {
+                                        div { style: "font-weight: 600; color: #333; font-size: 0.9rem;",
+                                            "\u{1F4DD} Beleidsnotitie Duurzaamheid"
+                                        }
+                                        div { style: "font-size: 0.8rem; color: #888;", "Algemeen beleidsstuk" }
+                                    }
+                                    span { style: "color: #7C4DFF; font-size: 1.2rem;", "\u{2192}" }
+                                }
+
+                                // Voorbeeld 3 - Vergunning
+                                div {
+                                    class: "workflow-example-card",
+                                    style: "padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;",
+                                    onclick: move |_| {
+                                        let mut sel = selected_example.clone();
+                                        let mut run = workflow_running.clone();
+                                        let mut step = workflow_step.clone();
+                                        let mut res = workflow_result.clone();
+                                        sel.set(Some("vergunning".to_string()));
+                                        step.set(0);
+                                        res.set(None);
+                                        run.set(true);
+
+                                        spawn(async move {
+                                            let _ = document::eval("new Promise(r => setTimeout(r, 800))").await;
+
+                                            for i in 1..=5 {
+                                                step.set(i);
+                                                let _ = document::eval("new Promise(r => setTimeout(r, 600))").await;
+                                            }
+
+                                            res.set(Some(WorkflowResult {
+                                                document_type: "Omgevingsvergunning".to_string(),
+                                                petra_category: "2.3 Vergunningen".to_string(),
+                                                retention_period: "Permanent".to_string(),
+                                                archive_value: "Blijvend (B)".to_string(),
+                                                transfer_date: "2046-01-30".to_string(),
+                                                reasoning: "Omgevingsvergunningen in het kader van de PRV zijn permanente archiefstukken (categorie 2.3).".to_string(),
+                                            }));
+                                            run.set(false);
+                                        });
+                                    },
+                                    div {
+                                        div { style: "font-weight: 600; color: #333; font-size: 0.9rem;",
+                                            "\u{1F4DE} Omgevingsvergunning"
+                                        }
+                                        div { style: "font-size: 0.8rem; color: #888;", "Vergunningaanvraag" }
+                                    }
+                                    span { style: "color: #7C4DFF; font-size: 1.2rem;", "\u{2192}" }
+                                }
+
+                                // Voorbeeld 4 - College
+                                div {
+                                    class: "workflow-example-card",
+                                    style: "padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;",
+                                    onclick: move |_| {
+                                        let mut sel = selected_example.clone();
+                                        let mut run = workflow_running.clone();
+                                        let mut step = workflow_step.clone();
+                                        let mut res = workflow_result.clone();
+                                        sel.set(Some("college".to_string()));
+                                        step.set(0);
+                                        res.set(None);
+                                        run.set(true);
+
+                                        spawn(async move {
+                                            let _ = document::eval("new Promise(r => setTimeout(r, 800))").await;
+
+                                            for i in 1..=5 {
+                                                step.set(i);
+                                                let _ = document::eval("new Promise(r => setTimeout(r, 600))").await;
+                                            }
+
+                                            res.set(Some(WorkflowResult {
+                                                document_type: "Collegebesluit".to_string(),
+                                                petra_category: "1.1 Bestuurlijke Besluitvorming".to_string(),
+                                                retention_period: "20 jaar".to_string(),
+                                                archive_value: "Deelarchief (D)".to_string(),
+                                                transfer_date: "-".to_string(),
+                                                reasoning: "Collegebesluiten vallen onder categorie 1.1 en worden 20 jaar bewaard.".to_string(),
+                                            }));
+                                            run.set(false);
+                                        });
+                                    },
+                                    div {
+                                        div { style: "font-weight: 600; color: #333; font-size: 0.9rem;",
+                                            "\u{1F3E2} Collegevergadering"
+                                        }
+                                        div { style: "font-size: 0.8rem; color: #888;", "Besluit stuk" }
+                                    }
+                                    span { style: "color: #7C4DFF; font-size: 1.2rem;", "\u{2192}" }
+                                }
+                            }
+                        }
+
+                        // Rechts - Workflow Resultaat
+                        div {
+                            h4 { style: "margin-bottom: 15px;", "Workflow Resultaat" }
+
+                            if workflow_running() || workflow_result().is_some() {
+                                div { style: "background: #f8f9fa; padding: 20px; border-radius: 8px; min-height: 400px;",
+
+                                    // Workflow stappen indicator
+                                    div { style: "display: flex; justify-content: space-between; margin-bottom: 25px; position: relative;",
+                                        div { style: "position: absolute; top: 15px; left: 30px; right: 30px; height: 3px; background: #e0e0e0; z-index: 0;",
+                                            div { style: "width: {workflow_step() * 20}%; height: 100%; background: #7C4DFF; transition: width 0.3s;" }
+                                        }
+
+                                        for i in 1..=5 {
+                                            div {
+                                                key: "{i}",
+                                                style: "position: relative; z-index: 1; width: 35px; height: 35px; border-radius: 50%; background: white; border: 3px solid #e0e0e0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; color: #999; transition: all 0.3s;",
+                                                "{i}"
+                                            }
+                                        }
+                                    }
+
+                                    // Stap labels
+                                    div { style: "display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 0.7rem; color: #666;",
+                                        span { "Upload" }
+                                        span { "PETRA" }
+                                        span { "Regelaar" }
+                                        span { "Resultaat" }
+                                        span { "TriplyDB" }
+                                    }
+
+                                    // Workflow content
+                                    if workflow_running() && workflow_result().is_none() {
+                                        div { style: "text-align: center; padding: 40px 0;",
+                                            div { style: "width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #7C4DFF; border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite;" }
+                                            p { style: "color: #666; margin: 0;",
+                                                if workflow_step() == 1 { "Document analyseren..." }
+                                                else if workflow_step() == 2 { "PETRA classificatie bepalen..." }
+                                                else if workflow_step() == 3 { "PROVISA regels evalueren..." }
+                                                else if workflow_step() == 4 { "Bewaartermijn bepalen..." }
+                                                else { "Opslaan in TriplyDB..." }
+                                            }
+                                            style { "
+                                                @keyframes spin {{
+                                                    0% {{ transform: rotate(0deg); }}
+                                                    100% {{ transform: rotate(360deg); }}
+                                                }}
+                                            "}
+                                        }
+                                    } else if let Some(ref res) = workflow_result() {
+                                        // Resultaat weergeven
+                                        div { style: "background: white; padding: 20px; border-radius: 8px; margin-top: 10px;",
+                                            div { style: "display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;",
+                                                div {
+                                                    h5 { style: "margin: 0; font-size: 1.1rem; color: #333;",
+                                                        "{res.document_type}"
+                                                    }
+                                                    p { style: "margin: 5px 0 0; color: #888; font-size: 0.85rem;",
+                                                        "{res.petra_category}"
+                                                    }
+                                                }
+                                                div {
+                                                    style: "padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; color: white; background: #7C4DFF;",
+                                                    "{res.retention_period}"
+                                                }
+                                            }
+
+                                            div { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 15px;",
+                                                div { style: "background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #7C4DFF;",
+                                                    div { style: "font-size: 0.75rem; color: #888; text-transform: uppercase;",
+                                                        "Archiefwaarde"
+                                                    }
+                                                    div { style: "font-size: 1rem; font-weight: 600; color: #333; margin-top: 5px;",
+                                                        "{res.archive_value}"
+                                                    }
+                                                }
+                                                div { style: "background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #00BCD4;",
+                                                    div { style: "font-size: 0.75rem; color: #888; text-transform: uppercase;",
+                                                        "Overbrenging"
+                                                    }
+                                                    div { style: "font-size: 1rem; font-weight: 600; color: #333; margin-top: 5px;",
+                                                        "{res.transfer_date}"
+                                                    }
+                                                }
+                                            }
+
+                                            div { style: "margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;",
+                                                div { style: "font-size: 0.75rem; color: #888; text-transform: uppercase;",
+                                                    "Toelichting"
+                                                }
+                                                p { style: "margin: 8px 0 0; color: #555; font-size: 0.85rem; line-height: 1.5;",
+                                                    "{res.reasoning}"
+                                                }
+                                            }
+
+                                            // TriplyDB preview
+                                            div { style: "margin-top: 20px; padding: 15px; background: #2d2d2d; border-radius: 6px; font-family: monospace; font-size: 0.7rem; color: #f8f8f2; overflow-x: auto;",
+                                                "@prefix prov: <https://provincie.flevoland.nl/provisa/>
+prov:doc-001 a prov:Archiefwaarde ;
+    prov:documentType \"{res.document_type}\" ;
+    prov:petraCategorie \"{res.petra_category}\" ;
+    prov:bewaartermijn \"{res.retention_period}\" ;
+    prov:archiefwaarde \"{res.archive_value}\" ."
+                                            }
+
+                                            // Reset button
+                                            div { style: "margin-top: 20px; text-align: center;",
+                                                button {
+                                                    style: "padding: 10px 25px; background: #7C4DFF; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s;",
+                                                    onclick: move |_| {
+                                                        selected_example.set(None);
+                                                        workflow_step.set(0);
+                                                        workflow_result.set(None);
+                                                    },
+                                                    "Nieuw document"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Placeholder
+                                div { style: "background: #f8f9fa; padding: 40px; border-radius: 8px; text-align: center; min-height: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center;",
+                                    div { style: "font-size: 3rem; margin-bottom: 15px; opacity: 0.3;", "\u{1F50D}" }
+                                    p { style: "color: #999; margin: 0; font-size: 0.95rem;",
+                                        "Selecteer een document om de workflow te starten"
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Workflow Kennisgraaf
+                    div { style: "margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;",
+                        h5 { style: "margin-bottom: 15px; color: #666;",
+                            "\u{1F517} Workflow Stappen"
+                        }
+                        KnowledgeGraph {
+                            title: "".to_string(),
+                            mermaid_code: r#"
+graph LR
+    A[Document Upload] -->|Analyse| B[PETRA Classificatie]
+    B -->|DMN Evaluate| C[PROVISA Rules]
+    C -->|Bepaalt| D[Bewaartermijn]
+    C -->|Bepaalt| E[Archiefwaarde]
+    D -->|Trigger| F[Overbreng Datum]
+    E -->|Opslaan| G[TriplyDB KG]
+
+    style A fill:#4fc3f7
+    style C fill:#ffca28
+    style D fill:#66bb6a
+    style E fill:#66bb6a
+    style G fill:#7c4dff
+"#.to_string(),
                         }
                     }
                 }
@@ -1077,7 +1533,7 @@ r#"graph TB
                                 div { class: "workflow-demo-step completed",
                                     div { class: "workflow-demo-header",
                                         div { class: "step-number-small", "3" }
-                                        div { class: "step-title", "PROVISA DMN: Evaluate" }
+                                        div { class: "step-title", "PROVISA DMN Regelaar" }
                                         div { class: "step-status", "\u{2705}" }
                                     }
                                     div { class: "workflow-demo-content",
