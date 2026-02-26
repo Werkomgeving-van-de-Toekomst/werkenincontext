@@ -20,6 +20,9 @@ pub enum ApiError {
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
 
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
     #[error("Database error: {0}")]
     Database(#[from] duckdb::Error),
 
@@ -33,6 +36,7 @@ impl IntoResponse for ApiError {
             ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, "NOT_FOUND", msg.clone()),
             ApiError::Validation(msg) => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR", msg.clone()),
             ApiError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", msg.clone()),
+            ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, "FORBIDDEN", msg.clone()),
             ApiError::Database(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "DATABASE_ERROR",

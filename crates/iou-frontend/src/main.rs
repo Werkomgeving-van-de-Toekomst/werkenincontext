@@ -42,6 +42,10 @@ pub enum Route {
     DocumentGenerator,
     #[route("/apps/nalevingscontrole")]
     Nalevingscontrole,
+    #[route("/compliance")]
+    ComplianceDashboard,
+    #[route("/provisa")]
+    ProvisaManager,
     #[route("/minfin")]
     MinFinDashboard,
     #[route("/minfin/begrotingsverkenner")]

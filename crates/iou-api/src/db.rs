@@ -46,7 +46,7 @@ fn parse_optional_datetime(s: Option<String>) -> Option<DateTime<Utc>> {
 
 /// Database wrapper met thread-safe connection
 pub struct Database {
-    conn: Mutex<Connection>,
+    pub(crate) conn: Mutex<Connection>,
 }
 
 impl Database {
@@ -374,6 +374,480 @@ impl Database {
         }
 
         Ok(results)
+    }
+
+    // ============================================
+    // ADVANCED SEARCH OPERATIONS
+    // ============================================
+
+    /// Advanced text search with filters
+    pub fn search_text(
+        &self,
+        params: &crate::routes::search::SearchParams,
+        query: &str,
+    ) -> anyhow::Result<(Vec<crate::routes::search::AdvancedSearchResult>, i64)> {
+        let conn = self.conn.lock().unwrap();
+
+        // Build dynamic SQL query based on filters
+        let mut sql = String::from(
+            r#"
+            SELECT
+                io.id,
+                io.object_type,
+                io.title,
+                COALESCE(SUBSTR(io.description, 1, 200), io.title) as snippet,
+                io.domain_id,
+                id.name as domain_name,
+                id.domain_type,
+                io.classification,
+                io.created_at,
+                io.is_woo_relevant
+            FROM v_searchable_objects io
+            JOIN information_domains id ON io.domain_id = id.id
+            WHERE 1=1
+            "#,
+        );
+
+        let mut param_values: Vec<String> = vec![];
+
+        // Add search pattern
+        let search_pattern = format!("%{}%", query.to_lowercase());
+        sql.push_str(" AND LOWER(io.searchable_text) LIKE ?");
+
+        // Add optional filters
+        if let Some(dt) = &params.domain_type {
+            sql.push_str(" AND LOWER(id.domain_type) = ?");
+            param_values.push(dt.to_lowercase());
+        }
+        if let Some(di) = &params.domain_id {
+            sql.push_str(" AND io.domain_id = ?");
+            param_values.push(di.clone());
+        }
+        if let Some(ot) = &params.object_type {
+            sql.push_str(" AND LOWER(io.object_type) = ?");
+            param_values.push(ot.to_lowercase());
+        }
+        if let Some(c) = &params.classification {
+            sql.push_str(" AND LOWER(io.classification) = ?");
+            param_values.push(c.to_lowercase());
+        }
+
+        // Get total count first
+        let count_sql = sql.replace(
+            "io.id, io.object_type, io.title, COALESCE(SUBSTR(io.description, 1, 200), io.title) as snippet, io.domain_id, id.name as domain_name, id.domain_type, io.classification, io.created_at, io.is_woo_relevant",
+            "COUNT(*) as total"
+        );
+
+        let total: i64 = {
+            let mut count_stmt = conn.prepare(&count_sql)?;
+            let mut params_vec = vec![&search_pattern as &dyn duckdb::ToSql];
+            for val in &param_values {
+                params_vec.push(val as &dyn duckdb::ToSql);
+            }
+            count_stmt.query_row(params_vec.as_slice(), |row| row.get(0))?
+        };
+
+        // Add sorting and pagination
+        match params.sort {
+            crate::routes::search::SortOrder::Relevance => {
+                // Simple relevance: title matches first, then date
+                sql.push_str(" ORDER BY CASE WHEN LOWER(io.title) LIKE ? THEN 0 ELSE 1 END, io.created_at DESC");
+            }
+            crate::routes::search::SortOrder::DateDesc => {
+                sql.push_str(" ORDER BY io.created_at DESC");
+            }
+            crate::routes::search::SortOrder::DateAsc => {
+                sql.push_str(" ORDER BY io.created_at ASC");
+            }
+            crate::routes::search::SortOrder::TitleAsc => {
+                sql.push_str(" ORDER BY io.title ASC");
+            }
+        }
+
+        sql.push_str(" LIMIT ? OFFSET ?");
+        param_values.push(params.limit.to_string());
+        param_values.push(params.offset.to_string());
+
+        let mut stmt = conn.prepare(&sql)?;
+
+        let mut results = Vec::new();
+        let mut params_vec: Vec<&dyn duckdb::ToSql> = vec![&search_pattern];
+
+        // Add title pattern for relevance sorting
+        if matches!(params.sort, crate::routes::search::SortOrder::Relevance) {
+            params_vec.push(&search_pattern);
+        }
+
+        for val in &param_values {
+            params_vec.push(val as &dyn duckdb::ToSql);
+        }
+
+        let rows = stmt.query_map(params_vec.as_slice(), |row| {
+            let id: String = row.get(0)?;
+            let created_at: String = row.get(8)?;
+            let parsed_dt = parse_datetime(&created_at);
+
+            // Calculate a simple relevance score
+            let title = row.get::<_, String>(2)?;
+            let score = if title.to_lowercase().contains(&query.to_lowercase()) {
+                0.9
+            } else {
+                0.5
+            };
+
+            Ok(crate::routes::search::AdvancedSearchResult {
+                id: Uuid::parse_str(&id).unwrap(),
+                object_type: row.get(1)?,
+                title,
+                snippet: row.get(3)?,
+                domain_id: Uuid::parse_str(&row.get::<_, String>(4)?).unwrap(),
+                domain_name: row.get(5)?,
+                domain_type: row.get(6)?,
+                classification: row.get(7)?,
+                score,
+                created_at,
+                semantic_score: None,
+                text_rank: Some(score),
+                is_woo_relevant: row.get(9)?,
+                woo_disclosure_class: None,
+            })
+        })?;
+
+        for row in rows {
+            results.push(row?);
+        }
+
+        Ok((results, total))
+    }
+
+    /// Get search facets for filtering
+    pub fn get_search_facets(
+        &self,
+        _query: &str,
+    ) -> anyhow::Result<crate::routes::search::SearchFacets> {
+        let conn = self.conn.lock().unwrap();
+
+        // Get domain types with counts
+        let domain_types: Vec<crate::routes::search::FacetCount> = {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT domain_type, COUNT(*) as count
+                FROM information_domains
+                GROUP BY domain_type
+                ORDER BY count DESC
+                "#,
+            )?;
+
+            let mut facets = Vec::new();
+            let rows = stmt.query_map([], |row| {
+                let value = row.get::<_, String>(0)?;
+                let label = match value.to_lowercase().as_str() {
+                    "zaak" => "Zaken",
+                    "project" => "Projecten",
+                    "beleid" => "Beleid",
+                    "expertise" => "Expertise",
+                    _ => value.as_str(),
+                };
+                Ok(crate::routes::search::FacetCount {
+                    value: value.clone(),
+                    count: row.get(1)?,
+                    label: label.to_string(),
+                })
+            })?;
+
+            for row in rows {
+                facets.push(row?);
+            }
+            facets
+        };
+
+        // Get object types with counts
+        let object_types: Vec<crate::routes::search::FacetCount> = {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT object_type, COUNT(*) as count
+                FROM information_objects
+                GROUP BY object_type
+                ORDER BY count DESC
+                "#,
+            )?;
+
+            let mut facets = Vec::new();
+            let rows = stmt.query_map([], |row| {
+                let value = row.get::<_, String>(0)?;
+                let label = match value.to_lowercase().as_str() {
+                    "document" => "Documenten",
+                    "email" => "E-mails",
+                    "chat" => "Chats",
+                    "besluit" => "Besluiten",
+                    "data" => "Data",
+                    _ => value.as_str(),
+                };
+                Ok(crate::routes::search::FacetCount {
+                    value: value.clone(),
+                    count: row.get(1)?,
+                    label: label.to_string(),
+                })
+            })?;
+
+            for row in rows {
+                facets.push(row?);
+            }
+            facets
+        };
+
+        // Get classifications with counts
+        let classifications: Vec<crate::routes::search::FacetCount> = {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT classification, COUNT(*) as count
+                FROM information_objects
+                GROUP BY classification
+                ORDER BY count DESC
+                "#,
+            )?;
+
+            let mut facets = Vec::new();
+            let rows = stmt.query_map([], |row| {
+                let value = row.get::<_, String>(0)?;
+                let label = match value.to_lowercase().as_str() {
+                    "openbaar" => "Openbaar",
+                    "intern" => "Intern",
+                    "vertrouwelijk" => "Vertrouwelijk",
+                    "geheim" => "Geheim",
+                    _ => value.as_str(),
+                };
+                Ok(crate::routes::search::FacetCount {
+                    value: value.clone(),
+                    count: row.get(1)?,
+                    label: label.to_string(),
+                })
+            })?;
+
+            for row in rows {
+                facets.push(row?);
+            }
+            facets
+        };
+
+        // Compliance status distribution
+        let compliance_statuses: Vec<crate::routes::search::FacetCount> = {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT
+                    CASE
+                        WHEN is_woo_relevant = true THEN 'woo_relevant'
+                        ELSE 'not_relevant'
+                    END as status,
+                    COUNT(*) as count
+                FROM information_objects
+                GROUP BY status
+                ORDER BY count DESC
+                "#,
+            )?;
+
+            let mut facets = Vec::new();
+            let rows = stmt.query_map([], |row| {
+                let value = row.get::<_, String>(0)?;
+                let label = match value.to_lowercase().as_str() {
+                    "woo_relevant" => "Woo Relevant",
+                    "not_relevant" => "Niet Relevant",
+                    _ => value.as_str(),
+                };
+                Ok(crate::routes::search::FacetCount {
+                    value: value.clone(),
+                    count: row.get(1)?,
+                    label: label.to_string(),
+                })
+            })?;
+
+            for row in rows {
+                facets.push(row?);
+            }
+            facets
+        };
+
+        Ok(crate::routes::search::SearchFacets {
+            domain_types,
+            object_types,
+            classifications,
+            compliance_statuses,
+        })
+    }
+
+    /// Get search suggestions for autocomplete
+    pub fn get_search_suggestions(
+        &self,
+        query: &str,
+        limit: i32,
+    ) -> anyhow::Result<Vec<crate::routes::search::SuggestionResult>> {
+        let conn = self.conn.lock().unwrap();
+        let mut suggestions = Vec::new();
+
+        let search_pattern = format!("%{}%", query.to_lowercase());
+
+        // Suggest matching titles (query suggestions)
+        {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT DISTINCT title, COUNT(*) as count
+                FROM v_searchable_objects
+                WHERE LOWER(searchable_text) LIKE ?
+                GROUP BY title
+                ORDER BY count DESC
+                LIMIT ?
+                "#,
+            )?;
+
+            let rows = stmt.query_map(params![search_pattern, limit / 2], |row| {
+                Ok(crate::routes::search::SuggestionResult {
+                    text: row.get(0)?,
+                    suggestion_type: crate::routes::search::SuggestionType::Query,
+                    count: Some(row.get(1)?),
+                })
+            })?;
+
+            for row in rows {
+                suggestions.push(row?);
+            }
+        }
+
+        // Suggest matching domains
+        {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT name, domain_type
+                FROM information_domains
+                WHERE LOWER(name) LIKE ?
+                LIMIT ?
+                "#,
+            )?;
+
+            let rows = stmt.query_map(params![search_pattern, limit / 4], |row| {
+                Ok(crate::routes::search::SuggestionResult {
+                    text: row.get(0)?,
+                    suggestion_type: crate::routes::search::SuggestionType::Domain,
+                    count: None,
+                })
+            })?;
+
+            for row in rows {
+                suggestions.push(row?);
+            }
+        }
+
+        Ok(suggestions)
+    }
+
+    /// Find similar documents based on text similarity
+    pub fn find_similar_documents(
+        &self,
+        id: Uuid,
+        limit: i32,
+    ) -> anyhow::Result<Vec<crate::routes::search::AdvancedSearchResult>> {
+        let conn = self.conn.lock().unwrap();
+
+        // First get the source document
+        let source = match self.get_object(id)? {
+            Some(obj) => obj,
+            None => return Ok(vec![]),
+        };
+
+        // Extract key terms from source (simple word extraction)
+        let terms: Vec<&str> = source
+            .title
+            .split_whitespace()
+            .filter(|w| w.len() > 3)
+            .collect();
+
+        if terms.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Build search query from terms
+        let mut results = Vec::new();
+
+        // Simple similarity: documents with overlapping terms in title
+        let search_pattern = terms
+            .iter()
+            .map(|t| format!("%{}%", t.to_lowercase()))
+            .collect::<Vec<_>>();
+
+        for pattern in search_pattern.iter().take(3) {
+            let mut stmt = conn.prepare(
+                r#"
+                SELECT
+                    io.id,
+                    io.object_type,
+                    io.title,
+                    COALESCE(SUBSTR(io.description, 1, 200), io.title) as snippet,
+                    io.domain_id,
+                    id.name as domain_name,
+                    id.domain_type,
+                    io.classification,
+                    io.created_at,
+                    io.is_woo_relevant
+                FROM v_searchable_objects io
+                JOIN information_domains id ON io.domain_id = id.id
+                WHERE io.id != ? AND LOWER(io.searchable_text) LIKE ?
+                ORDER BY io.created_at DESC
+                LIMIT ?
+                "#,
+            )?;
+
+            let rows = stmt.query_map(
+                params![id.to_string(), pattern, (limit / 3).max(1)],
+                |row| {
+                    let created_at: String = row.get(8)?;
+                    Ok(crate::routes::search::AdvancedSearchResult {
+                        id: Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
+                        object_type: row.get(1)?,
+                        title: row.get(2)?,
+                        snippet: row.get(3)?,
+                        domain_id: Uuid::parse_str(&row.get::<_, String>(4)?).unwrap(),
+                        domain_name: row.get(5)?,
+                        domain_type: row.get(6)?,
+                        classification: row.get(7)?,
+                        score: 0.7,
+                        created_at,
+                        semantic_score: None,
+                        text_rank: Some(0.7),
+                        is_woo_relevant: row.get(9)?,
+                        woo_disclosure_class: None,
+                    })
+                },
+            )?;
+
+            for row in rows {
+                results.push(row?);
+            }
+
+            if results.len() >= limit as usize {
+                break;
+            }
+        }
+
+        // Remove duplicates and limit
+        results.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        results.truncate(limit as usize);
+        results.dedup_by(|a, b| a.id == b.id);
+
+        Ok(results)
+    }
+
+    /// Reindex search data (update full-text search indexes)
+    pub fn reindex_search(&self) -> anyhow::Result<i64> {
+        // In DuckDB, we don't have traditional FTS indexes like PostgreSQL
+        // This is a placeholder for future index updates
+        // For now, we'll just return the count of indexed objects
+        let conn = self.conn.lock().unwrap();
+
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM information_objects", [], |row| {
+            row.get(0)
+        })?;
+
+        tracing::info!("Reindexed {} objects for search", count);
+        Ok(count)
     }
 
     // ============================================

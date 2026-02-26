@@ -22,8 +22,10 @@ pub mod ner;
 pub mod graphrag;
 pub mod compliance;
 pub mod suggestions;
+pub mod semantic;
 
 pub use ner::DutchNerExtractor;
 pub use graphrag::KnowledgeGraph;
 pub use compliance::ComplianceAssessor;
 pub use suggestions::MetadataSuggester;
+pub use semantic::{SemanticSearchService, cosine_similarity};

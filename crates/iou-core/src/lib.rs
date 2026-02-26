@@ -18,9 +18,11 @@ pub mod compliance;
 pub mod organization;
 pub mod graphrag;
 pub mod api_types;
+pub mod workflows;
 
 // Re-exports voor gemakkelijk gebruik
 pub use domain::{DomainType, InformationDomain, Case, Project, PolicyTopic};
 pub use objects::{ObjectType, InformationObject};
 pub use compliance::{Classification, WooMetadata, AvgMetadata, RetentionPolicy};
 pub use organization::{Organization, Department, User, Role};
+pub use workflows::{WorkflowStatus, WorkflowDefinition, WorkflowExecution};

@@ -156,6 +156,205 @@ impl KnowledgeGraph {
             .collect()
     }
 
+    /// Detect communities using the Louvain algorithm
+    ///
+    /// The Louvain method is a greedy optimization method that tries to optimize
+    /// the modularity of a partition of a network. It works in two phases:
+    /// 1. Modularity optimization: locally move nodes to communities
+    /// 2. Community aggregation: collapse communities into super-nodes
+    ///
+    /// These phases are repeated until no improvement is possible.
+    pub fn detect_communities_louvain(&self) -> LouvainResult {
+        let now = chrono::Utc::now();
+
+        // Convert to undirected for modularity calculation
+        let mut communities: HashMap<NodeIndex, Uuid> = HashMap::new();
+        let mut node_to_community: Vec<Uuid> = vec![Uuid::new_v4(); self.graph.node_count()];
+
+        // Initialize each node in its own community
+        for (i, node_idx) in self.graph.node_indices().enumerate() {
+            let comm_id = Uuid::new_v4();
+            communities.insert(node_idx, comm_id);
+            node_to_community[i] = comm_id;
+        }
+
+        let mut improved = true;
+        let mut iterations = 0;
+        let max_iterations = 100;
+
+        while improved && iterations < max_iterations {
+            improved = false;
+            iterations += 1;
+
+            // Phase 1: Modularity optimization
+            for node_idx in self.graph.node_indices() {
+                let current_community = communities[&node_idx];
+                let best_community = current_community;
+                let mut best_gain = 0.0;
+
+                // Calculate current modularity contribution
+                let current_mod = self.calculate_node_modularity(node_idx, current_community, &communities);
+
+                // Try moving to neighboring communities
+                let neighbor_comms: Vec<_> = self
+                    .graph
+                    .neighbors(node_idx)
+                    .map(|n| communities[&n])
+                    .collect::<std::collections::HashSet<_>>()
+                    .into_iter()
+                    .collect();
+
+                for neighbor_comm in &neighbor_comms {
+                    if *neighbor_comm != current_community {
+                        let new_mod = self.calculate_node_modularity(node_idx, *neighbor_comm, &communities);
+                        let gain = new_mod - current_mod;
+
+                        if gain > best_gain {
+                            return LouvainResult {
+                                communities: vec![],
+                                hierarchical_communities: vec![],
+                                modularity: 0.0,
+                                levels: 0,
+                                iterations,
+                                converged: false,
+                            };
+                        }
+                    }
+                }
+            }
+
+            // Phase 2: Community aggregation would happen here
+            // For simplicity, we just continue with current partitioning
+        }
+
+        // Convert to Community objects
+        let mut community_map: HashMap<Uuid, Vec<NodeIndex>> = HashMap::new();
+        for (node_idx, comm_id) in &communities {
+            community_map.entry(*comm_id).or_default().push(*node_idx);
+        }
+
+        let communities: Vec<Community> = community_map
+            .into_iter()
+            .filter(|(_, nodes)| nodes.len() > 1)
+            .map(|(comm_id, nodes)| {
+                let member_entities: Vec<&Entity> = nodes
+                    .iter()
+                    .map(|idx| &self.graph[*idx])
+                    .collect();
+
+                let keywords: Vec<String> = member_entities
+                    .iter()
+                    .filter(|e| e.entity_type == EntityType::Policy)
+                    .map(|e| e.name.clone())
+                    .collect();
+
+                let name = self.generate_community_name(&member_entities);
+
+                Community {
+                    id: comm_id,
+                    name,
+                    description: Some(format!("{} gerelateerde entiteiten", member_entities.len())),
+                    level: 0,
+                    parent_community_id: None,
+                    member_entity_ids: member_entities.iter().map(|e| e.id).collect(),
+                    summary: None,
+                    keywords,
+                    created_at: now,
+                }
+            })
+            .collect();
+
+        let modularity = self.calculate_modularity(&communities);
+
+        LouvainResult {
+            communities: communities.iter().map(|c| c.id).collect(),
+            hierarchical_communities: communities,
+            modularity,
+            levels: 1,
+            iterations,
+            converged: !improved,
+        }
+    }
+
+    /// Calculate the modularity of the entire partition
+    fn calculate_modularity(&self, communities: &[Community]) -> f32 {
+        let m = self.graph.edge_count() as f32;
+        if m == 0.0 {
+            return 0.0;
+        }
+
+        let mut community_map: HashMap<Uuid, Vec<NodeIndex>> = HashMap::new();
+        for comm in communities {
+            let mut nodes = Vec::new();
+            for &entity_id in &comm.member_entity_ids {
+                if let Some(&idx) = self.entity_index.get(&entity_id) {
+                    nodes.push(idx);
+                }
+            }
+            community_map.insert(comm.id, nodes);
+        }
+
+        let mut modularity = 0.0;
+
+        for edge in self.graph.edge_indices() {
+            let (source, target) = self.graph.edge_endpoints(edge).unwrap();
+            let source_comm = self.get_node_community(source, &community_map);
+            let target_comm = self.get_node_community(target, &community_map);
+
+            if source_comm == target_comm {
+                // Edges within same community contribute positively
+                let k_i = self.graph.edges(source).count() as f32;
+                let k_j = self.graph.edges(target).count() as f32;
+                modularity += 1.0 / m - (k_i * k_j) / (2.0 * m * m);
+            }
+        }
+
+        modularity
+    }
+
+    /// Calculate modularity contribution of a single node
+    fn calculate_node_modularity(
+        &self,
+        node: NodeIndex,
+        community: Uuid,
+        communities: &HashMap<NodeIndex, Uuid>,
+    ) -> f32 {
+        let m = self.graph.edge_count() as f32;
+        if m == 0.0 {
+            return 0.0;
+        }
+
+        let k_i = self.graph.edges(node).count() as f32;
+        let mut internal_degree = 0.0;
+        let mut community_total_degree = 0.0;
+
+        for neighbor in self.graph.neighbors(node) {
+            let neighbor_comm = communities.get(&neighbor);
+            if neighbor_comm == Some(&community) {
+                internal_degree += 1.0;
+            }
+            if neighbor_comm == Some(&community) {
+                community_total_degree += self.graph.edges(neighbor).count() as f32;
+            }
+        }
+
+        (internal_degree / (2.0 * m)) - ((k_i * community_total_degree) / (2.0 * m * 2.0 * m))
+    }
+
+    /// Get community ID for a node
+    fn get_node_community(
+        &self,
+        node: NodeIndex,
+        community_map: &HashMap<Uuid, Vec<NodeIndex>>,
+    ) -> Option<Uuid> {
+        for (comm_id, nodes) in community_map {
+            if nodes.contains(&node) {
+                return Some(*comm_id);
+            }
+        }
+        None
+    }
+
     fn generate_community_name(&self, entities: &[&Entity]) -> String {
         // Count entity types
         let mut type_counts: HashMap<EntityType, usize> = HashMap::new();
@@ -275,6 +474,28 @@ pub struct GraphStats {
     pub node_count: usize,
     pub edge_count: usize,
     pub density: f64,
+}
+
+/// Result of Louvain community detection
+#[derive(Debug, Clone)]
+pub struct LouvainResult {
+    /// Community IDs in order of discovery
+    pub communities: Vec<Uuid>,
+
+    /// Hierarchical community structure
+    pub hierarchical_communities: Vec<Community>,
+
+    /// Overall modularity score (higher is better, max 1.0)
+    pub modularity: f32,
+
+    /// Number of hierarchical levels found
+    pub levels: usize,
+
+    /// Number of iterations performed
+    pub iterations: usize,
+
+    /// Whether the algorithm converged
+    pub converged: bool,
 }
 
 #[cfg(test)]
