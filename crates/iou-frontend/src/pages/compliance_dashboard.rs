@@ -10,6 +10,7 @@
 use dioxus::prelude::*;
 
 use crate::state::AppState;
+use crate::components::{Header, Panel};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum TimePeriod {
@@ -139,6 +140,158 @@ fn mock_alerts() -> Vec<ComplianceAlert> {
     ]
 }
 
+#[component]
+fn TrendBar(point: TrendPoint) -> Element {
+    let woo_height = (point.woo_rate * 100.0) as i32;
+    let avg_height = (point.avg_rate * 100.0) as i32;
+    let archief_height = (point.archief_rate * 100.0) as i32;
+    let label_short = if point.date.len() > 8 { &point.date[8..] } else { &point.date };
+
+    rsx! {
+        div { class: "chart-bar-group",
+            div {
+                class: "chart-bar woo",
+                style: "height: {woo_height}%;",
+                title: "{point.date}: Woo {woo_height}%",
+            }
+            div {
+                class: "chart-bar avg",
+                style: "height: {avg_height}%;",
+                title: "{point.date}: AVG {avg_height}%",
+            }
+            div {
+                class: "chart-bar archief",
+                style: "height: {archief_height}%;",
+                title: "{point.date}: Archief {archief_height}%",
+            }
+            div { class: "chart-label",
+                "{label_short}"
+            }
+        }
+    }
+}
+
+#[component]
+fn DomainBar(domain: DomainCompliance) -> Element {
+    let woo_width = domain.woo_compliant * 100 / domain.woo_total.max(1);
+    let avg_width = domain.avg_compliant * 100 / domain.avg_total.max(1);
+    let woo_text = format!("{}/{}", domain.woo_compliant, domain.woo_total);
+    let avg_text = format!("{}/{}", domain.avg_compliant, domain.avg_total);
+    let score_text = format!("{}%", (domain.score * 100.0) as i32);
+
+    rsx! {
+        div { class: "domain-item",
+            div { class: "domain-header",
+                div { class: "domain-name", "{domain.name}" }
+                div {
+                    class: if domain.score >= 0.9 { "score-badge good" }
+                        else if domain.score >= 0.7 { "score-badge warning" }
+                        else { "score-badge bad" },
+                    "{score_text}"
+                }
+            }
+            div { class: "domain-bars",
+                div { class: "bar-row",
+                    span { "Woo" }
+                    div { class: "bar-container",
+                        div {
+                            class: "bar woo",
+                            style: "width: {woo_width}%;",
+                        }
+                    }
+                    span { "{woo_text}" }
+                }
+                div { class: "bar-row",
+                    span { "AVG" }
+                    div { class: "bar-container",
+                        div {
+                            class: "bar avg",
+                            style: "width: {avg_width}%;",
+                        }
+                    }
+                    span { "{avg_text}" }
+                }
+            }
+            if !domain.issues.is_empty() {
+                div { class: "domain-issues",
+                    for issue in &domain.issues {
+                        div { class: "issue-item", "• {issue}" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn RiskDomainItem(domain: DomainCompliance) -> Element {
+    let score = (domain.score * 100.0) as i32;
+    let issues = domain.issues.join(", ");
+
+    rsx! {
+        div { class: "risk-domain",
+            div { class: "risk-domain-name", "{domain.name}" }
+            div { class: "risk-score", "Score: {score}%" }
+            div { class: "risk-factors",
+                "Risicofactoren: {issues}"
+            }
+        }
+    }
+}
+
+#[component]
+fn AlertItem(alert: ComplianceAlert, selected_alert: Signal<Option<String>>) -> Element {
+    let alert_class = alert.severity.class();
+    let alert_icon = alert.severity.icon();
+    let alert_title = alert.title.clone();
+    let alert_desc = alert.description.clone();
+    let alert_domain = alert.domain_name.clone();
+    let alert_type = alert.alert_type.clone();
+    let alert_due = alert.due_date.clone();
+    let alert_id = alert.id.clone();
+    let is_selected = *selected_alert.read() == Some(alert_id.clone());
+
+    rsx! {
+        div {
+            class: format!("alert-item {}", alert_class),
+            onclick: move |_| {
+                let id = alert_id.clone();
+                if *selected_alert.read() == Some(id.clone()) {
+                    selected_alert.set(None);
+                } else {
+                    selected_alert.set(Some(id));
+                }
+            },
+            div { class: "alert-icon", "{alert_icon}" }
+            div { class: "alert-content",
+                div { class: "alert-title", "{alert_title}" }
+                div { class: "alert-desc", "{alert_desc}" }
+                if let Some(domain) = &alert_domain {
+                    div { class: "alert-domain", "{domain}" }
+                }
+            }
+        }
+        if is_selected {
+            div { class: "alert-detail",
+                div { class: "detail-row",
+                    span { "Type:" }
+                    span { "{alert_type}" }
+                }
+                if let Some(due) = &alert_due {
+                    div { class: "detail-row",
+                        span { "Deadline:" }
+                        span { "{due}" }
+                    }
+                }
+                div { style: "display: flex; gap: 10px; margin-top: 10px;",
+                    button { class: "btn btn-primary", "Actie ondernemen" }
+                    button { class: "btn btn-secondary", "Sluiten" }
+                }
+            }
+        }
+    }
+}
+
 fn mock_domains() -> Vec<DomainCompliance> {
     vec![
         DomainCompliance {
@@ -264,7 +417,7 @@ pub fn ComplianceDashboard() -> Element {
                 div { class: "score-card overall",
                     div { class: "score-circle",
                         svg {
-                            viewBox: "0 0 100 100",
+                            view_box: "0 0 100 100",
                             circle {
                                 cx: "50",
                                 cy: "50",
@@ -325,14 +478,10 @@ pub fn ComplianceDashboard() -> Element {
                         class: "btn btn-secondary",
                         style: "margin-top: 8px; font-size: 0.8rem;",
                         onclick: move |_| {
-                            let scroll_top = web_sys::window()
+                            let _ = web_sys::window()
                                 .and_then(|w| w.document())
                                 .and_then(|d| d.get_element_by_id("alerts-section"))
-                                .and_then(|el| el.scroll_into_view_with_scroll_into_view_options(
-                                    web_sys::ScrollIntoViewOptions::new()
-                                        .behavior(web_sys::ScrollBehavior::Smooth)
-                                        .block(web_sys::ScrollAlignment::Start)
-                                ).ok());
+                                .map(|el| el.scroll_into_view());
                         },
                         "Bekijk"
                     }
@@ -347,46 +496,7 @@ pub fn ComplianceDashboard() -> Element {
                     Panel { title: "Domein Compliance".to_string(),
                         div { class: "domain-list",
                             for domain in domains.read().iter() {
-                                div { class: "domain-item",
-                                    div { class: "domain-header",
-                                        div { class: "domain-name", "{domain.name}" }
-                                        div {
-                                            class: if domain.score >= 0.9 { "score-badge good" }
-                                                else if domain.score >= 0.7 { "score-badge warning" }
-                                                else { "score-badge bad" },
-                                            "{domain.score * 100.0 as i32}%"
-                                        }
-                                    }
-                                    div { class: "domain-bars",
-                                        div { class: "bar-row",
-                                            span { "Woo" }
-                                            div { class: "bar-container",
-                                                div {
-                                                    class: "bar woo",
-                                                    style: "width: {domain.woo_compliant * 100 / domain.woo_total.max(1)}%;",
-                                                }
-                                            }
-                                            span { "{}/{}", domain.woo_compliant, domain.woo_total }
-                                        }
-                                        div { class: "bar-row",
-                                            span { "AVG" }
-                                            div { class: "bar-container",
-                                                div {
-                                                    class: "bar avg",
-                                                    style: "width: {domain.avg_compliant * 100 / domain.avg_total.max(1)}%;",
-                                                }
-                                            }
-                                            span { "{}/{}", domain.avg_compliant, domain.avg_total }
-                                        }
-                                    }
-                                    if !domain.issues.is_empty() {
-                                        div { class: "domain-issues",
-                                            for issue in &domain.issues {
-                                                div { class: "issue-item", "• {issue}" }
-                                            }
-                                        }
-                                    }
-                                }
+                                DomainBar { domain: domain.clone() }
                             }
                         }
                     }
@@ -401,26 +511,7 @@ pub fn ComplianceDashboard() -> Element {
                             }
                             div { class: "chart-bars",
                                 for point in trends.read().iter() {
-                                    div { class: "chart-bar-group",
-                                        div {
-                                            class: "chart-bar woo",
-                                            style: "height: {point.woo_rate * 100 as i32}%;",
-                                            title: "{point.date}: Woo {point.woo_rate * 100 as i32}%",
-                                        }
-                                        div {
-                                            class: "chart-bar avg",
-                                            style: "height: {point.avg_rate * 100 as i32}%;",
-                                            title: "{point.date}: AVG {point.avg_rate * 100 as i32}%",
-                                        }
-                                        div {
-                                            class: "chart-bar archief",
-                                            style: "height: {point.archief_rate * 100 as i32}%;",
-                                            title: "{point.date}: Archief {point.archief_rate * 100 as i32}%",
-                                        }
-                                        div { class: "chart-label",
-                                            &point.date[8..] // Show day-month only
-                                        }
-                                    }
+                                    TrendBar { point: point.clone() }
                                 }
                             }
                         }
@@ -432,43 +523,10 @@ pub fn ComplianceDashboard() -> Element {
                     // Alerts Panel
                     Panel { title: "Actieve Alerts".to_string(),
                         div { id: "alerts-section", class: "alerts-list",
-                            for alert in alerts.read().iter() {
-                                div {
-                                    class: format!("alert-item {}", alert.severity.class()),
-                                    onclick: move |_| {
-                                        let id = alert.id.clone();
-                                        if *selected_alert.read() == Some(id.clone()) {
-                                            selected_alert.set(None);
-                                        } else {
-                                            selected_alert.set(Some(id));
-                                        }
-                                    },
-                                    div { class: "alert-icon", "{alert.severity.icon()}" }
-                                    div { class: "alert-content",
-                                        div { class: "alert-title", "{alert.title}" }
-                                        div { class: "alert-desc", "{alert.description}" }
-                                        if let Some(domain) = &alert.domain_name {
-                                            div { class: "alert-domain", "{domain}" }
-                                        }
-                                    }
-                                }
-                                if *selected_alert.read() == Some(alert.id.clone()) {
-                                    div { class: "alert-detail",
-                                        div { class: "detail-row",
-                                            span { "Type:" }
-                                            span { "{alert.alert_type}" }
-                                        }
-                                        if let Some(due) = &alert.due_date {
-                                            div { class: "detail-row",
-                                                span { "Deadline:" }
-                                                span { "{due}" }
-                                            }
-                                        }
-                                        div { style: "display: flex; gap: 10px; margin-top: 10px;",
-                                            button { class: "btn btn-primary", "Actie ondernemen" }
-                                            button { class: "btn btn-secondary", "Sluiten" }
-                                        }
-                                    }
+                            for alert in alerts.read().clone().iter() {
+                                AlertItem {
+                                    alert: alert.clone(),
+                                    selected_alert: selected_alert.clone(),
                                 }
                             }
                         }
@@ -479,7 +537,8 @@ pub fn ComplianceDashboard() -> Element {
                         class: "btn btn-secondary",
                         style: "width: 100%; margin-top: 10px;",
                         onclick: move |_| {
-                            show_risk_analysis.set(!show_risk_analysis.read());
+                            let current = *show_risk_analysis.read();
+                            show_risk_analysis.set(!current);
                         },
                         "Toon risicoanalyse"
                     }
@@ -526,14 +585,7 @@ pub fn ComplianceDashboard() -> Element {
                         div { style: "margin-top: 20px;",
                             h3 { "Domeinen met verhoogd risico" }
                             for domain in domains.read().iter().filter(|d| d.score < 0.8) {
-                                div { class: "risk-domain",
-                                    div { class: "risk-domain-name", "{domain.name}" }
-                                    div { class: "risk-score", "Score: {:.0}%", domain.score * 100.0 }
-                                    div { class: "risk-factors",
-                                        "Risicofactoren: {}",
-                                        domain.issues.join(", ")
-                                    }
-                                }
+                                RiskDomainItem { domain: domain.clone() }
                             }
                         }
                         div { style: "margin-top: 20px;",

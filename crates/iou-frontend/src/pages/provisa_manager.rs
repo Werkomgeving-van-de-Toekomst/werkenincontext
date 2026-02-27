@@ -170,6 +170,44 @@ fn mock_records() -> Vec<ProvisaRecord> {
 }
 
 #[component]
+fn RecordItem(
+    idx: usize,
+    record: ProvisaRecord,
+    selected_record: Signal<Option<ProvisaRecord>>,
+    show_version_compare: Signal<bool>,
+) -> Element {
+    let title = record.title.clone();
+    let dossier_nr = record.dossier_nr.clone();
+    let source_domain = record.source_domain.clone();
+    let provisa_version_name = record.provisa_version.name();
+    let status_class = record.status.class();
+    let status_display = record.status.display();
+
+    rsx! {
+        div {
+            class: "record-item",
+            key: "{idx}",
+            onclick: move |_| {
+                selected_record.set(Some(record.clone()));
+                show_version_compare.set(false);
+            },
+            div { class: "record-icon", "" }
+            div { class: "record-info",
+                h4 { "{title}" }
+                div { class: "meta",
+                    span { class: "tag", "{dossier_nr}" }
+                    span { " · " }
+                    span { "{source_domain}" }
+                    span { " · " }
+                    span { class: "tag version", "{provisa_version_name}" }
+                }
+            }
+            div { class: "{status_class}", "{status_display}" }
+        }
+    }
+}
+
+#[component]
 pub fn ProvisaManager() -> Element {
     let mut state = use_context::<Signal<AppState>>();
     let mut search_filter = use_signal(|| SearchFilter {
@@ -320,35 +358,13 @@ pub fn ProvisaManager() -> Element {
                                 div { class: "empty-state",
                                     p { "Geen resultaten gevonden." }
                                 }
-                            } else {
-                                // Render record items - simpler approach with closure
-                                {
-                                    let records_for_render = filtered_records.clone();
-                                    records_for_render.iter().take(10).enumerate().map(|(idx, record)| {
-                                        let record = record.clone();
-                                        rsx! {
-                                            div {
-                                                class: "record-item",
-                                                key: "{idx}",
-                                                onclick: move |_| {
-                                                    selected_record.set(Some(record.clone()));
-                                                    show_version_compare.set(false);
-                                                },
-                                                div { class: "record-icon", "" }
-                                                div { class: "record-info",
-                                                    h4 { "{record.title}" }
-                                                    div { class: "meta",
-                                                        span { class: "tag", "{record.dossier_nr}" }
-                                                        span { " · " }
-                                                        span { "{record.source_domain}" }
-                                                        span { " · " }
-                                                        span { class: "tag version", "{record.provisa_version.name()}" }
-                                                    }
-                                                }
-                                                div { class: record.status.class(), "{record.status.display()}" }
-                                            }
-                                        }
-                                    }).collect::<Vec<_>>()
+                            }
+                            for (idx, record) in filtered_records.iter().take(10).enumerate() {
+                                RecordItem {
+                                    idx,
+                                    record: record.clone(),
+                                    selected_record: selected_record.clone(),
+                                    show_version_compare: show_version_compare.clone(),
                                 }
                             }
                         }
