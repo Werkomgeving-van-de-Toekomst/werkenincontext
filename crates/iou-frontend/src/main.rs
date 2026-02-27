@@ -28,6 +28,10 @@ pub enum Route {
     FlevolandArchief,
     #[route("/flevoland/architectuur")]
     FlevolandArchitectuur,
+    #[route("/flevoland/compliance-dashboard")]
+    FlevolandComplianceDashboard,
+    #[route("/flevoland/provisa-beheer")]
+    FlevolandProvisaBeheer,
     #[route("/context/:id")]
     ContextDetail { id: String },
     #[route("/documents/:id")]
@@ -42,10 +46,6 @@ pub enum Route {
     DocumentGenerator,
     #[route("/apps/nalevingscontrole")]
     Nalevingscontrole,
-    #[route("/compliance")]
-    ComplianceDashboard,
-    #[route("/provisa")]
-    ProvisaManager,
     #[route("/minfin")]
     MinFinDashboard,
     #[route("/minfin/begrotingsverkenner")]

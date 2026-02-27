@@ -455,9 +455,23 @@ pub fn FlevolandDashboard() -> Element {
                             div { class: "app-grid",
                                 Link { to: Route::FlevolandProvisa,
                                     AppCard {
+                                        name: "PROVISA Selectielijst".to_string(),
+                                        description: "Bekijk PROVISA 2020 categorie\u{00eb}n".to_string(),
+                                        badge: "Info".to_string(),
+                                    }
+                                }
+                                Link { to: Route::FlevolandProvisaBeheer,
+                                    AppCard {
                                         name: "PROVISA Beheer".to_string(),
-                                        description: "Beheer selectielijsten en bewaartermijnen".to_string(),
-                                        badge: "Compliance".to_string(),
+                                        description: "Beheer dossiers, versies & termijnen".to_string(),
+                                        badge: "Nieuw!".to_string(),
+                                    }
+                                }
+                                Link { to: Route::FlevolandComplianceDashboard,
+                                    AppCard {
+                                        name: "Compliance Dashboard".to_string(),
+                                        description: "Real-time Woo/AVG monitoring".to_string(),
+                                        badge: "Nieuw!".to_string(),
                                     }
                                 }
                                 Link { to: Route::FlevolandHotspots,
@@ -2414,6 +2428,44 @@ pub fn FlevolandArchief() -> Element {
                     }
                 }
             }
+        }
+    }
+}
+
+/// Compliance Dashboard - Flevoland wrapper
+#[component]
+pub fn FlevolandComplianceDashboard() -> Element {
+    use crate::pages::ComplianceDashboard;
+
+    rsx! {
+        div { class: "flevoland",
+            div { class: "context-bar",
+                div { class: "breadcrumb",
+                    Link { to: Route::FlevolandDashboard, span { "Provincie Flevoland" } }
+                    span { " \u{203A} " }
+                    span { class: "current", "Compliance Dashboard" }
+                }
+            }
+            ComplianceDashboard {}
+        }
+    }
+}
+
+/// PROVISA Beheer - Flevoland wrapper
+#[component]
+pub fn FlevolandProvisaBeheer() -> Element {
+    use crate::pages::ProvisaManager;
+
+    rsx! {
+        div { class: "flevoland",
+            div { class: "context-bar",
+                div { class: "breadcrumb",
+                    Link { to: Route::FlevolandDashboard, span { "Provincie Flevoland" } }
+                    span { " \u{203A} " }
+                    span { class: "current", "PROVISA Beheer" }
+                }
+            }
+            ProvisaManager {}
         }
     }
 }
