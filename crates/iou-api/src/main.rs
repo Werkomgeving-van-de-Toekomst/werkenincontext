@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Extension, State},
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Router,
     middleware as axum_middleware,
 };
@@ -97,6 +97,18 @@ async fn main() -> anyhow::Result<()> {
         .route("/workflows/{id}/transition", post(workflows::transition_workflow))
         .route("/workflows/history/{document_id}", get(workflows::get_workflow_history))
         .route("/workflows/actions/pending", get(workflows::get_pending_actions))
+        // Document creation endpoints
+        .route("/documents/create", post(routes::documents_create))
+        .route("/documents/:id/status", get(routes::documents_get_status))
+        .route("/documents/:id/approve", post(routes::documents_approve))
+        .route("/documents/:id/audit", get(routes::documents_audit))
+        .route("/documents/:id/download", get(routes::documents_download))
+        // Template management endpoints
+        .route("/templates", get(routes::list_templates))
+        .route("/templates", post(routes::create_template))
+        .route("/templates/:id", get(routes::get_template))
+        .route("/templates/:id", put(routes::update_template))
+        .route("/templates/:id", delete(routes::delete_template))
         .without_v07_checks();
 
     // Combine API with static file serving
