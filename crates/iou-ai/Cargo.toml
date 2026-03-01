@@ -26,6 +26,10 @@ anyhow.workspace = true
 # Logging
 tracing.workspace = true
 
+# Template engine
+tera = "1.20"
+slug = "0.1"
+
 # Text processing (simpler alternative to rust-bert for now)
 # rust-bert requires libtorch which is heavy
 # We'll use regex-based NER for Dutch government entities

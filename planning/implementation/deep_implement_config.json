@@ -17,7 +17,12 @@
     "section-08-api-layer",
     "section-09-frontend-integration"
   ],
-  "sections_state": {},
+  "sections_state": {
+    "section-01-foundation": {
+      "status": "complete",
+      "commit_hash": "899ca79"
+    }
+  },
   "pre_commit": {
     "present": false,
     "type": "none",

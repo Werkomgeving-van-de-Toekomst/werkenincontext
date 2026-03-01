@@ -25,9 +25,14 @@ pub mod compliance;
 pub mod suggestions;
 pub mod semantic;
 
+pub mod templates;
+pub mod conversion;
+
 pub use ner::DutchNerExtractor;
 pub use graphrag::KnowledgeGraph;
 pub use document_entity::{DocumentEntity, DocumentSection, DocumentEntityMetadata, DocumentSchema};
 pub use compliance::ComplianceAssessor;
 pub use suggestions::MetadataSuggester;
 pub use semantic::{SemanticSearchService, cosine_similarity};
+pub use templates::TemplateEngine;
+pub use conversion::{markdown_to_odf, markdown_to_pdf, OutputFormat};

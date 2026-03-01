@@ -33,4 +33,5 @@ pub use document::{
     DocumentId, DocumentState, TrustLevel, DomainConfig,
     DocumentRequest, DocumentMetadata, AgentResult, AuditEntry,
     StorageRef, DocumentVersion, DocumentFormat,
+    Template, TemplateVariable, VariableSource, RenderedDocument,
 };
