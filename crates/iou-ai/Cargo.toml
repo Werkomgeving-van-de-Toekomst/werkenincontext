@@ -7,6 +7,7 @@ description = "AI/ML services for IOU-Modern: NER, GraphRAG, embeddings"
 [dependencies]
 # Internal
 iou-core.workspace = true
+iou-storage.workspace = true
 
 # Graph algorithms
 petgraph = "0.6"

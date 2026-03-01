@@ -8,6 +8,14 @@ pub mod research;
 pub mod content;
 pub mod compliance;
 pub mod review;
+pub mod error;
+pub mod pipeline;
+
+pub use error::{PipelineError, ErrorSeverity};
+pub use pipeline::{
+    AgentPipeline, AgentPipelineWithConfig, PipelineConfig,
+    AgentExecutionResult, PipelineCheckpoint, PipelineResult,
+};
 
 use thiserror::Error;
 

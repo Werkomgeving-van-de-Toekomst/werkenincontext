@@ -43,4 +43,8 @@ pub use agents::{
     ResearchContext, ResearchAgentConfig, execute_research_agent,
     GeneratedDocument, ContentAgentConfig, execute_content_agent,
     ComplianceResult, ComplianceConfig, execute_compliance_agent,
+    ReviewDecision, ReviewAction, ReviewConfig, execute_review_agent,
+    QualityIssue, QualityIssueCategory,
+    PipelineError, ErrorSeverity, AgentPipeline, PipelineConfig,
+    AgentExecutionResult, PipelineCheckpoint, PipelineResult,
 };
