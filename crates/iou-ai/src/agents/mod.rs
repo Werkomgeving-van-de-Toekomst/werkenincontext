@@ -7,6 +7,7 @@ pub mod config;
 pub mod research;
 pub mod content;
 pub mod compliance;
+pub mod review;
 
 use thiserror::Error;
 
@@ -39,6 +40,9 @@ pub enum AgentError {
 
     #[error("Compliance check failed: {0}")]
     ComplianceError(String),
+
+    #[error("Review check failed: {0}")]
+    ReviewError(String),
 }
 
 // Re-export agent types
@@ -47,5 +51,9 @@ pub use content::{GeneratedDocument, execute_content_agent, ContentAgentConfig, 
 pub use compliance::{
     ComplianceResult, execute_compliance_agent, ComplianceConfig,
     PiiLocation, PiiType, AccessibilityIssue, AccessibilityLevel
+};
+pub use review::{
+    ReviewDecision, ReviewAction, execute_review_agent, ReviewConfig,
+    QualityIssue, QualityIssueCategory,
 };
 pub use config::{AgentConfig, ResearchAgentConfig};
