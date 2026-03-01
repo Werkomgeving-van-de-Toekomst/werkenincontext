@@ -42,4 +42,5 @@ pub use agents::{
     AgentError,
     ResearchContext, ResearchAgentConfig, execute_research_agent,
     GeneratedDocument, ContentAgentConfig, execute_content_agent,
+    ComplianceResult, ComplianceConfig, execute_compliance_agent,
 };

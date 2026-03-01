@@ -778,3 +778,81 @@ The Compliance Agent produces a `ComplianceResult` that is consumed by:
 - The Review Agent (for quality checks)
 - The Pipeline (for audit trail logging)
 - The API (for status reporting)
+
+---
+
+## Implementation Notes
+
+### What Was Actually Built
+
+**File Created:**
+- `/Users/marc/Projecten/iou-modern/crates/iou-ai/src/agents/compliance.rs` (~950 lines)
+
+**Files Modified:**
+- `/Users/marc/Projecten/iou-modern/crates/iou-ai/Cargo.toml` - Added `strum` dependency
+- `/Users/marc/Projecten/iou-modern/crates/iou-ai/src/agents/mod.rs` - Added `pub mod compliance;`
+- `/Users/marc/Projecten/iou-modern/crates/iou-ai/src/lib.rs` - Re-exported compliance types
+
+**Tests Implemented:** 19 compliance agent tests
+- `test_compliance_config_default`
+- `test_pii_type_redaction_labels`
+- `test_validate_bsn_11_proef_valid`
+- `test_validate_bsn_11_proef_invalid`
+- `test_is_valid_dutch_postcode`
+- `test_detect_bsn_finds_valid_bsn`
+- `test_detect_iban_finds_dutch_iban`
+- `test_detect_email_finds_personal_emails` (updated from plan)
+- `test_detect_phone_finds_dutch_formats`
+- `test_detect_address_finds_postal_codes`
+- `test_pii_redaction_is_irreversible`
+- `test_check_heading_hierarchy_detects_multiple_h1`
+- `test_check_heading_hierarchy_detects_no_h1`
+- `test_check_heading_hierarchy_valid_hierarchy`
+- `test_execute_compliance_agent_detects_pii`
+- `test_execute_compliance_agent_validates_woo`
+- `test_execute_compliance_agent_checks_wcag`
+- `test_execute_compliance_agent_calculates_score`
+- `test_execute_compliance_agent_score_below_threshold_with_pii`
+
+### Deviations from Plan
+
+1. **Email Detection - Security Fix During Code Review**
+   - Plan: Detect all email addresses as PII
+   - Implementation: Initially matched all `.nl` and `.org` emails
+   - Fix Applied: Smart detection that skips generic/role-based emails (info@, contact@, etc.) and only flags personal emails (those with dots, underscores, or hyphens in the local part)
+   - Rationale: Prevents false positives for public government contact addresses
+
+2. **Storage Implementation - Placeholder with TODOs**
+   - Plan: Full S3 integration with RBAC and audit trail
+   - Implementation: Placeholder functions with comprehensive TODO documentation
+   - Rationale: Storage architecture requires integration with pipeline section; detailed TODO comments guide future implementation
+
+3. **ComplianceConfig Fields**
+   - Changed `original_bucket` and `redacted_bucket` to `Option<String>` to allow optional storage
+   - Added `enable_secure_storage: bool` flag
+   - Rationale: Allows storage to be disabled during development/testing
+
+4. **AccessibilityIssue Field**
+   - Changed `location` to `line_number` (was `location` in plan)
+   - Rationale: More descriptive name; both are `Option<usize>`
+
+5. **Removed Duplicate Dependency**
+   - Plan mentioned using `iou_core::compliance` types extensively
+   - Implementation only uses `WooRefusalGround`, `ComplianceIssue`, `IssueSeverity`
+   - Rationale: Other types like `WooMetadata`, `AvgMetadata` are not directly used by the agent
+
+### Code Review Fixes Applied
+
+1. **Email Over-Matching Fix** (Security)
+   - Removed `.nl` and `.org` blanket checks
+   - Added smart detection based on personal indicators in email local part
+
+2. **Storage Architecture Implementation**
+   - Added `original_storage_key` and `redacted_storage_key` to `ComplianceResult`
+   - Added storage configuration fields to `ComplianceConfig`
+   - Implemented `store_original_document()` with TODO for S3, RBAC, audit trail
+   - Implemented `store_redacted_document()` with TODO for version control, publication status
+
+### All Tests Passing
+
+Total: 80 tests in `iou-ai` crate (18 research + 13 content + 19 compliance + 30 other)
