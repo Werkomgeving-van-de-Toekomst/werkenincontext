@@ -6,6 +6,7 @@ members = [
     "crates/iou-ai",
     "crates/iou-regels",
     "crates/iou-frontend",
+    "crates/iou-storage",
 ]
 
 [workspace.package]
@@ -50,6 +51,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 iou-core = { path = "crates/iou-core" }
 iou-ai = { path = "crates/iou-ai" }
 iou-regels = { path = "crates/iou-regels" }
+iou-storage = { path = "crates/iou-storage" }
 
 [profile.release]
 lto = true

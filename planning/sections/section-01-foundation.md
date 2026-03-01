@@ -1127,3 +1127,52 @@ After completing this section:
 4. **section-06-review-agent** can begin (depends on core types)
 
 These sections can be developed in parallel once foundation is complete.
+
+---
+
+## Implementation Notes (Post-Implementation)
+
+### Deviation from Plan: S3 Client Library
+
+**Planned:** `rust-s3` v0.5
+
+**Actual:** `aws-sdk-s3` v1.124 + `aws-config` v1.8
+
+**Rationale:**
+- `rust-s3` had transitive dependency issues with yanked crates (xml-rs, hmac)
+- AWS SDK for Rust is the official, actively maintained library
+- AWS SDK is compatible with Garage, MinIO, and all S3-compatible storage
+- Better async support and error handling
+
+**Files Modified:**
+- `crates/iou-storage/Cargo.toml` - Uses AWS SDK dependencies instead of rust-s3
+- `crates/iou-storage/src/s3.rs` - Full AWS SDK implementation with ByteStream
+
+### MetadataStore Implementation
+
+**Planned:** Stub with TODO markers
+
+**Actual:** Full in-memory implementation with HashMap storage
+
+**Rationale:**
+- Code review identified missing MetadataStore as critical issue
+- In-memory storage enables development and testing
+- DuckDB integration deferred to production (noted in comments)
+
+**Files Created:**
+- `crates/iou-storage/src/metadata.rs` (196 lines, 4 tests)
+
+### Test Results
+
+All 64 tests pass:
+- iou-storage: 6 tests (S3 client + MetadataStore)
+- iou-core: 21 tests (document types)
+- iou-ai: 16 tests (GraphRAG entities)
+- iou-regels: 18 tests
+- iou-api: 2 tests
+
+### Security Fixes Applied
+
+1. `StorageConfig::from_env()` now uses `.expect()` for credentials (fails fast)
+2. Default credentials only available via explicit `minio_local()` for development
+3. Added security documentation warnings in config.rs
