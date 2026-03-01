@@ -21,6 +21,30 @@
     "section-01-foundation": {
       "status": "complete",
       "commit_hash": "899ca79"
+    },
+    "section-02-template-system": {
+      "status": "complete",
+      "commit_hash": "e9d5374"
+    },
+    "section-03-research-agent": {
+      "status": "complete",
+      "commit_hash": "670fec3"
+    },
+    "section-04-content-agent": {
+      "status": "complete",
+      "commit_hash": "299dcee"
+    },
+    "section-05-compliance-agent": {
+      "status": "complete",
+      "commit_hash": "45536f1"
+    },
+    "section-06-review-agent": {
+      "status": "complete",
+      "commit_hash": "9262ce6"
+    },
+    "section-07-pipeline-orchestration": {
+      "status": "complete",
+      "commit_hash": "eab61d5"
     }
   },
   "pre_commit": {
