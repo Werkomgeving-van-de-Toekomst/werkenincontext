@@ -8,10 +8,33 @@ Let me extract the relevant tests from claude-plan-tdd.md and implementation det
 
 The Research Agent is the first agent in the document creation pipeline. Its purpose is to analyze the document request, query the knowledge graph (GraphRAG) for similar documents and context, determine the appropriate document structure, and identify mandatory versus optional sections.
 
+**Status:** ✅ Implemented
+
 **Dependencies:**
 - section-01-foundation (core domain types, storage client, GraphRAG Document entity)
 
 **Blocks:** section-04-content-agent (depends on ResearchContext output)
+
+## Implementation Notes
+
+### Files Created
+- `crates/iou-ai/src/agents/mod.rs` - Agent module with AgentError enum
+- `crates/iou-ai/src/agents/config.rs` - Agent configuration with validation
+- `crates/iou-ai/src/agents/research.rs` - Research Agent implementation
+
+### Changes from Plan
+1. **EntityReference.entity_id**: Changed from `Uuid` to `String` for flexibility with external knowledge graphs
+2. **GraphRAG Integration**: Currently stubbed with TODO comments; full semantic similarity search will be implemented in later sections when embedding infrastructure is available
+3. **Config Validation**: Added `validate()` method to `ResearchAgentConfig` for threshold bounds checking
+
+### Test Coverage
+18 tests covering:
+- Config validation (threshold bounds, max documents)
+- Structure pattern extraction
+- Entity reference resolution
+- Default document structures
+- Empty GraphRAG result handling
+- Required field validation
 
 ## Tests
 
