@@ -8,7 +8,7 @@ use crate::agents::config::ResearchAgentConfig;
 use crate::agents::AgentError;
 use crate::graphrag::KnowledgeGraph;
 use chrono::{DateTime, Utc};
-use iou_core::document::{DomainConfig, DocumentRequest};
+use iou_core::document::{DomainConfig, DocumentRequest, VariableSource};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;  // Still used for DocumentRequest
@@ -27,6 +27,9 @@ pub struct ResearchContext {
 
     /// Optional sections that may be included
     pub optional_sections: Vec<String>,
+
+    /// Suggested optional sections that should be included for this document
+    pub suggested_sections: Vec<String>,
 
     /// Similar documents found in GraphRAG
     pub similar_documents: Vec<SimilarDocument>,
@@ -88,15 +91,6 @@ pub struct TemplateVariableSuggestion {
     pub suggested_value: Option<String>,
     pub source: VariableSource,
     pub is_required: bool,
-}
-
-/// Source of a template variable value
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum VariableSource {
-    UserInput,
-    KnowledgeGraph,
-    AgentGenerated,
-    Default,
 }
 
 /// Result from a GraphRAG query for similar documents
@@ -165,11 +159,15 @@ pub async fn execute_research_agent_with_config(
         &domain_context,
     );
 
+    // Suggest optional sections to include (for now, suggest all optional sections)
+    let suggested_sections = optional_sections.clone();
+
     Ok(ResearchContext {
         document_type: request.document_type.clone(),
         domain_context,
         mandatory_sections,
         optional_sections,
+        suggested_sections,
         similar_documents: similar_result.documents,
         related_entities,
         provisa_guidelines,

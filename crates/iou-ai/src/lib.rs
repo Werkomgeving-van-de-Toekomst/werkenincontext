@@ -38,4 +38,8 @@ pub use suggestions::MetadataSuggester;
 pub use semantic::{SemanticSearchService, cosine_similarity};
 pub use templates::TemplateEngine;
 pub use conversion::{markdown_to_odf, markdown_to_pdf, OutputFormat};
-pub use agents::{AgentError, ResearchContext, ResearchAgentConfig, execute_research_agent};
+pub use agents::{
+    AgentError,
+    ResearchContext, ResearchAgentConfig, execute_research_agent,
+    GeneratedDocument, ContentAgentConfig, execute_content_agent,
+};

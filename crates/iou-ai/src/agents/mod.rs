@@ -5,6 +5,7 @@
 
 pub mod config;
 pub mod research;
+pub mod content;
 
 use thiserror::Error;
 
@@ -41,4 +42,5 @@ pub enum AgentError {
 
 // Re-export agent types
 pub use research::{ResearchContext, execute_research_agent};
+pub use content::{GeneratedDocument, execute_content_agent, ContentAgentConfig, EntityLink, SectionMetadata};
 pub use config::{AgentConfig, ResearchAgentConfig};
