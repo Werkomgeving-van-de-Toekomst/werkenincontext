@@ -45,6 +45,14 @@
     "section-07-pipeline-orchestration": {
       "status": "complete",
       "commit_hash": "eab61d5"
+    },
+    "section-08-api-layer": {
+      "status": "complete",
+      "commit_hash": "45789ac"
+    },
+    "section-09-frontend-integration": {
+      "status": "complete",
+      "commit_hash": "446e410"
     }
   },
   "pre_commit": {
