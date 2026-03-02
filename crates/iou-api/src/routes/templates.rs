@@ -79,14 +79,28 @@ pub struct UpdateTemplateRequest {
 
 /// GET /api/templates?domain_id={id}
 pub async fn list_templates(
-    Extension(_db): Extension<Arc<Database>>,
-    Query(_params): Query<ListTemplatesParams>,
+    Extension(db): Extension<Arc<Database>>,
+    Query(params): Query<ListTemplatesParams>,
 ) -> Result<Json<TemplateListResponse>, ApiError> {
-    // TODO: Query templates from database
-    // For now, return empty list
-    let templates: Vec<TemplateDto> = vec![];
+    let templates = db.list_templates_async(params.domain_id).await?;
 
-    Ok(Json(TemplateListResponse { templates }))
+    let template_dtos: Vec<TemplateDto> = templates
+        .into_iter()
+        .map(|t| TemplateDto {
+            id: t.id,
+            name: t.name,
+            domain_id: t.domain_id,
+            document_type: t.document_type,
+            version: t.version,
+            is_active: t.is_active,
+            created_at: t.created_at,
+            updated_at: t.updated_at,
+        })
+        .collect();
+
+    Ok(Json(TemplateListResponse {
+        templates: template_dtos,
+    }))
 }
 
 /// GET /api/templates/{id}

@@ -1149,6 +1149,65 @@ impl Database {
         }
     }
 
+    /// List all templates, optionally filtered by domain_id
+    pub fn list_templates(&self, domain_id: Option<&str>) -> anyhow::Result<Vec<iou_core::document::Template>> {
+        let conn = self.conn.lock().unwrap();
+        let mut templates = Vec::new();
+
+        let sql = if domain_id.is_some() {
+            r#"
+            SELECT id, name, domain_id, document_type, content,
+                   required_variables, optional_sections, version,
+                   created_at, updated_at, is_active
+            FROM templates
+            WHERE domain_id = ?
+            ORDER BY name
+            "#
+        } else {
+            r#"
+            SELECT id, name, domain_id, document_type, content,
+                   required_variables, optional_sections, version,
+                   created_at, updated_at, is_active
+            FROM templates
+            ORDER BY domain_id, name
+            "#
+        };
+
+        let mut stmt = conn.prepare(sql)?;
+
+        let mut rows = if let Some(domain) = domain_id {
+            stmt.query(params![domain])?
+        } else {
+            stmt.query(params![])?
+        };
+
+        while let Some(row) = rows.next()? {
+            templates.push(iou_core::document::Template {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                domain_id: row.get(2)?,
+                document_type: row.get(3)?,
+                content: row.get(4)?,
+                required_variables: serde_json::from_str(&row.get::<_, String>(5)?).unwrap_or_default(),
+                optional_sections: serde_json::from_str(&row.get::<_, String>(6)?).unwrap_or_default(),
+                version: row.get(7)?,
+                created_at: parse_datetime(&row.get::<_, String>(8)?),
+                updated_at: parse_datetime(&row.get::<_, String>(9)?),
+                is_active: row.get(10)?,
+            });
+        }
+
+        Ok(templates)
+    }
+
+    /// Async wrapper for list_templates
+    pub async fn list_templates_async(&self, domain_id: Option<String>) -> anyhow::Result<Vec<iou_core::document::Template>> {
+        let db = self.clone();
+        let domain = domain_id.map(|s| s.to_string());
+        tokio::task::spawn_blocking(move || db.list_templates(domain.as_deref()))
+            .await?
+    }
+
     /// Create template
     pub fn create_template(&self, template: &iou_core::document::Template) -> anyhow::Result<()> {
         let conn = self.conn.lock().unwrap();
