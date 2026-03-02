@@ -80,6 +80,12 @@ pub enum Route {
     ZHProjectPortfolio,
     #[route("/zuidholland/kennisnetwerk")]
     ZHKennisnetwerk,
+    #[route("/documenten/maken")]
+    DocumentCreator,
+    #[route("/documenten/wachtrij")]
+    ApprovalQueue,
+    #[route("/templates")]
+    TemplateManager,
 }
 
 fn main() {

@@ -7,6 +7,8 @@ use serde::de::DeserializeOwned;
 use iou_core::api_types::{ContextResponse, SearchResponse};
 use iou_core::domain::InformationDomain;
 
+pub mod documents;
+
 const API_BASE: &str = "http://localhost:8000";
 
 /// Fetch context for a domain

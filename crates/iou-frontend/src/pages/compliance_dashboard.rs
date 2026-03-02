@@ -388,6 +388,28 @@ pub fn ComplianceDashboard() -> Element {
                 p { "Real-time monitoring van Woo, AVG en Archiefwet compliance" }
             }
 
+            // Quick navigation cards for document management
+            div { class: "quick-nav",
+                a { class: "nav-card",
+                    href: "/documenten/maken",
+                    div { class: "nav-icon", "📄" }
+                    h3 { "Document Maken" }
+                    p { "Genereer Woo-compliant documenten met AI" }
+                }
+                a { class: "nav-card",
+                    href: "/documenten/wachtrij",
+                    div { class: "nav-icon", "✓" }
+                    h3 { "Goedkeuring" }
+                    p { "Beheer document goedkeuring wachtrij" }
+                }
+                a { class: "nav-card",
+                    href: "/templates",
+                    div { class: "nav-icon", "📋" }
+                    h3 { "Templates" }
+                    p { "Beheer document templates" }
+                }
+            }
+
             // Period Selector
             div { class: "period-selector",
                 button {
