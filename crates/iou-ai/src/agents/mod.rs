@@ -18,6 +18,7 @@ pub use pipeline::{
 };
 
 use thiserror::Error;
+use crate::llm::LlmError;
 
 /// Common error type for all agents
 #[derive(Debug, Error)]
@@ -51,6 +52,12 @@ pub enum AgentError {
 
     #[error("Review check failed: {0}")]
     ReviewError(String),
+}
+
+impl From<LlmError> for AgentError {
+    fn from(err: LlmError) -> Self {
+        AgentError::AiProviderError(err.to_string())
+    }
 }
 
 // Re-export agent types

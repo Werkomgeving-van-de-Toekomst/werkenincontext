@@ -35,6 +35,12 @@ slug = "0.1"
 # Async runtime
 tokio = { workspace = true, features = ["test-util"] }
 
+# Async trait
+async-trait = "0.1"
+
+# HTTP client for LLM APIs
+reqwest = { version = "0.12", features = ["json"] }
+
 # Text processing (simpler alternative to rust-bert for now)
 # rust-bert requires libtorch which is heavy
 # We'll use regex-based NER for Dutch government entities

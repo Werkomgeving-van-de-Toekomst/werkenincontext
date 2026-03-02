@@ -29,6 +29,7 @@ pub mod templates;
 pub mod conversion;
 
 pub mod agents;
+pub mod llm;
 
 pub use ner::DutchNerExtractor;
 pub use graphrag::KnowledgeGraph;
@@ -48,3 +49,4 @@ pub use agents::{
     PipelineError, ErrorSeverity, AgentPipeline, PipelineConfig,
     AgentExecutionResult, PipelineCheckpoint, PipelineResult,
 };
+pub use llm::{LlmConfig, LlmProvider, LlmBackend, LlmError, ChatMessage, create_provider};

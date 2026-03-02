@@ -8,6 +8,7 @@ use crate::agents::research::ResearchContext;
 use crate::agents::AgentError;
 use crate::templates::TemplateEngine;
 use crate::graphrag::KnowledgeGraph;
+use crate::llm::{LlmConfig, create_provider};
 use chrono::{DateTime, Utc};
 use iou_core::document::{DocumentRequest, Template, TemplateVariable, VariableSource};
 use serde::{Deserialize, Serialize};
@@ -82,6 +83,10 @@ pub struct ContentAgentConfig {
 
     /// Whether to use AI for content generation
     pub enable_ai_generation: bool,
+
+    /// LLM configuration (optional - if not set, will try to load from env)
+    #[serde(skip)]
+    pub llm_config: Option<LlmConfig>,
 }
 
 impl Default for ContentAgentConfig {
@@ -91,6 +96,7 @@ impl Default for ContentAgentConfig {
             enable_entity_linking: true,
             default_language: "nl".to_string(),
             enable_ai_generation: false,  // Disabled by default until AI provider is configured
+            llm_config: None,
         }
     }
 }
@@ -268,12 +274,12 @@ fn add_conditional_sections(
 
 /// Generate AI-powered content sections
 ///
-/// TODO: This is a stub. Actual AI generation will be implemented
-/// when the AI provider infrastructure is available.
+/// This function uses an LLM to generate content for missing sections
+/// based on the research context and template structure.
 async fn generate_ai_sections(
     context: &mut HashMap<String, String>,
     research: &ResearchContext,
-    _config: &ContentAgentConfig,
+    config: &ContentAgentConfig,
 ) -> Result<(), AgentError> {
     // Generate standard sections like summary, background, etc.
     let sections_to_generate = vec![
@@ -282,20 +288,100 @@ async fn generate_ai_sections(
         ("conclusion", "Conclusie"),
     ];
 
+    // Try to get or create LLM provider
+    let llm_provider = if let Some(llm_config) = &config.llm_config {
+        create_provider(llm_config)?
+    } else {
+        // Try to load from environment
+        let llm_config = LlmConfig::from_env()
+            .map_err(|e| AgentError::AiProviderError(format!("Failed to load LLM config: {}", e)))?;
+        create_provider(&llm_config)?
+    };
+
     for (section_key, section_name) in sections_to_generate {
         if !context.contains_key(section_key) {
-            // Generate placeholder content
-            let content = format!(
-                "[{}] Tekst voor {} document in domein {}.",
-                section_name,
-                research.document_type,
-                research.domain_context.domain_id
-            );
-            context.insert(section_key.to_string(), content);
+            // Generate content using LLM
+            let prompt = build_section_prompt(section_name, research, context, &config.default_language);
+
+            match llm_provider.generate(&prompt).await {
+                Ok(content) => {
+                    context.insert(section_key.to_string(), content);
+                }
+                Err(e) => {
+                    // Fall back to placeholder if LLM fails
+                    let fallback = format!(
+                        "[{}] Tekst voor {} document in domein {}.",
+                        section_name,
+                        research.document_type,
+                        research.domain_context.domain_id
+                    );
+                    tracing::warn!("LLM generation failed for {}: {}, using placeholder", section_key, e);
+                    context.insert(section_key.to_string(), fallback);
+                }
+            }
         }
     }
 
     Ok(())
+}
+
+/// Build a prompt for LLM-based section generation
+fn build_section_prompt(
+    section_name: &str,
+    research: &ResearchContext,
+    context: &HashMap<String, String>,
+    language: &str,
+) -> String {
+    let language_instruction = match language {
+        "nl" => "Schrijf in het Nederlands.",
+        "en" => "Write in English.",
+        _ => "",
+    };
+
+    let domain_info = format!(
+        "Domein: {} ({})\nOrganisatie: {}",
+        research.domain_context.domain_id,
+        research.domain_context.domain_name,
+        research.domain_context.organizational_unit.as_deref().unwrap_or("Onbekend")
+    );
+
+    let regulations = if !research.domain_context.applicable_regulations.is_empty() {
+        format!("\nToepasselijke wet- en regelgeving: {}", research.domain_context.applicable_regulations.join(", "))
+    } else {
+        String::new()
+    };
+
+    let context_vars = context.iter()
+        .map(|(k, v)| format!("{}: {}", k, v))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    format!(
+        r#"Je bent een professionele tekstschrijver voor de Nederlandse overheid. {}
+Genereer een professionele "{}" sectie voor een {} document.
+
+{}
+
+{} {}
+
+Context:
+{}
+
+De tekst moet:
+- Professioneel en formeel zijn
+- Voldoen aan overheidsstandaarden
+- Succinct en duidelijk zijn
+- Direct bruikbaar zijn in een document (geen extra toelichting)
+
+Genereer alleen de tekst voor de sectie, zonder headers."#,
+        language_instruction,
+        section_name,
+        research.document_type,
+        domain_info,
+        regulations,
+        context_vars,
+        context_vars
+    )
 }
 
 /// Extract metadata about document sections

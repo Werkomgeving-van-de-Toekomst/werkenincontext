@@ -792,7 +792,7 @@ fn calculate_compliance_score(result: &ComplianceResult) -> f32 {
 ///
 /// # Security Architecture
 ///
-/// ```
+/// ```text
 /// Original Document Bucket (Restricted Access):
 /// - IAM policies restrict access to authorized roles
 /// - All access logged to audit trail
