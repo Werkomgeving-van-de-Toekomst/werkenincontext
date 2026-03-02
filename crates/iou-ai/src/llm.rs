@@ -1,6 +1,6 @@
 //! LLM Provider Abstraction
 //!
-//! Supports multiple LLM backends for content generation.
+//! Supports Mistral AI for content generation.
 
 use async_trait::async_trait;
 use reqwest::Client;
@@ -32,9 +32,6 @@ pub type Result<T> = std::result::Result<T, LlmError>;
 /// Configuration for LLM provider
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LlmConfig {
-    /// Provider to use
-    pub provider: LlmProvider,
-
     /// API key (can be loaded from environment)
     #[serde(skip_serializing)]
     pub api_key: Option<String>,
@@ -55,26 +52,18 @@ pub struct LlmConfig {
 impl LlmConfig {
     /// Create config from environment variables
     pub fn from_env() -> Result<Self> {
-        let provider = std::env::var("LLM_PROVIDER")
-            .unwrap_or_else(|_| "anthropic".to_string());
-
         let model = std::env::var("LLM_MODEL")
-            .unwrap_or_else(|_| "claude-3-haiku-20240307".to_string());
+            .unwrap_or_else(|_| "mistral-small-latest".to_string());
 
         let api_key = std::env::var("LLM_API_KEY").ok();
 
-        let base_url = match provider.as_str() {
-            "anthropic" => Some("https://api.anthropic.com".to_string()),
-            "openai" => Some("https://api.openai.com/v1".to_string()),
-            "custom" => std::env::var("LLM_BASE_URL").ok(),
-            _ => None,
-        };
+        let base_url = std::env::var("LLM_BASE_URL")
+            .unwrap_or_else(|_| "https://api.mistral.ai".to_string());
 
         Ok(Self {
-            provider: provider.parse()?,
             api_key,
             model,
-            base_url,
+            base_url: Some(base_url),
             max_tokens: 4096,
             temperature: 0.7,
         })
@@ -91,27 +80,6 @@ impl LlmConfig {
             .clone()
             .or_else(|| std::env::var("LLM_API_KEY").ok())
             .ok_or(LlmError::NoApiKey)
-    }
-}
-
-/// LLM Provider type
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum LlmProvider {
-    Anthropic,
-    OpenAI,
-    Custom(String),
-}
-
-impl std::str::FromStr for LlmProvider {
-    type Err = LlmError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "anthropic" => Ok(LlmProvider::Anthropic),
-            "openai" => Ok(LlmProvider::OpenAI),
-            other => Ok(LlmProvider::Custom(other.to_string())),
-        }
     }
 }
 
@@ -135,13 +103,13 @@ pub struct ChatMessage {
     pub content: String,
 }
 
-/// Anthropic Claude provider
-pub struct AnthropicProvider {
+/// Mistral AI provider
+pub struct MistralProvider {
     client: Client,
     config: LlmConfig,
 }
 
-impl AnthropicProvider {
+impl MistralProvider {
     pub fn new(config: LlmConfig) -> Result<Self> {
         Ok(Self {
             client: Client::new(),
@@ -151,95 +119,15 @@ impl AnthropicProvider {
 }
 
 #[async_trait]
-impl LlmBackend for AnthropicProvider {
+impl LlmBackend for MistralProvider {
     async fn generate(&self, prompt: &str) -> Result<String> {
         let api_key = self.config.get_api_key()?;
+        let base_url = self.config.base_url.as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or("https://api.mistral.ai");
 
         let response = self.client
-            .post(format!("{}/v1/messages", self.config.base_url.as_ref().unwrap()))
-            .header("x-api-key", api_key)
-            .header("anthropic-version", "2023-06-01")
-            .json(&json!({
-                "model": self.config.model,
-                "max_tokens": self.config.max_tokens,
-                "temperature": self.config.temperature,
-                "messages": [{
-                    "role": "user",
-                    "content": prompt
-                }]
-            }))
-            .send()
-            .await?;
-
-        if response.status().is_success() {
-            let json: serde_json::Value = response.json().await?;
-            Ok(json["content"][0]["text"]
-                .as_str()
-                .ok_or_else(|| LlmError::InvalidResponse("Missing content".to_string()))?
-                .to_string())
-        } else {
-            let status = response.status().as_u16();
-            let text = response.text().await.unwrap_or_default();
-            Err(LlmError::ApiError(format!("HTTP {}: {}", status, text)))
-        }
-    }
-
-    async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
-        let api_key = self.config.get_api_key()?;
-
-        let response = self.client
-            .post(format!("{}/v1/messages", self.config.base_url.as_ref().unwrap()))
-            .header("x-api-key", api_key)
-            .header("anthropic-version", "2023-06-01")
-            .json(&json!({
-                "model": self.config.model,
-                "max_tokens": self.config.max_tokens,
-                "temperature": self.config.temperature,
-                "messages": messages
-            }))
-            .send()
-            .await?;
-
-        if response.status().is_success() {
-            let json: serde_json::Value = response.json().await?;
-            Ok(json["content"][0]["text"]
-                .as_str()
-                .ok_or_else(|| LlmError::InvalidResponse("Missing content".to_string()))?
-                .to_string())
-        } else {
-            let status = response.status().as_u16();
-            let text = response.text().await.unwrap_or_default();
-            Err(LlmError::ApiError(format!("HTTP {}: {}", status, text)))
-        }
-    }
-
-    fn is_configured(&self) -> bool {
-        self.config.has_api_key()
-    }
-}
-
-/// OpenAI provider
-pub struct OpenAiProvider {
-    client: Client,
-    config: LlmConfig,
-}
-
-impl OpenAiProvider {
-    pub fn new(config: LlmConfig) -> Result<Self> {
-        Ok(Self {
-            client: Client::new(),
-            config,
-        })
-    }
-}
-
-#[async_trait]
-impl LlmBackend for OpenAiProvider {
-    async fn generate(&self, prompt: &str) -> Result<String> {
-        let api_key = self.config.get_api_key()?;
-
-        let response = self.client
-            .post(format!("{}/chat/completions", self.config.base_url.as_ref().unwrap()))
+            .post(format!("{}/v1/chat/completions", base_url))
             .header("Authorization", format!("Bearer {}", api_key))
             .json(&json!({
                 "model": self.config.model,
@@ -268,9 +156,12 @@ impl LlmBackend for OpenAiProvider {
 
     async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
         let api_key = self.config.get_api_key()?;
+        let base_url = self.config.base_url.as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or("https://api.mistral.ai");
 
         let response = self.client
-            .post(format!("{}/chat/completions", self.config.base_url.as_ref().unwrap()))
+            .post(format!("{}/v1/chat/completions", base_url))
             .header("Authorization", format!("Bearer {}", api_key))
             .json(&json!({
                 "model": self.config.model,
@@ -319,14 +210,13 @@ impl LlmBackend for MockProvider {
     }
 }
 
-/// Create LLM provider from config
+/// Create Mistral provider from config
 pub fn create_provider(config: &LlmConfig) -> Result<Box<dyn LlmBackend>> {
-    match config.provider {
-        LlmProvider::Anthropic => Ok(Box::new(AnthropicProvider::new(config.clone())?)),
-        LlmProvider::OpenAI => Ok(Box::new(OpenAiProvider::new(config.clone())?)),
-        LlmProvider::Custom(ref name) => {
-            // For custom providers, you'd need to implement them
-            Err(LlmError::ApiError(format!("Unknown provider: {}", name)))
-        }
-    }
+    Ok(Box::new(MistralProvider::new(config.clone())?))
+}
+
+/// Create Mistral provider from environment
+pub fn create_provider_from_env() -> Result<Box<dyn LlmBackend>> {
+    let config = LlmConfig::from_env()?;
+    create_provider(&config)
 }

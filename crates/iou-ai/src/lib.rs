@@ -49,4 +49,4 @@ pub use agents::{
     PipelineError, ErrorSeverity, AgentPipeline, PipelineConfig,
     AgentExecutionResult, PipelineCheckpoint, PipelineResult,
 };
-pub use llm::{LlmConfig, LlmProvider, LlmBackend, LlmError, ChatMessage, create_provider};
+pub use llm::{LlmConfig, LlmBackend, LlmError, ChatMessage, MistralProvider, MockProvider, create_provider, create_provider_from_env};
