@@ -25,6 +25,10 @@
     "section-02-config-structures": {
       "status": "complete",
       "commit_hash": "a22f3d6"
+    },
+    "section-03-terrain-encoding": {
+      "status": "complete",
+      "commit_hash": "69c12e0"
     }
   },
   "pre_commit": {
