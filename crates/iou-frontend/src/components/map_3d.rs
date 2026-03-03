@@ -568,6 +568,19 @@ fn is_valid_container_id(id: &str) -> bool {
         .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
 }
 
+/// Validates that a color string is a valid hex color.
+///
+/// Accepts formats like "#ff0000" or "#FF0000".
+fn is_valid_hex_color(color: &str) -> bool {
+    if color.len() != 7 {
+        return false;
+    }
+    if !color.starts_with('#') {
+        return false;
+    }
+    color[1..].chars().all(|c| c.is_ascii_hexdigit())
+}
+
 /// Builds the JavaScript to add terrain source to the map.
 ///
 /// This function:
@@ -781,6 +794,183 @@ pub fn TerrainWarning(message: String) -> Element {
             }
         }
     }
+}
+
+// ============================================================================
+// GeoJSON Layer Management Functions
+// ============================================================================
+
+use crate::components::layer_control_3d::{GeoJsonLayer, LayerType};
+
+/// Generates JavaScript to add a GeoJSON layer to the map.
+///
+/// This function generates JavaScript that:
+/// 1. Checks if the map instance exists
+/// 2. Adds a GeoJSON source if it doesn't exist
+/// 3. Adds a layer with appropriate styling based on geometry type
+///
+/// # Arguments
+///
+/// * `container_id` - The map container ID
+/// * `layer` - The GeoJSON layer configuration
+///
+/// # Returns
+///
+/// A JavaScript string that can be executed via eval()
+pub fn build_add_geojson_layer_script(container_id: &str, layer: &GeoJsonLayer) -> String {
+    assert!(is_valid_container_id(container_id), "Invalid container_id");
+    assert!(is_valid_container_id(&layer.id), "Invalid layer_id");
+    assert!(is_valid_hex_color(&layer.color), "Invalid hex color");
+
+    let url_escaped = js_escape_string(&layer.url);
+    let color_escaped = js_escape_string(&layer.color);
+
+    let (layer_type, paint_properties) = match layer.layer_type {
+        LayerType::Point => (
+            "circle",
+            format!(r#"'circle-color': '{}', 'circle-radius': 6"#, color_escaped)
+        ),
+        LayerType::Line => (
+            "line",
+            format!(r#"'line-color': '{}', 'line-width': 2"#, color_escaped)
+        ),
+        LayerType::Polygon => (
+            "fill",
+            format!(r#"'fill-color': '{}', 'fill-opacity': 0.3"#, color_escaped)
+        ),
+    };
+
+    format!(r#"
+        (function() {{
+            const map = window['map_{}'];
+            if (!map) {{
+                console.error('Map not found for layer: {}');
+                return {{ success: false, error: 'Map not found' }};
+            }}
+
+            try {{
+                // Add source if not exists
+                if (!map.getSource('{}')) {{
+                    map.addSource('{}', {{
+                        type: 'geojson',
+                        data: '{}'
+                    }});
+                }}
+
+                // Add layer if not exists
+                if (!map.getLayer('{}')) {{
+                    map.addLayer({{
+                        id: '{}',
+                        type: '{}',
+                        source: '{}',
+                        paint: {{ {} }}
+                    }});
+                }}
+
+                return {{ success: true, layer: '{}' }};
+            }} catch (e) {{
+                console.error('Error adding layer:', e);
+                return {{ success: false, error: e.toString() }};
+            }}
+        }})();
+    "#,
+        container_id,
+        layer.id,
+        layer.id,
+        layer.id,
+        url_escaped,
+        layer.id,
+        layer.id,
+        layer_type,
+        layer.id,
+        paint_properties,
+        layer.id
+    )
+}
+
+/// Generates JavaScript to toggle a layer's visibility.
+///
+/// # Arguments
+///
+/// * `container_id` - The map container ID
+/// * `layer_id` - The ID of the layer to toggle
+/// * `visible` - Whether the layer should be visible
+///
+/// # Returns
+///
+/// A JavaScript string that can be executed via eval()
+pub fn build_toggle_layer_visibility_script(container_id: &str, layer_id: &str, visible: bool) -> String {
+    assert!(is_valid_container_id(container_id), "Invalid container_id");
+    assert!(is_valid_container_id(layer_id), "Invalid layer_id");
+
+    let visibility = if visible { "visible" } else { "none" };
+
+    format!(r#"
+        (function() {{
+            const map = window['map_{}'];
+            if (!map) {{
+                console.error('Map not found');
+                return {{ success: false, error: 'Map not found' }};
+            }}
+
+            try {{
+                map.setLayoutProperty('{}', 'visibility', '{}');
+                return {{ success: true, visible: {} }};
+            }} catch (e) {{
+                console.error('Error toggling layer:', e);
+                return {{ success: false, error: e.toString() }};
+            }}
+        }})();
+    "#,
+        container_id,
+        layer_id,
+        visibility,
+        visible
+    )
+}
+
+/// Generates JavaScript to remove a layer from the map.
+///
+/// # Arguments
+///
+/// * `container_id` - The map container ID
+/// * `layer_id` - The ID of the layer to remove
+///
+/// # Returns
+///
+/// A JavaScript string that can be executed via eval()
+pub fn build_remove_layer_script(container_id: &str, layer_id: &str) -> String {
+    assert!(is_valid_container_id(container_id), "Invalid container_id");
+    assert!(is_valid_container_id(layer_id), "Invalid layer_id");
+
+    format!(r#"
+        (function() {{
+            const map = window['map_{}'];
+            if (!map) {{
+                console.error('Map not found');
+                return {{ success: false, error: 'Map not found' }};
+            }}
+
+            try {{
+                if (map.getLayer('{}')) {{
+                    map.removeLayer('{}');
+                }}
+                if (map.getSource('{}')) {{
+                    map.removeSource('{}');
+                }}
+                return {{ success: true }};
+            }} catch (e) {{
+                console.error('Error removing layer:', e);
+                return {{ success: false, error: e.toString() }};
+            }}
+        }})();
+    "#,
+        container_id,
+        layer_id,
+        layer_id,
+        layer_id,
+        layer_id
+    )
 }
 
 // Note: The actual Map3D Dioxus component requires web-specific APIs
@@ -1145,5 +1335,129 @@ mod component_tests {
         assert!(is_valid_container_id("map_3d"));
         assert!(!is_valid_container_id("map;alert(1)"));
         assert!(!is_valid_container_id("map space"));
+    }
+
+    #[test]
+    fn test_is_valid_hex_color() {
+        assert!(is_valid_hex_color("#ff0000"));
+        assert!(is_valid_hex_color("#FF0000"));
+        assert!(is_valid_hex_color("#00ff00"));
+        assert!(is_valid_hex_color("#0000ff"));
+        assert!(is_valid_hex_color("#123abc"));
+        assert!(!is_valid_hex_color("ff0000"));  // Missing #
+        assert!(!is_valid_hex_color("#ff00"));   // Too short
+        assert!(!is_valid_hex_color("#ff00000")); // Too long
+        assert!(!is_valid_hex_color("#gg0000"));  // Invalid hex
+        assert!(!is_valid_hex_color("red"));      // Named color not allowed
+    }
+
+    // GeoJSON layer management tests (section-06)
+
+    #[test]
+    fn test_build_add_geojson_layer_script_generates_valid_javascript() {
+        use crate::components::layer_control_3d::{GeoJsonLayer, LayerType};
+
+        let layer = GeoJsonLayer {
+            id: "test-layer".to_string(),
+            name: "Test Layer".to_string(),
+            url: "/test.geojson".to_string(),
+            layer_type: LayerType::Polygon,
+            visible: true,
+            color: "#ff0000".to_string(),
+        };
+
+        let js = build_add_geojson_layer_script("map", &layer);
+
+        // Verify the JavaScript contains key elements
+        assert!(js.contains("addSource"));
+        assert!(js.contains("test-layer"));
+        assert!(js.contains("addLayer"));
+        assert!(js.contains("fill"));  // Polygon type
+        assert!(js.contains("fill-color"));
+        assert!(js.contains("#ff0000"));
+    }
+
+    #[test]
+    fn test_build_add_geojson_layer_script_handles_point_type() {
+        use crate::components::layer_control_3d::{GeoJsonLayer, LayerType};
+
+        let layer = GeoJsonLayer {
+            id: "points".to_string(),
+            name: "Points".to_string(),
+            url: "/points.geojson".to_string(),
+            layer_type: LayerType::Point,
+            visible: true,
+            color: "#00ff00".to_string(),
+        };
+
+        let js = build_add_geojson_layer_script("map", &layer);
+
+        assert!(js.contains("circle"));  // Point type
+        assert!(js.contains("circle-color"));
+        assert!(js.contains("#00ff00"));
+        assert!(js.contains("circle-radius"));
+    }
+
+    #[test]
+    fn test_build_add_geojson_layer_script_handles_line_type() {
+        use crate::components::layer_control_3d::{GeoJsonLayer, LayerType};
+
+        let layer = GeoJsonLayer {
+            id: "lines".to_string(),
+            name: "Lines".to_string(),
+            url: "/lines.geojson".to_string(),
+            layer_type: LayerType::Line,
+            visible: true,
+            color: "#0000ff".to_string(),
+        };
+
+        let js = build_add_geojson_layer_script("map", &layer);
+
+        assert!(js.contains("line"));  // Line type
+        assert!(js.contains("line-color"));
+        assert!(js.contains("#0000ff"));
+        assert!(js.contains("line-width"));
+    }
+
+    #[test]
+    fn test_build_toggle_layer_visibility_script_visible() {
+        let js = build_toggle_layer_visibility_script("map", "test-layer", true);
+        assert!(js.contains("setLayoutProperty"));
+        assert!(js.contains("'visibility', 'visible'"));
+        assert!(js.contains("window['map_map']"));
+    }
+
+    #[test]
+    fn test_build_toggle_layer_visibility_script_hidden() {
+        let js = build_toggle_layer_visibility_script("map", "test-layer", false);
+        assert!(js.contains("setLayoutProperty"));
+        assert!(js.contains("'visibility', 'none'"));
+    }
+
+    #[test]
+    fn test_build_remove_layer_script() {
+        let js = build_remove_layer_script("map", "test-layer");
+        assert!(js.contains("removeLayer"));
+        assert!(js.contains("removeSource"));
+        assert!(js.contains("test-layer"));
+        assert!(js.contains("window['map_map']"));
+    }
+
+    #[test]
+    fn test_layer_script_escaping() {
+        use crate::components::layer_control_3d::{GeoJsonLayer, LayerType};
+
+        // Test layer with special characters in ID
+        let layer = GeoJsonLayer {
+            id: "layer-with-dash".to_string(),
+            name: "Test Layer".to_string(),
+            url: "/test.geojson".to_string(),
+            layer_type: LayerType::Point,
+            visible: true,
+            color: "#ff0000".to_string(),
+        };
+
+        let js = build_add_geojson_layer_script("map", &layer);
+        assert!(js.contains("layer-with-dash"));
     }
 }

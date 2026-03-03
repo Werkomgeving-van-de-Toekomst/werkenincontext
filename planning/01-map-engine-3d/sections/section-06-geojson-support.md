@@ -469,3 +469,71 @@ After implementation, verify:
 - [ ] cultuurhistorie layer displays with appropriate styling
 - [ ] All unit tests pass (`cargo test -p iou-frontend`)
 - [ ] Browser console shows no errors when loading layers
+
+---
+
+## Implementation Notes
+
+**Date:** 2026-03-03
+**Status:** ✅ Complete
+
+### Files Created
+- `crates/iou-frontend/src/components/layer_detection.rs` - Layer type detection module
+
+### Files Modified
+- `crates/iou-frontend/src/components/map_3d.rs` - Added JavaScript generation functions
+- `crates/iou-frontend/src/components/mod.rs` - Added module exports
+
+### Changes Made
+
+1. **Layer Detection Module** (`layer_detection.rs`)
+   - `detect_layer_type()` - Detects geometry type from GeoJSON content
+   - `has_mixed_geometries()` - Checks for mixed geometry types
+   - Returns Point, Line, or Polygon based on first feature's geometry
+
+2. **JavaScript Generation Functions** (`map_3d.rs`)
+   - `build_add_geojson_layer_script()` - Generates JS to add GeoJSON layer
+   - `build_toggle_layer_visibility_script()` - Generates JS to toggle visibility
+   - `build_remove_layer_script()` - Generates JS to remove layer
+
+3. **Security Enhancements**
+   - `is_valid_hex_color()` - Validates hex color format (#RRGGBB)
+   - Color validation assertion in `build_add_geojson_layer_script()`
+   - Layer ID validation assertion using `is_valid_container_id()`
+
+4. **Tests Added** (104 total tests passing)
+   - 17 layer detection tests (Point, Line, Polygon, Multi*, empty, invalid, mixed)
+   - 8 GeoJSON JavaScript generation tests
+   - 1 color validation test
+
+### Deviations from Plan
+
+1. **Map Instance Reference**: Uses `window['map_{}']` instead of `window.map3dInstances['{}']`
+   - Reason: Consistent with section-05 pattern
+
+2. **Integration Test File**: Not created at `tests/geojson_integration_test.rs`
+   - Reason: Binary-only crate (main.rs) - integration tests require lib.rs
+
+3. **Function Names**: Used `build_*_script()` prefix instead of `generate_*_js()`
+   - Reason: Consistent naming with existing terrain functions
+
+4. **Layer ID Escaping**: Uses validation instead of escaping for layer IDs
+   - Reason: `is_valid_container_id()` restricts to safe characters only
+
+### MVP Layer Definitions
+
+Already defined in `layer_control_3d.rs`:
+- `provinciegrens` - Polygon, blue (#e74c3c), visible by default
+- `cultuurhistorie` - Point, blue (#3498db), hidden by default
+
+### MapLibre Layer Type Mapping
+
+| GeoJSON Geometry | MapLibre Type | Paint Properties |
+|-----------------|---------------|------------------|
+| Point, MultiPoint | circle | circle-color, circle-radius: 6 |
+| LineString, MultiLineString | line | line-color, line-width: 2 |
+| Polygon, MultiPolygon | fill | fill-color, fill-opacity: 0.3 |
+
+### Environment Variables Required
+
+None for this section.
