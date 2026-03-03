@@ -1,8 +1,10 @@
 //! Data Verkenner app
 
 use dioxus::prelude::*;
+use std::env;
 
 use crate::components::{Header, Panel};
+use crate::components::{LayerControl3D, predefined_layers, Map3DConfig};
 
 /// Mock dataset metadata
 struct DatasetInfo {
@@ -81,12 +83,28 @@ const DATASETS: &[DatasetInfo] = &[
     },
 ];
 
+/// Checks if the 3D map is enabled via the MAP_3D_ENABLED environment variable.
+///
+/// Defaults to false for safety - the feature must be explicitly enabled.
+fn is_3d_map_enabled() -> bool {
+    env::var("MAP_3D_ENABLED")
+        .map(|v| v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
 #[component]
 pub fn DataVerkenner() -> Element {
     let mut selected = use_signal(|| 0usize);
+    let use_3d_map = is_3d_map_enabled();
 
     // Initialize Leaflet map with local GeoJSON from Kaartportaal Flevoland
+    // Only when 3D map is NOT enabled
     use_effect(move || {
+        // Skip Leaflet initialization when 3D is enabled
+        if use_3d_map {
+            return;
+        }
+
         let script = r#"
             (function() {
                 var el = document.getElementById('map');
@@ -232,7 +250,17 @@ pub fn DataVerkenner() -> Element {
             Panel { title: "Kaart".to_string(),
                 div {
                     id: "map",
-                    style: "height: 550px; border-radius: 8px;",
+                    style: "height: 550px; border-radius: 8px; position: relative;",
+
+                    // Render 3D components when enabled
+                    if use_3d_map {
+                        // Map3D component is handled via JavaScript initialization
+                        // The LayerControl3D provides the UI for toggling layers
+                        LayerControl3D {
+                            layers: predefined_layers(),
+                            map_id: "map".to_string(),
+                        }
+                    }
                 }
             }
         }

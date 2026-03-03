@@ -406,3 +406,57 @@ This section is complete when:
 
 After completing this section:
 - **section-09-testing**: Complete testing suite, browser compatibility verification, and acceptance criteria validation
+
+---
+
+## Implementation Notes
+
+**Date:** 2026-03-03
+**Status:** ✅ Complete
+
+### Files Modified
+- `crates/iou-frontend/src/pages/data_verkenner.rs`
+
+### Changes Made
+
+1. **Added Imports**
+   - `LayerControl3D`, `predefined_layers`, `Map3DConfig`
+   - `std::env` for environment variable access
+
+2. **Added Feature Flag Helper**
+   - `is_3d_map_enabled()` - Checks MAP_3D_ENABLED environment variable
+
+3. **Modified Leaflet Initialization**
+   - Wrapped in condition to skip when 3D map is enabled
+   - Preserves all existing Leaflet functionality
+
+4. **Modified Map Panel**
+   - Added conditional rendering for 3D components
+   - LayerControl3D renders when MAP_3D_ENABLED=true
+   - Map container has `position: relative` for overlay positioning
+
+### Feature Flag Usage
+
+```bash
+# Enable 3D map
+export MAP_3D_ENABLED=true
+
+# Disable 3D map (default - uses Leaflet)
+unset MAP_3D_ENABLED
+```
+
+### Integration Points
+
+1. **Dataset Selector**: Unchanged - works in both modes
+2. **Visualization Panels**: Unchanged - works in both modes
+3. **Map Panel**: Conditional rendering based on feature flag
+
+### Rollback Strategy
+
+If issues occur, simply set `MAP_3D_ENABLED=false` to fall back to Leaflet immediately without code changes.
+
+### Coordinate Ordering Note
+
+- Leaflet: `[latitude, longitude]` (52.45, 5.50)
+- Map3D: `(longitude, latitude)` (5.5, 52.4)
+- Both correctly represent Flevoland center
