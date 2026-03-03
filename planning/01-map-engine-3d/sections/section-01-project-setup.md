@@ -150,3 +150,27 @@ After completing this section:
 - The unpkg CDN is used as the default CDN source
 - Component implementations are deferred to later sections
 - This section is intentionally minimal to establish structure without premature implementation
+---
+
+## Implementation Notes (Added after completion)
+
+**Deviation from original plan:**
+
+The original plan specified adding MapLibre CSS/JS to `Dioxus.toml` in a `[web.resource.map_3d]` section. However, this approach has two issues:
+
+1. Dioxus doesn't support custom resource sections (only `[web.resource]` and `[web.resource.dev]`)
+2. Adding to the main `[web.resource]` would load MapLibre on every page, even when the 3D map isn't used
+
+**Actual implementation:**
+
+- MapLibre resources were NOT added to Dioxus.toml
+- Dynamic resource injection will be implemented in `section-04-map3d-component` using JavaScript
+- This keeps the 3D map truly conditional - resources only load when Map3D component is used
+- A note was added to Dioxus.toml explaining this decision
+
+**Files created/modified:**
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/map_3d.rs` - Stub created
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/layer_control_3d.rs` - Stub created
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/mod.rs` - Module exports added
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/Dioxus.toml` - Note added about dynamic loading
+- ✅ Tests added and passing (2 tests)

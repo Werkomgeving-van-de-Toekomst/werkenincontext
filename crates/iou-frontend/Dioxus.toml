@@ -11,9 +11,13 @@ reload_html = true
 watch_path = ["src", "assets"]
 
 [web.resource]
+# Leaflet CSS (existing 2D map)
 style = [
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
 ]
+# Leaflet JS and vis-network (existing)
+# Note: MapLibre GL JS resources will be injected dynamically via JavaScript eval
+# when the Map3D component initializes (see section-04-map3d-component)
 script = [
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
     "https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js",
