@@ -799,3 +799,18 @@ This section is complete when:
 5. `GeoJsonLayer::builder()` produces valid layer configurations
 6. `LayerType::from_geojson_type()` correctly maps GeoJSON types
 7. Module exports are updated in `mod.rs`
+---
+
+## Implementation Notes (Added after completion)
+
+**Implementation completed as specified with no deviations.**
+
+**Files created/modified:**
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/map_3d.rs` - Map3DConfig, ConfigError implemented
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/layer_control_3d.rs` - LayerType, GeoJsonLayer, Builder implemented
+- ✅ `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/mod.rs` - Re-exports added
+- ✅ All tests passing (21 tests total)
+  - 11 config tests in map_3d.rs
+  - 10 layer config tests in layer_control_3d.rs
+
+**Code Review:** No issues found - all code approved for commit.

@@ -17,7 +17,12 @@
     "section-08-page-integration",
     "section-09-testing"
   ],
-  "sections_state": {},
+  "sections_state": {
+    "section-01-project-setup": {
+      "status": "complete",
+      "commit_hash": "861772d"
+    }
+  },
   "pre_commit": {
     "present": false,
     "type": "none",
