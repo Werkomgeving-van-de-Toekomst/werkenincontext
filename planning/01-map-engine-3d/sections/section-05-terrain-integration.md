@@ -263,3 +263,89 @@ This section is complete when:
 
 After completing this section:
 - **section-06-geojson-support**: Add GeoJSON layer support to display data over terrain
+
+---
+
+## Implementation Notes
+
+**Date:** 2026-03-03
+**Status:** ✅ Complete
+
+### Files Modified
+- `crates/iou-frontend/src/components/map_3d.rs`
+
+### Changes Made
+
+1. **Configuration Methods (`Map3DConfig`)**
+   - Added `terrain_tile_url()` - Returns MapTiler URL with API key from environment
+   - Added `terrain_exaggeration()` - Returns clamped value [0.1, 5.0] from environment or config
+
+2. **JavaScript Generation Functions**
+   - Added `build_terrain_init_script(config)` - Initializes terrain source with MapLibre
+   - Added `build_terrain_error_script(container_id)` - Sets up terrain error event listeners
+   - Added `build_set_terrain_exaggeration_script(container_id, value)` - Updates exaggeration with clamping
+
+3. **Security Enhancements**
+   - Added `js_escape_string(s)` - Escapes strings for safe JavaScript interpolation
+   - Added `is_valid_container_id(id)` - Validates container IDs before use
+   - All JavaScript generation now uses safe interpolation
+
+4. **State Management**
+   - Added `TerrainState` struct - Tracks terrain loaded, enabled, and error state
+   - Added `TerrainState::error_message_dutch()` - Returns localized error messages
+
+5. **UI Components**
+   - Added `TerrainWarning` component - Displays Dutch warning banner for terrain errors
+
+6. **Tests Added** (50 total tests passing)
+   - `test_terrain_tile_url_includes_api_key`
+   - `test_terrain_tile_url_fallback_when_no_key`
+   - `test_terrain_tile_url_uses_custom_url`
+   - `test_terrain_exaggeration_reads_from_env`
+   - `test_terrain_exaggeration_clamps_to_valid_range`
+   - `test_terrain_exaggeration_defaults_to_config_value`
+   - `test_from_env_reads_terrain_exaggeration`
+   - `test_build_terrain_init_script_contains_source_config`
+   - `test_build_terrain_init_script_includes_exaggeration`
+   - `test_build_terrain_error_script`
+   - `test_build_set_terrain_exaggeration_script`
+   - `test_build_set_terrain_exaggeration_script_clamps_value`
+   - `test_terrain_state_default`
+   - `test_terrain_state_mark_loaded`
+   - `test_terrain_state_mark_error`
+   - `test_terrain_state_dutch_error_message_*`
+   - `test_terrain_init_script_checks_existing_source`
+   - `test_js_escape_string_handles_special_chars`
+   - `test_is_valid_container_id`
+
+### Deviations from Plan
+
+1. **Map Reference Consistency**: All scripts now use `window['map_{container_id}']` for consistency with the main map initialization.
+
+2. **Exaggeration Clamping**: Environment values are automatically clamped to [0.1, 5.0] range to prevent MapLibre errors.
+
+3. **Security**: Added JavaScript string escaping to prevent injection attacks.
+
+4. **Function Signatures**:
+   - `build_terrain_error_script()` now takes `container_id: &str` parameter
+   - `build_set_terrain_exaggeration_script()` now takes `container_id: &str` and `value: f64` parameters
+
+5. **Icon Choice**: Used emoji (⚠️) instead of lucide icon for simplicity - no additional dependency needed.
+
+### Code Review Fixes Applied
+
+1. Fixed map instance reference inconsistency across all JavaScript generation functions
+2. Added exaggeration value clamping in both `terrain_exaggeration()` and `build_set_terrain_exaggeration_script()`
+3. Implemented JavaScript string escaping for safe URL interpolation
+4. Added container ID validation
+5. Improved documentation clarity
+
+### Environment Variables Required
+
+```bash
+# Required for terrain to work
+MAPTILER_API_KEY=your_key_here
+
+# Optional (default: 1.5)
+TERRAIN_EXAGGERATION=1.5
+```
