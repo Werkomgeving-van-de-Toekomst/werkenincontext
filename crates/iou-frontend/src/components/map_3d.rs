@@ -982,6 +982,7 @@ pub fn build_remove_layer_script(container_id: &str, layer_id: &str) -> String {
 #[cfg(test)]
 mod component_tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
     fn test_map_event_loaded_to_json() {
@@ -1152,7 +1153,10 @@ mod component_tests {
     }
 
     #[test]
+    #[serial]
     fn test_terrain_tile_url_fallback_when_no_key() {
+        // Clear the environment variable to test fallback behavior
+        // Uses #[serial] to prevent interference from parallel tests
         std::env::remove_var("MAPTILER_API_KEY");
         let config = Map3DConfig::default();
         let url = config.terrain_tile_url();

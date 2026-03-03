@@ -33,6 +33,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 approx = "0.5"
+serial_test = "3"
 
 [features]
 default = ["web"]
