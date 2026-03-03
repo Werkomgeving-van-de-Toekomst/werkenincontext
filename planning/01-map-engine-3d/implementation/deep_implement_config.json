@@ -1,0 +1,30 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/planning/01-map-engine-3d/sections",
+  "target_dir": "/Users/marc/Projecten/iou-modern",
+  "state_dir": "/Users/marc/Projecten/iou-modern/planning/01-map-engine-3d/implementation",
+  "git_root": "/Users/marc/Projecten/iou-modern",
+  "commit_style": "simple",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-project-setup",
+    "section-02-config-structures",
+    "section-03-terrain-encoding",
+    "section-04-map3d-component",
+    "section-05-terrain-integration",
+    "section-06-geojson-support",
+    "section-07-layer-control",
+    "section-08-page-integration",
+    "section-09-testing"
+  ],
+  "sections_state": {},
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-03T12:53:49.873469+00:00"
+}
