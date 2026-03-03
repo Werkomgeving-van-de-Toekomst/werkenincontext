@@ -28,7 +28,7 @@ pub use timeline::{Timeline, TimelineEvent, TimelineEventType};
 // pub use map_3d::Map3D;
 pub use layer_control_3d::LayerControl3D;
 // Re-export config and layer types
-pub use map_3d::{Map3DConfig, ConfigError};
+pub use map_3d::{Map3DConfig, ConfigError, TerrainSource};
 pub use layer_control_3d::{GeoJsonLayer, LayerType, GeoJsonLayerBuilder, predefined_layers, LayerCheckbox};
 pub use layer_detection::{detect_layer_type, has_mixed_geometries};
 pub use terrain_encoding::{elevation_to_terrain_rgb, terrain_rgb_to_elevation};

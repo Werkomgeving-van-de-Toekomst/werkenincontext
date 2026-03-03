@@ -29,6 +29,30 @@
     "section-03-terrain-encoding": {
       "status": "complete",
       "commit_hash": "69c12e0"
+    },
+    "section-04-map3d-component": {
+      "status": "complete",
+      "commit_hash": "de989d8"
+    },
+    "section-05-terrain-integration": {
+      "status": "complete",
+      "commit_hash": "6c2f6bb"
+    },
+    "section-06-geojson-support": {
+      "status": "complete",
+      "commit_hash": "b37b034"
+    },
+    "section-07-layer-control": {
+      "status": "complete",
+      "commit_hash": "d88e51f"
+    },
+    "section-08-page-integration": {
+      "status": "complete",
+      "commit_hash": "a6a9499"
+    },
+    "section-09-testing": {
+      "status": "complete",
+      "commit_hash": "264b3df"
     }
   },
   "pre_commit": {

@@ -8,6 +8,20 @@ use std::env;
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Terrain tile source type.
+///
+/// Determines whether tiles are loaded from MapTiler (requires API key)
+/// or from a local source (AHN tiles).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TerrainSource {
+    /// MapTiler terrain tiles (requires MAPTILER_API_KEY)
+    MapTiler,
+    /// Local AHN tiles (no API key required)
+    LocalAHN,
+    /// No terrain - flat 3D map only
+    None,
+}
+
 /// Configuration for the MapLibre GL JS 3D map instance.
 ///
 /// # Coordinate Ordering
@@ -53,8 +67,14 @@ pub struct Map3DConfig {
     /// Terrain vertical exaggeration (0.1 to 5.0)
     pub terrain_exaggeration: f64,
 
-    /// URL for terrain tiles (Terrain-RGB format)
+    /// Terrain tile source type
+    pub terrain_source: TerrainSource,
+
+    /// URL for terrain tiles (Terrain-RGB format) - used only for MapTiler
     pub terrain_tile_url: String,
+
+    /// Local terrain tile path (for LocalAHN source)
+    pub terrain_local_path: String,
 
     /// URL for the map style (MapLibre GL JS style specification)
     pub style_url: String,
@@ -91,6 +111,11 @@ impl std::error::Error for ConfigError {}
 
 impl Default for Map3DConfig {
     fn default() -> Self {
+        // Determine terrain source from environment
+        // TERRAIN_SOURCE=maptiler|local|none (default: auto-detect)
+        // If MAPTILER_API_KEY is set, use MapTiler, otherwise use LocalAHN
+        let terrain_source = Self::determine_terrain_source();
+
         Self {
             container_id: "map".to_string(),
             // Flevoland center: (longitude, latitude)
@@ -101,7 +126,9 @@ impl Default for Map3DConfig {
             min_zoom: 6.0,
             max_zoom: 18.0,
             terrain_exaggeration: 1.5,
+            terrain_source,
             terrain_tile_url: "https://api.maptiler.com/tiles/terrain-rgb/tiles.json".to_string(),
+            terrain_local_path: "/static/terrain/{z}/{x}/{y}.png".to_string(),
             style_url: Self::default_style_url(),
             enabled: Self::is_3d_enabled(),
         }
@@ -180,6 +207,39 @@ impl Map3DConfig {
             .unwrap_or(false)
     }
 
+    /// Determines the terrain source based on environment configuration.
+    ///
+    /// Checks TERRAIN_SOURCE first, then falls back to MAPTILER_API_KEY detection.
+    /// - If TERRAIN_SOURCE=maptiler: always use MapTiler
+    /// - If TERRAIN_SOURCE=local: always use local AHN tiles
+    /// - If TERRAIN_SOURCE=none: disable terrain
+    /// - Otherwise: use MapTiler if API key is set, else local AHN
+    fn determine_terrain_source() -> TerrainSource {
+        match env::var("TERRAIN_SOURCE").as_deref() {
+            Ok("maptiler") => TerrainSource::MapTiler,
+            Ok("local") => TerrainSource::LocalAHN,
+            Ok("none") => TerrainSource::None,
+            Ok(_) => {
+                // Unknown value, fall back to auto-detect
+                Self::auto_detect_terrain_source()
+            }
+            Err(_) => {
+                // Not set, auto-detect based on API key
+                Self::auto_detect_terrain_source()
+            }
+        }
+    }
+
+    /// Auto-detects terrain source based on whether MAPTILER_API_KEY is set.
+    fn auto_detect_terrain_source() -> TerrainSource {
+        if env::var("MAPTILER_API_KEY").is_ok() {
+            TerrainSource::MapTiler
+        } else {
+            // No API key? Use local AHN tiles (no API key required)
+            TerrainSource::LocalAHN
+        }
+    }
+
     /// Returns the default map style URL.
     ///
     /// Uses the MAP_STYLE_URL environment variable if set, otherwise
@@ -190,27 +250,43 @@ impl Map3DConfig {
         })
     }
 
-    /// Returns the terrain tile URL with MapTiler API key.
+    /// Returns the terrain tile URL appropriate for the configured source.
     ///
-    /// Uses the MAPTILER_API_KEY environment variable if set.
-    /// Falls back to a placeholder if the key is not configured.
-    ///
-    /// Note: If MAPTILER_API_KEY is not set, terrain will not load.
-    /// Set a valid key from https://maptiler.com/ to enable terrain.
+    /// For MapTiler: Includes the MAPTILER_API_KEY if set.
+    /// For LocalAHN: Returns the local tile path.
+    /// For None: Returns an empty string (no terrain).
     pub fn terrain_tile_url(&self) -> String {
-        // If a custom URL was set (doesn't contain default maptiler domain), use it directly
-        if !self.terrain_tile_url.contains("maptiler.com") {
-            return self.terrain_tile_url.clone();
+        match self.terrain_source {
+            TerrainSource::MapTiler => {
+                // If a custom URL was set (doesn't contain default maptiler domain), use it directly
+                if !self.terrain_tile_url.contains("maptiler.com") {
+                    return self.terrain_tile_url.clone();
+                }
+
+                // MapTiler requires an API key
+                let api_key = env::var("MAPTILER_API_KEY")
+                    .unwrap_or_else(|_| "YOUR_KEY_HERE".to_string());
+
+                format!(
+                    "https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key={}",
+                    api_key
+                )
+            }
+            TerrainSource::LocalAHN => {
+                // Local AHN tiles - no API key needed
+                // The path uses {z}, {x}, {y} placeholders that MapLibre will replace
+                self.terrain_local_path.clone()
+            }
+            TerrainSource::None => {
+                // No terrain source
+                String::new()
+            }
         }
+    }
 
-        // MapTiler requires an API key
-        let api_key = env::var("MAPTILER_API_KEY")
-            .unwrap_or_else(|_| "YOUR_KEY_HERE".to_string());
-
-        format!(
-            "https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key={}",
-            api_key
-        )
+    /// Returns whether terrain is enabled for this configuration.
+    pub fn has_terrain(&self) -> bool {
+        self.terrain_source != TerrainSource::None
     }
 
     /// Returns the terrain exaggeration value, clamped to valid range.
@@ -238,6 +314,8 @@ impl Map3DConfig {
     /// - `TERRAIN_TILE_URL`: Custom terrain tile URL (optional)
     /// - `MAPTILER_API_KEY`: MapTiler API key for terrain tiles
     /// - `TERRAIN_EXAGGERATION`: Terrain vertical exaggeration, clamped to [0.1, 5.0]
+    /// - `TERRAIN_TILE_URL`: Custom terrain tile URL (sets terrain_source to MapTiler)
+    /// - `TERRAIN_SOURCE`: Force terrain source (maptiler|local|none)
     ///
     /// # Returns
     ///
@@ -246,9 +324,15 @@ impl Map3DConfig {
         let mut config = Self::default();
         config.enabled = Self::is_3d_enabled();
 
+        // Check TERRAIN_SOURCE first
+        config.terrain_source = Self::determine_terrain_source();
+
         // Allow custom terrain tile URL
+        // If set, override the terrain source to MapTiler style (uses url property)
         if let Ok(url) = env::var("TERRAIN_TILE_URL") {
             config.terrain_tile_url = url;
+            // Custom URL implies MapTiler-style source (uses TileJSON)
+            config.terrain_source = TerrainSource::MapTiler;
         }
 
         // Allow custom style URL
@@ -588,13 +672,49 @@ fn is_valid_hex_color(color: &str) -> bool {
 /// 2. Adds the terrain DEM source from MapTiler
 /// 3. Sets terrain with exaggeration
 /// 4. Sets up terrain event listeners
+///
+/// Supports:
+/// - MapTiler: Uses TileJSON URL (tiles.json)
+/// - LocalAHN: Uses direct tile URL template (/static/terrain/{z}/{x}/{y}.png)
+/// - None: Skips terrain initialization
 pub fn build_terrain_init_script(config: &Map3DConfig) -> String {
     let container_id = &config.container_id;
     assert!(is_valid_container_id(container_id), "Invalid container_id");
 
+    // Skip terrain initialization if disabled
+    if config.terrain_source == TerrainSource::None {
+        return r#"
+            (function() {
+                console.log('Terrain disabled in configuration');
+            })();
+        "#.to_string();
+    }
+
     let tile_url_escaped = js_escape_string(&config.terrain_tile_url());
     let exaggeration = config.terrain_exaggeration();
 
+    // Attribution and source config depend on terrain source type
+    let (attribution, source_declaration) = match config.terrain_source {
+        TerrainSource::MapTiler => (
+            "&copy; MapTiler &copy; OpenStreetMap contributors",
+            format!("url: '{}'", tile_url_escaped)
+        ),
+        TerrainSource::LocalAHN => (
+            "&copy; PDOK AHN3/4 - Kadaster",
+            format!("tiles: ['{}'], tileSize: 256", tile_url_escaped)
+        ),
+        TerrainSource::None => ("", String::new()),
+    };
+
+    // Build the source config string
+    let source_config = format!(
+        r#"type: 'raster-dem', {}, attribution: '{}'"#,
+        source_declaration, attribution
+    );
+
+    // Build the complete script
+    // Note: We build the source config as a string, then insert it
+    // The format string has 3 placeholders: container_id, source_config, exaggeration
     format!(r#"
         (function() {{
             const map = window['map_{}'];
@@ -608,15 +728,10 @@ pub fn build_terrain_init_script(config: &Map3DConfig) -> String {
                 return;
             }}
 
-            const tileUrl = "{}";
             const exaggeration = {};
+            console.log('Initializing terrain: exaggeration=', exaggeration);
 
-            map.addSource('ahn3-terrain', {{
-                type: 'raster-dem',
-                tiles: [tileUrl],
-                tileSize: 256,
-                attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
-            }});
+            map.addSource('ahn3-terrain', {{ {} }});
 
             map.setTerrain({{ source: 'ahn3-terrain', exaggeration: exaggeration }});
 
@@ -630,12 +745,12 @@ pub fn build_terrain_init_script(config: &Map3DConfig) -> String {
                     window.sendToRust(JSON.stringify({{ event: 'terrain_loaded' }}));
                 }}
             }});
+
+            map.on('terrain.error', function(error) {{
+                console.error('Terrain error:', error);
+            }});
         }})();
-    "#,
-        container_id,
-        tile_url_escaped,
-        exaggeration
-    )
+    "#, container_id, source_config, exaggeration)
 }
 
 /// Builds the JavaScript for terrain error handling.
@@ -1160,7 +1275,9 @@ mod component_tests {
         std::env::remove_var("MAPTILER_API_KEY");
         let config = Map3DConfig::default();
         let url = config.terrain_tile_url();
-        assert!(url.contains("YOUR_KEY_HERE"));
+        // When no API key is set, defaults to LocalAHN tiles
+        assert!(url.contains("/static/terrain/"));
+        assert_eq!(config.terrain_source, TerrainSource::LocalAHN);
     }
 
     #[test]
