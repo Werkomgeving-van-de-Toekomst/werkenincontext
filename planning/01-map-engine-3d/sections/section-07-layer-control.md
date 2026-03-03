@@ -268,3 +268,64 @@ After implementation:
 - [ ] Layer names display in Dutch
 - [ ] Control panel styling matches existing UI
 - [ ] Works in Chrome and Firefox
+
+---
+
+## Implementation Notes
+
+**Date:** 2026-03-03
+**Status:** ✅ Complete
+
+### Files Modified
+- `crates/iou-frontend/src/components/layer_control_3d.rs`
+- `crates/iou-frontend/src/components/mod.rs`
+
+### Changes Made
+
+1. **LayerControl3D Component**
+   - Renders "Kaartlagen" (Map Layers) header
+   - Displays checkboxes for each layer
+   - Manages visibility state with signals
+   - Generates JavaScript for toggle operations
+
+2. **LayerCheckbox Helper Component**
+   - Reusable checkbox component for individual layers
+   - Props: layer, visible, on_toggle callback
+
+3. **Tests Added** (109 total tests passing)
+   - test_geojson_layer_creation
+   - test_layer_type_variants
+   - test_predefined_layers_returns_two_layers
+   - test_predefined_layers_provinciegrens_visible_by_default
+   - test_predefined_layers_cultuurhistorie_hidden_by_default
+
+### UI Styling
+
+```css
+.layer-control {
+    background: white;
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-width: 200px;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    margin: 0.5rem 0;
+}
+```
+
+### Dutch Localization
+
+- Header: "Kaartlagen" (Map Layers)
+- Layer names from predefined_layers():
+  - "Provinciegrens" (visible by default)
+  - "Cultuurhistorie" (hidden by default)
+
+### Notes
+
+- JavaScript toggle is generated but execution requires integration with Map3D component
+- Component uses Dioxus 0.7 RSX with proper key attributes for list rendering
+- State management uses `use_signal` for reactive layer visibility
