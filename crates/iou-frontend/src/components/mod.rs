@@ -10,6 +10,7 @@ mod layer_control_3d;
 mod loading;
 mod map_3d;
 mod panel;
+mod terrain_encoding;
 mod timeline;
 
 pub use approval_actions::ApprovalActions;
@@ -28,6 +29,7 @@ pub use timeline::{Timeline, TimelineEvent, TimelineEventType};
 // Re-export config and layer types
 pub use map_3d::{Map3DConfig, ConfigError};
 pub use layer_control_3d::{GeoJsonLayer, LayerType, GeoJsonLayerBuilder, predefined_layers};
+pub use terrain_encoding::{elevation_to_terrain_rgb, terrain_rgb_to_elevation};
 
 #[cfg(test)]
 mod tests {

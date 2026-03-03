@@ -291,3 +291,26 @@ This section is complete when:
 4. Edge cases (minimum, maximum, negative, sea level) are handled
 5. Functions are documented with rustdoc comments
 6. Module is properly exported from components/mod.rs
+
+## Implementation Notes
+
+### Actual Implementation (2026-03-03)
+
+**File Created:**
+- `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/components/terrain_encoding.rs` (with inline tests)
+
+**Key Deviation from Plan:**
+
+The `elevation_to_terrain_rgb` function returns `Option<(u8, u8, u8)>` instead of `(u8, u8, u8)`. This was chosen during code review for safer error handling:
+
+- Returns `None` for NaN and Infinity inputs
+- Prevents silent data corruption from invalid float values
+- More explicit API for error handling
+
+**Test Organization:**
+
+Tests are in a `#[cfg(test)]` module within `terrain_encoding.rs` (idiomatic Rust) rather than a separate `terrain_encoding_test.rs` file as originally planned.
+
+**Test Count:** 19 tests (15 original + 4 for NaN/Infinity edge cases)
+
+**All acceptance criteria met.**

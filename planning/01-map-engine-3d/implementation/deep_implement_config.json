@@ -21,6 +21,10 @@
     "section-01-project-setup": {
       "status": "complete",
       "commit_hash": "861772d"
+    },
+    "section-02-config-structures": {
+      "status": "complete",
+      "commit_hash": "a22f3d6"
     }
   },
   "pre_commit": {
