@@ -14,13 +14,13 @@ watch_path = ["src", "assets"]
 # Leaflet CSS (existing 2D map)
 style = [
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+    "https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css",
 ]
-# Leaflet JS and vis-network (existing)
-# Note: MapLibre GL JS resources will be injected dynamically via JavaScript eval
-# when the Map3D component initializes (see section-04-map3d-component)
+# Leaflet JS, vis-network, and MapLibre GL JS (for 3D map)
 script = [
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
     "https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js",
+    "https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js",
 ]
 
 [web.resource.dev]

@@ -942,8 +942,8 @@ pub fn TerrainWarning(message: String) -> Element {
 
 /// Map3D Component - Initializes a MapLibre GL JS 3D map.
 ///
-/// This component loads MapLibre GL JS resources and initializes the map.
-/// The actual map container is provided by the parent component.
+/// This component renders a script tag that initializes MapLibre.
+/// The MapLibre resources must be loaded via Dioxus.toml.
 ///
 /// # Example
 ///
@@ -956,79 +956,99 @@ pub fn TerrainWarning(message: String) -> Element {
 /// ```
 #[component]
 pub fn Map3D(config: Map3DConfig) -> Element {
-    // Get the container ID
-    let container_id = config.container_id.clone();
+    if !config.enabled {
+        return rsx! { };
+    }
 
-    // Use effect to initialize map after mount
-    use_effect(move || {
-        // Only initialize if enabled
-        if !config.enabled {
-            return;
+    // Build the complete initialization script
+    let script_content = build_map3d_init_script(&config);
+
+    rsx! {
+        script {
+            dangerous_inner_html: "{script_content}"
         }
-
-        // Build the JavaScript initialization code
-        let map_init_code = build_map_init_script(&config);
-
-        let terrain_init_code = if config.has_terrain() {
-            build_terrain_init_script(&config)
-        } else {
-            String::new()
-        };
-
-        // Full initialization: load MapLibre, then initialize map
-        let full_code = format!(r#"
-            (function() {{
-                // Skip if MapLibre already loaded and map exists
-                if (window.maplibregl && window['map_{}']) return;
-
-                // Load MapLibre CSS
-                if (!document.querySelector('link[href*="maplibre-gl"]')) {{
-                    var css = document.createElement('link');
-                    css.rel = 'stylesheet';
-                    css.href = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css';
-                    document.head.appendChild(css);
-                }}
-
-                // Load MapLibre JS
-                if (!window.maplibregl) {{
-                    var script = document.createElement('script');
-                    script.src = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js';
-                    script.onload = function() {{
-                        {};
-                        {};
-                    }};
-                    document.head.appendChild(script);
-                }} else {{
-                    {};
-                    {};
-                }}
-            }})();
-        "#, container_id,
-           map_init_code, terrain_init_code,
-           map_init_code, terrain_init_code);
-
-        // Execute the JavaScript using eval
-        let _ = eval_js(&full_code);
-    });
-
-    // This component doesn't render anything visible
-    rsx! { }
+    }
 }
 
-/// Helper to execute JavaScript in the browser context.
-fn eval_js(code: &str) -> Result<(), String> {
-    use web_sys::js_sys::Function;
-    use wasm_bindgen::JsValue;
+/// Builds the complete JavaScript initialization script for Map3D.
+fn build_map3d_init_script(config: &Map3DConfig) -> String {
+    let container_id = &config.container_id;
+    let center = config.center;
+    let zoom = config.zoom;
+    let pitch = config.pitch;
+    let bearing = config.bearing;
 
-    // Create a Function from the code - new Function(body) in JS
-    // new_with_args takes (args..., body) - with no args, pass empty string then body
-    let function = Function::new_with_args("", code);
+    // Terrain setup
+    let terrain_code = if config.has_terrain() {
+        let terrain_url = config.terrain_tile_url();
+        let exaggeration = config.terrain_exaggeration();
+        format!(
+            r#"map.on('load', function() {{
+    map.addSource('terrain', {{
+        type: 'raster-dem',
+        tiles: ['{}'],
+        tileSize: 256,
+        attribution: 'AWS Open Data'
+    }});
+    map.setTerrain({{ source: 'terrain', exaggeration: {} }});
+}});"#,
+            escape_js_string(&terrain_url),
+            exaggeration
+        )
+    } else {
+        String::new()
+    };
 
-    function
-        .call0(&JsValue::NULL)
-        .map_err(|e| format!("Failed to execute function: {:?}", e))?;
+    format!(
+        r#"(function() {{
+    if (window.map3d_{}) return;
+    window.map3d_{} = true;
 
-    Ok(())
+    function init() {{
+        if (!window.maplibregl) {{ setTimeout(init, 100); return; }}
+        var el = document.getElementById('{}');
+        if (!el) {{ setTimeout(init, 100); return; }}
+
+        try {{
+            var map = new maplibregl.Map({{
+                container: '{}',
+                style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                center: [{}, {}],
+                zoom: {},
+                pitch: {},
+                bearing: {}
+            }});
+
+            map.addControl(new maplibregl.NavigationControl());
+            window['map_{}'] = map;
+            {}
+
+            console.log('Map3D initialized:', '{}');
+        }} catch (e) {{
+            console.error('Map3D init failed:', e);
+        }}
+    }}
+
+    init();
+}})();"#,
+        container_id, container_id,           // unique flag
+        container_id,                         // getElementById
+        container_id,                         // Map container
+        center.0, center.1,                   // center lon, lat
+        zoom, pitch, bearing,                 // view params
+        container_id,                         // window storage
+        terrain_code,                          // terrain or empty
+        container_id                          // log message
+    )
+}
+
+/// Escapes a string for safe use in JavaScript string literals.
+fn escape_js_string(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\'', "\\'")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
 }
 
 // ============================================================================
