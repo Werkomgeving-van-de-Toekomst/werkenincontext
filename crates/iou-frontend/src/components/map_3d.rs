@@ -911,6 +911,68 @@ pub fn TerrainWarning(message: String) -> Element {
     }
 }
 
+/// Map3D Component - Initializes a MapLibre GL JS 3D map.
+///
+/// This component loads MapLibre GL JS resources and initializes the map.
+/// The actual map container is provided by the parent component.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// rsx! {
+///     Map3D {
+///         config: Map3DConfig::default(),
+///     }
+/// }
+/// ```
+#[component]
+pub fn Map3D(config: Map3DConfig) -> Element {
+    // Get a reference to the document to inject scripts
+    let document = web_sys::window()
+        .and_then(|w| w.document())
+        .expect("Could not access document");
+
+    // Build initialization scripts
+    let load_maplibre = r#"
+        (function() {
+            if (window.maplibregl) return;
+            var css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css';
+            document.head.appendChild(css);
+            var script = document.createElement('script');
+            script.src = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js';
+            script.onload = function() {
+                if (window.initMap3D) { window.initMap3D(); }
+            };
+            document.head.appendChild(script);
+        })();
+    "#;
+
+    let map_init = build_map_init_script(&config);
+    let terrain_init = if config.has_terrain() {
+        build_terrain_init_script(&config)
+    } else {
+        String::new()
+    };
+
+    // Create script element with the initialization code
+    let script_element = document
+        .create_element("script")
+        .expect("Failed to create script element");
+
+    script_element
+        .set_text_content(Some(&format!("{}{}{}", load_maplibre, map_init, terrain_init)));
+
+    // Append script to document body
+    if let Some(body) = document.body() {
+        let _ = body.append_child(&script_element);
+    }
+
+    // This component doesn't render anything visible
+    rsx! { }
+}
+
 // ============================================================================
 // GeoJSON Layer Management Functions
 // ============================================================================

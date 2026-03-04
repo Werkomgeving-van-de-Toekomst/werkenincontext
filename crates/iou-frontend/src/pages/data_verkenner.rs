@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use std::env;
 
 use crate::components::{Header, Panel};
-use crate::components::{LayerControl3D, predefined_layers, Map3DConfig};
+use crate::components::{LayerControl3D, predefined_layers, Map3D, Map3DConfig};
 
 /// Mock dataset metadata
 struct DatasetInfo {
@@ -249,16 +249,26 @@ pub fn DataVerkenner() -> Element {
 
             Panel { title: "Kaart".to_string(),
                 div {
-                    id: "map",
-                    style: "height: 550px; border-radius: 8px; position: relative;",
+                    style: "position: relative;",
 
-                    // Render 3D components when enabled
+                    // Layer control overlay (positioned absolutely over the map)
                     if use_3d_map {
-                        // Map3D component is handled via JavaScript initialization
-                        // The LayerControl3D provides the UI for toggling layers
                         LayerControl3D {
                             layers: predefined_layers(),
                             map_id: "map".to_string(),
+                        }
+                    }
+
+                    // Map container
+                    div {
+                        id: "map",
+                        style: "height: 550px; border-radius: 8px;",
+                    }
+
+                    // Initialize Map3D when 3D is enabled
+                    if use_3d_map {
+                        Map3D {
+                            config: Map3DConfig::default(),
                         }
                     }
                 }

@@ -24,8 +24,7 @@ pub use panel::Panel;
 pub use timeline::{Timeline, TimelineEvent, TimelineEventType};
 
 // 3D Map Components (Map Engine 3D Upgrade)
-// pub use declarations will be added when components are implemented
-// pub use map_3d::Map3D;
+pub use map_3d::Map3D;
 pub use layer_control_3d::LayerControl3D;
 // Re-export config and layer types
 pub use map_3d::{Map3DConfig, ConfigError, TerrainSource};
