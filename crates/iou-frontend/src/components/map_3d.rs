@@ -128,7 +128,7 @@ impl Default for Map3DConfig {
             terrain_exaggeration: 1.5,
             terrain_source,
             terrain_tile_url: "https://api.maptiler.com/tiles/terrain-rgb/tiles.json".to_string(),
-            terrain_local_path: "/static/terrain/{z}/{x}/{y}.png".to_string(),
+            terrain_local_path: "https://elevation-tiles-prod.s3.amazonaws.com/v1/terrarium/{z}/{x}/{y}.png".to_string(),
             style_url: Self::default_style_url(),
             enabled: Self::is_3d_enabled(),
         }
@@ -1275,8 +1275,8 @@ mod component_tests {
         std::env::remove_var("MAPTILER_API_KEY");
         let config = Map3DConfig::default();
         let url = config.terrain_tile_url();
-        // When no API key is set, defaults to LocalAHN tiles
-        assert!(url.contains("/static/terrain/"));
+        // When no API key is set, defaults to LocalAHN (AWS terrain tiles)
+        assert!(url.contains("elevation-tiles-prod.s3.amazonaws.com") || url.contains("/static/terrain/"));
         assert_eq!(config.terrain_source, TerrainSource::LocalAHN);
     }
 
