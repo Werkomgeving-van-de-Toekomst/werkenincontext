@@ -83,13 +83,24 @@ const DATASETS: &[DatasetInfo] = &[
     },
 ];
 
-/// Checks if the 3D map is enabled via the MAP_3D_ENABLED environment variable.
+/// Checks if the 3D map is enabled.
 ///
-/// Defaults to false for safety - the feature must be explicitly enabled.
+/// Note: In WASM builds, environment variables are not available.
+/// This defaults to true for testing. Use a query parameter or feature flag
+/// for production control.
 fn is_3d_map_enabled() -> bool {
-    env::var("MAP_3D_ENABLED")
-        .map(|v| v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false)
+    // For WASM, we can't read env vars at runtime
+    // This is a simple check that returns true by default for testing
+    #[cfg(feature = "web")]
+    {
+        true // 3D map enabled by default for web builds
+    }
+    #[cfg(not(feature = "web"))]
+    {
+        std::env::var("MAP_3D_ENABLED")
+            .map(|v| v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false)
+    }
 }
 
 #[component]

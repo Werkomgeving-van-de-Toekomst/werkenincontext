@@ -201,10 +201,18 @@ impl Map3DConfig {
     /// # Returns
     ///
     /// Returns `true` if MAP_3D_ENABLED is "true" (case-insensitive), `false` otherwise.
+    /// Note: In WASM builds, this always returns true since env vars are not available.
     pub fn is_3d_enabled() -> bool {
-        env::var("MAP_3D_ENABLED")
-            .map(|v| v.eq_ignore_ascii_case("true"))
-            .unwrap_or(false)
+        #[cfg(feature = "web")]
+        {
+            true // Always enabled for web builds
+        }
+        #[cfg(not(feature = "web"))]
+        {
+            env::var("MAP_3D_ENABLED")
+                .map(|v| v.eq_ignore_ascii_case("true"))
+                .unwrap_or(false)
+        }
     }
 
     /// Determines the terrain source based on environment configuration.
