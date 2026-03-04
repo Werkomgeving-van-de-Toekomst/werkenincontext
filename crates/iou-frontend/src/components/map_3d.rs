@@ -475,25 +475,46 @@ mod config_tests {
 
     #[test]
     fn test_map3d_config_from_env_reads_map_3d_enabled_flag() {
-        // Note: This test requires setting environment variables
-        std::env::set_var("MAP_3D_ENABLED", "true");
-        let enabled = Map3DConfig::is_3d_enabled();
-        assert!(enabled);
+        // Note: For web builds, is_3d_enabled() always returns true
+        // This test is only meaningful for non-web builds
+        #[cfg(feature = "web")]
+        {
+            // For web builds, it should always be enabled
+            assert!(Map3DConfig::is_3d_enabled());
+        }
 
-        std::env::set_var("MAP_3D_ENABLED", "false");
-        let disabled = Map3DConfig::is_3d_enabled();
-        assert!(!disabled);
+        #[cfg(not(feature = "web"))]
+        {
+            std::env::set_var("MAP_3D_ENABLED", "true");
+            let enabled = Map3DConfig::is_3d_enabled();
+            assert!(enabled);
 
-        std::env::remove_var("MAP_3D_ENABLED");
-        let default_disabled = Map3DConfig::is_3d_enabled();
-        assert!(!default_disabled);
+            std::env::set_var("MAP_3D_ENABLED", "false");
+            let disabled = Map3DConfig::is_3d_enabled();
+            assert!(!disabled);
+
+            std::env::remove_var("MAP_3D_ENABLED");
+            let default_disabled = Map3DConfig::is_3d_enabled();
+            assert!(!default_disabled);
+        }
     }
 
     #[test]
     fn test_map3d_config_from_env_defaults_to_false_when_flag_not_set() {
-        std::env::remove_var("MAP_3D_ENABLED");
-        let config = Map3DConfig::from_env();
-        assert!(!config.enabled);
+        // Note: For web builds, is_3d_enabled() always returns true
+        #[cfg(feature = "web")]
+        {
+            std::env::remove_var("MAP_3D_ENABLED");
+            let config = Map3DConfig::from_env();
+            assert!(config.enabled);
+        }
+
+        #[cfg(not(feature = "web"))]
+        {
+            std::env::remove_var("MAP_3D_ENABLED");
+            let config = Map3DConfig::from_env();
+            assert!(!config.enabled);
+        }
     }
 
     #[test]
@@ -935,50 +956,79 @@ pub fn TerrainWarning(message: String) -> Element {
 /// ```
 #[component]
 pub fn Map3D(config: Map3DConfig) -> Element {
-    // Get a reference to the document to inject scripts
-    let document = web_sys::window()
-        .and_then(|w| w.document())
-        .expect("Could not access document");
+    // Get the container ID
+    let container_id = config.container_id.clone();
 
-    // Build initialization scripts
-    let load_maplibre = r#"
-        (function() {
-            if (window.maplibregl) return;
-            var css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css';
-            document.head.appendChild(css);
-            var script = document.createElement('script');
-            script.src = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js';
-            script.onload = function() {
-                if (window.initMap3D) { window.initMap3D(); }
-            };
-            document.head.appendChild(script);
-        })();
-    "#;
+    // Use effect to initialize map after mount
+    use_effect(move || {
+        // Only initialize if enabled
+        if !config.enabled {
+            return;
+        }
 
-    let map_init = build_map_init_script(&config);
-    let terrain_init = if config.has_terrain() {
-        build_terrain_init_script(&config)
-    } else {
-        String::new()
-    };
+        // Build the JavaScript initialization code
+        let map_init_code = build_map_init_script(&config);
 
-    // Create script element with the initialization code
-    let script_element = document
-        .create_element("script")
-        .expect("Failed to create script element");
+        let terrain_init_code = if config.has_terrain() {
+            build_terrain_init_script(&config)
+        } else {
+            String::new()
+        };
 
-    script_element
-        .set_text_content(Some(&format!("{}{}{}", load_maplibre, map_init, terrain_init)));
+        // Full initialization: load MapLibre, then initialize map
+        let full_code = format!(r#"
+            (function() {{
+                // Skip if MapLibre already loaded and map exists
+                if (window.maplibregl && window['map_{}']) return;
 
-    // Append script to document body
-    if let Some(body) = document.body() {
-        let _ = body.append_child(&script_element);
-    }
+                // Load MapLibre CSS
+                if (!document.querySelector('link[href*="maplibre-gl"]')) {{
+                    var css = document.createElement('link');
+                    css.rel = 'stylesheet';
+                    css.href = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css';
+                    document.head.appendChild(css);
+                }}
+
+                // Load MapLibre JS
+                if (!window.maplibregl) {{
+                    var script = document.createElement('script');
+                    script.src = 'https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js';
+                    script.onload = function() {{
+                        {};
+                        {};
+                    }};
+                    document.head.appendChild(script);
+                }} else {{
+                    {};
+                    {};
+                }}
+            }})();
+        "#, container_id,
+           map_init_code, terrain_init_code,
+           map_init_code, terrain_init_code);
+
+        // Execute the JavaScript using eval
+        let _ = eval_js(&full_code);
+    });
 
     // This component doesn't render anything visible
     rsx! { }
+}
+
+/// Helper to execute JavaScript in the browser context.
+fn eval_js(code: &str) -> Result<(), String> {
+    use web_sys::js_sys::Function;
+    use wasm_bindgen::JsValue;
+
+    // Create a Function from the code - new Function(body) in JS
+    // new_with_args takes (args..., body) - with no args, pass empty string then body
+    let function = Function::new_with_args("", code);
+
+    function
+        .call0(&JsValue::NULL)
+        .map_err(|e| format!("Failed to execute function: {:?}", e))?;
+
+    Ok(())
 }
 
 // ============================================================================
