@@ -42,5 +42,9 @@ tracing-subscriber.workspace = true
 # Config
 dotenvy = "0.15"
 
+# HTTP client for external APIs
+reqwest = { version = "0.12", features = ["json"] }
+proj = "0.31.0"
+
 [dev-dependencies]
 tokio-test = "0.4"

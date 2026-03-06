@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use std::env;
 
 use crate::components::{Header, Panel};
-use crate::components::{LayerControl3D, predefined_layers, Map3D, Map3DConfig};
+use crate::components::{LayerControl3D, predefined_layers};
 
 /// Mock dataset metadata
 struct DatasetInfo {
@@ -84,16 +84,10 @@ const DATASETS: &[DatasetInfo] = &[
 ];
 
 /// Checks if the 3D map is enabled.
-///
-/// Note: In WASM builds, environment variables are not available.
-/// This defaults to true for testing. Use a query parameter or feature flag
-/// for production control.
 fn is_3d_map_enabled() -> bool {
-    // For WASM, we can't read env vars at runtime
-    // This is a simple check that returns true by default for testing
     #[cfg(feature = "web")]
     {
-        true // 3D map enabled by default for web builds
+        true
     }
     #[cfg(not(feature = "web"))]
     {
@@ -103,15 +97,134 @@ fn is_3d_map_enabled() -> bool {
     }
 }
 
+/// Returns the Map3D initialization script.
+fn get_map3d_init_script() -> String {
+    r#"
+    (function() {
+        console.log('Map3D script loaded');
+
+        function waitForElement(id, callback) {
+            var element = document.getElementById(id);
+            if (element) {
+                callback(element);
+            } else {
+                setTimeout(function() { waitForElement(id, callback); }, 100);
+            }
+        }
+
+        function initMap3D() {
+            if (typeof window.maplibregl === 'undefined') {
+                console.log('MapLibre GL not loaded yet, waiting...');
+                setTimeout(initMap3D, 200);
+                return;
+            }
+
+            if (window.map_map) {
+                console.log('Map already initialized');
+                return;
+            }
+
+            console.log('Initializing Map3D...');
+
+            try {
+                var map = new maplibregl.Map({
+                    container: 'map',
+                    style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                    center: [5.6, 52.4],
+                    zoom: 10,
+                    pitch: 60,
+                    bearing: 0,
+                    antialias: true
+                });
+
+                map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+                window.map_map = map;
+
+                map.on('load', function() {
+                    console.log('Map loaded, fetching buildings...');
+
+                    fetch('/api/buildings-3d?bbox=150000,470000,170000,490000&limit=100')
+                        .then(r => {
+                            console.log('Buildings fetch status:', r.status, r.statusText);
+                            if (!r.ok) throw new Error('Failed to fetch: ' + r.status + ' ' + r.statusText);
+                            return r.json();
+                        })
+                        .then(data => {
+                            console.log('Buildings response:', data);
+
+                            if (data.features && data.features.length > 0) {
+                                // Log first building coordinates for debugging
+                                console.log('First building coordinates:', data.features[0].geometry.coordinates);
+
+                                map.addSource('buildings', {
+                                    type: 'geojson',
+                                    data: data
+                                });
+
+                                map.addLayer({
+                                    id: 'building-3d',
+                                    type: 'fill-extrusion',
+                                    source: 'buildings',
+                                    paint: {
+                                        'fill-extrusion-color': '#8899aa',
+                                        'fill-extrusion-height': ['coalesce', ['get', 'height'], 10],
+                                        'fill-extrusion-base': 0,
+                                        'fill-extrusion-opacity': 0.8
+                                    }
+                                });
+
+                                // Fit map to buildings bounds
+                                var coordinates = [];
+                                data.features.forEach(function(f) {
+                                    if (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0]) {
+                                        var coords = f.geometry.coordinates[0];
+                                        coords.forEach(function(c) {
+                                            coordinates.push(c);
+                                        });
+                                    }
+                                });
+                                var bounds = coordinates.reduce(function(bounds, coord) {
+                                    return bounds.extend(coord);
+                                }, new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
+
+                                map.fitBounds(bounds, {
+                                    padding: 50,
+                                    pitch: 60
+                                });
+
+                                console.log('Loaded ' + data.features.length + ' buildings from 3DBAG');
+                                console.log('Map bounds fitted to buildings');
+                            } else {
+                                console.warn('No buildings found');
+                            }
+                        })
+                        .catch(err => console.error('Failed to load buildings:', err));
+                });
+
+                map.on('error', function(e) {
+                    console.error('Map error:', e);
+                });
+
+            } catch (e) {
+                console.error('Error creating map:', e);
+            }
+        }
+
+        waitForElement('map', function() {
+            console.log('Map container found, initializing...');
+            initMap3D();
+        });
+    })();
+    "#.to_string()
+}
+
 #[component]
 pub fn DataVerkenner() -> Element {
     let mut selected = use_signal(|| 0usize);
     let use_3d_map = is_3d_map_enabled();
 
-    // Initialize Leaflet map with local GeoJSON from Kaartportaal Flevoland
-    // Only when 3D map is NOT enabled
+    // Initialize Leaflet map when 3D is NOT enabled
     use_effect(move || {
-        // Skip Leaflet initialization when 3D is enabled
         if use_3d_map {
             return;
         }
@@ -128,7 +241,6 @@ pub fn DataVerkenner() -> Element {
                     attribution: '&copy; OpenStreetMap'
                 }).addTo(map);
 
-                // Layer groups for the control
                 var grensLayer = L.layerGroup().addTo(map);
                 var cultuurLayer = L.layerGroup().addTo(map);
                 var windLayer = L.layerGroup();
@@ -197,6 +309,16 @@ pub fn DataVerkenner() -> Element {
         document::eval(script);
     });
 
+    // Initialize Map3D when 3D is enabled
+    use_effect(move || {
+        if !use_3d_map {
+            return;
+        }
+
+        let map_script = get_map3d_init_script();
+        document::eval(&map_script);
+    });
+
     let idx = *selected.read();
     let dataset = &DATASETS[idx];
 
@@ -262,7 +384,6 @@ pub fn DataVerkenner() -> Element {
                 div {
                     style: "position: relative;",
 
-                    // Layer control overlay (positioned absolutely over the map)
                     if use_3d_map {
                         LayerControl3D {
                             layers: predefined_layers(),
@@ -270,17 +391,9 @@ pub fn DataVerkenner() -> Element {
                         }
                     }
 
-                    // Map container
                     div {
                         id: "map",
                         style: "height: 550px; border-radius: 8px;",
-                    }
-
-                    // Initialize Map3D when 3D is enabled
-                    if use_3d_map {
-                        Map3D {
-                            config: Map3DConfig::default(),
-                        }
                     }
                 }
             }

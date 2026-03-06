@@ -109,11 +109,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/templates/{id}", get(routes::get_template))
         .route("/templates/{id}", put(routes::update_template))
         .route("/templates/{id}", delete(routes::delete_template))
+        // 3D Buildings proxy
+        .route("/buildings-3d", get(routes::buildings_3d::get_buildings_3d))
         .without_v07_checks();
 
     // Combine API with static file serving
     let app = Router::new()
         .nest("/api", api)
+        // Terrain tile endpoints (must be before fallback - these are public, not under /api)
+        .route("/terrain/tilejson.json", get(routes::terrain::get_tilejson))
+        .route("/terrain/{*tile_path}", get(routes::terrain::get_terrain_tile))
         // Serve static frontend files
         .fallback_service(ServeDir::new("static").append_index_html_on_directories(true))
         // CORS layer
