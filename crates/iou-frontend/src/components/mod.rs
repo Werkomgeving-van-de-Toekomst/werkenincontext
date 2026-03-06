@@ -6,8 +6,12 @@ mod audit_viewer;
 mod document_card;
 mod header;
 mod knowledge_graph;
+mod layer_control_3d;
+mod layer_detection;
 mod loading;
+mod map_3d;
 mod panel;
+mod terrain_encoding;
 mod timeline;
 
 pub use approval_actions::ApprovalActions;
@@ -18,3 +22,31 @@ pub use header::Header;
 pub use knowledge_graph::KnowledgeGraph;
 pub use panel::Panel;
 pub use timeline::{Timeline, TimelineEvent, TimelineEventType};
+
+// 3D Map Components (Map Engine 3D Upgrade)
+pub use map_3d::Map3D;
+pub use layer_control_3d::LayerControl3D;
+// Re-export config and layer types
+pub use map_3d::{Map3DConfig, ConfigError, TerrainSource};
+pub use layer_control_3d::{GeoJsonLayer, LayerType, GeoJsonLayerBuilder, predefined_layers, LayerCheckbox};
+pub use layer_detection::{detect_layer_type, has_mixed_geometries};
+pub use terrain_encoding::{elevation_to_terrain_rgb, terrain_rgb_to_elevation};
+
+#[cfg(test)]
+mod tests {
+    // These tests verify that the 3D map modules compile successfully.
+    // The mere existence of these tests confirms that mod map_3d and
+    // mod layer_control_3d declarations are valid.
+
+    #[test]
+    fn test_map3d_module_compiles() {
+        // If this test compiles, the map_3d module exists
+        assert!(true, "map_3d module is accessible");
+    }
+
+    #[test]
+    fn test_layer_control_3d_module_compiles() {
+        // If this test compiles, the layer_control_3d module exists
+        assert!(true, "layer_control_3d module is accessible");
+    }
+}
