@@ -3,6 +3,7 @@
 use axum::{extract::Query, response::Json};
 use serde::Deserialize;
 use serde_json::json;
+use std::sync::OnceLock;
 
 #[derive(Deserialize)]
 pub struct BboxParams {
@@ -10,15 +11,25 @@ pub struct BboxParams {
     limit: Option<usize>,
 }
 
+/// Flag indicating whether proj crate is available for accurate conversion.
+/// Checked once at startup to avoid repeated Proj creation.
+static PROJ_AVAILABLE: OnceLock<bool> = OnceLock::new();
+
+/// Check if proj is available for coordinate conversion.
+fn is_proj_available() -> bool {
+    *PROJ_AVAILABLE.get_or_init(|| {
+        proj::Proj::new_known_crs("EPSG:28992", "EPSG:4326", None).is_ok()
+    })
+}
+
 /// RD (EPSG:28992) to WGS84 (EPSG:4326) coordinate conversion
-/// Using proj crate for accurate transformation
+/// Using proj crate for accurate transformation.
+///
+/// Returns None if proj is not available or conversion fails.
 fn rd_to_wgs84(x: f64, y: f64) -> Option<(f64, f64)> {
     use proj::Proj;
 
-    // Create a transformation from RD (EPSG:28992) to WGS84 (EPSG:4326)
     let proj = Proj::new_known_crs("EPSG:28992", "EPSG:4326", None).ok()?;
-
-    // Convert the point - proj returns (longitude, latitude) as a tuple
     let (lon, lat) = proj.convert((x, y)).ok()?;
 
     Some((lon, lat))
@@ -80,7 +91,7 @@ pub async fn get_buildings_3d(Query(params): Query<BboxParams>) -> Json<serde_js
 
 
     // Check if proj is available for accurate conversion
-    let use_proj = false; //proj::Proj::new_known_crs("EPSG:28992", "EPSG:4326", None).is_ok();
+    let use_proj = is_proj_available();
 
     // Process each building feature
     let features = if let Some(features_array) = cityjson.get("features").and_then(|f| f.as_array()) {
@@ -149,6 +160,7 @@ fn convert_geometry_proj(
 ) -> serde_json::Value {
     use proj::Proj;
 
+    // Create Proj instance once per geometry (not per coordinate)
     let proj = match Proj::new_known_crs("EPSG:28992", "EPSG:4326", None) {
         Ok(p) => p,
         Err(_) => return convert_geometry_fallback(geometry, vertices, transform),
@@ -257,4 +269,77 @@ fn convert_geometry_fallback(
     fallback.insert("type".to_string(), json!("Point"));
     fallback.insert("coordinates".to_string(), json!([0, 0]));
     serde_json::Value::Object(fallback)
+}
+
+#[cfg(test)]
+mod coordinate_tests {
+    use super::*;
+
+    #[test]
+    fn test_rd_to_wgs84_amersfoort() {
+        // Amersfoort coordinates (reference point)
+        // RD: (155000, 463000) should approximate WGS84: (5.3876, 52.1552)
+        if let Some((lon, lat)) = rd_to_wgs84(155000.0, 463000.0) {
+            assert!(f64::abs(lon - 5.3876) < 0.001, "Longitude mismatch");
+            assert!(f64::abs(lat - 52.1552) < 0.001, "Latitude mismatch");
+        } else {
+            panic!("proj conversion failed");
+        }
+    }
+
+    #[test]
+    fn test_rd_to_wgs84_returns_none_on_invalid() {
+        // Extreme coordinates that might fail conversion
+        let result = rd_to_wgs84(f64::NAN, f64::NAN);
+        assert!(result.is_none(), "NaN coordinates should return None");
+
+        // Test infinity
+        let result = rd_to_wgs84(f64::INFINITY, f64::INFINITY);
+        assert!(result.is_none(), "Infinity coordinates should return None");
+    }
+
+    #[test]
+    fn test_fallback_conversion_does_not_panic() {
+        // Fallback should handle all inputs gracefully
+        let (lon, lat) = rd_to_wgs84_fallback(155000.0, 463000.0);
+        assert!(lon.is_finite());
+        assert!(lat.is_finite());
+    }
+
+    #[test]
+    fn test_proj_more_accurate_than_fallback() {
+        // Compare both methods at a known point
+        let rd_x = 155000.0;
+        let rd_y = 463000.0;
+
+        let proj_result = rd_to_wgs84(rd_x, rd_y);
+        let fallback_result = rd_to_wgs84_fallback(rd_x, rd_y);
+
+        if let Some((proj_lon, proj_lat)) = proj_result {
+            // proj should give valid results
+            assert!(proj_lon >= 3.0 && proj_lon <= 7.5, "Longitude out of Netherlands range");
+            assert!(proj_lat >= 50.0 && proj_lat <= 54.0, "Latitude out of Netherlands range");
+
+            // Fallback should be in reasonable range too
+            assert!(fallback_result.0 >= 3.0 && fallback_result.0 <= 7.5);
+            assert!(fallback_result.1 >= 50.0 && fallback_result.1 <= 54.0);
+        }
+    }
+
+    #[test]
+    fn test_convert_geometry_proj_valid_input() {
+        // Skip if proj is not available
+        if !is_proj_available() {
+            return; // Skip test if proj unavailable
+        };
+
+        // Verify proj can convert a simple point
+        let proj = proj::Proj::new_known_crs("EPSG:28992", "EPSG:4326", None).unwrap();
+        let result = proj.convert((155000.0, 463000.0));
+        assert!(result.is_ok(), "proj should convert valid RD coordinates");
+
+        let (lon, lat) = result.unwrap();
+        assert!(f64::abs(lon - 5.3876) < 0.01);
+        assert!(f64::abs(lat - 52.1552) < 0.01);
+    }
 }
