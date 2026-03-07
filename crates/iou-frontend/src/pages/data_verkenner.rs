@@ -97,37 +97,192 @@ fn is_3d_map_enabled() -> bool {
     }
 }
 
-/// Returns the Map3D initialization script.
-fn get_map3d_init_script() -> String {
+/// Builds the JavaScript fetch script for dynamic building loading.
+fn build_buildings_fetch_script() -> String {
     r#"
-    (function() {
-        console.log('Map3D script loaded');
+        // Constants
+        const BUILDINGS_FETCH_LIMIT = 150;
 
-        function waitForElement(id, callback) {
-            var element = document.getElementById(id);
-            if (element) {
-                callback(element);
+        // State tracking for dynamic loading
+        let lastFetchedBbox = null;
+        let fetchTimeout = null;
+        let abortController = null;
+
+        // Check if bounds changed by at least 10% threshold
+        // Also checks if center position moved significantly (pan detection)
+        function shouldFetch(newBounds) {
+            if (!lastFetchedBbox) return true;
+
+            const width = newBounds[2] - newBounds[0];
+            const lastWidth = lastFetchedBbox[2] - lastFetchedBbox[0];
+            const height = newBounds[3] - newBounds[1];
+            const lastHeight = lastFetchedBbox[3] - lastFetchedBbox[1];
+
+            // Handle zero dimensions
+            if (lastWidth === 0 || lastHeight === 0) return true;
+
+            // Calculate centers to detect panning
+            const newCenterX = (newBounds[0] + newBounds[2]) / 2;
+            const newCenterY = (newBounds[1] + newBounds[3]) / 2;
+            const lastCenterX = (lastFetchedBbox[0] + lastFetchedBbox[2]) / 2;
+            const lastCenterY = (lastFetchedBbox[1] + lastFetchedBbox[3]) / 2;
+
+            // Check if center moved more than 10% of viewport size
+            const centerMoveX = Math.abs(newCenterX - lastCenterX) / lastWidth;
+            const centerMoveY = Math.abs(newCenterY - lastCenterY) / lastHeight;
+
+            const widthChange = Math.abs(width - lastWidth) / lastWidth;
+            const heightChange = Math.abs(height - lastHeight) / lastHeight;
+
+            return widthChange > 0.1 || heightChange > 0.1 || centerMoveX > 0.1 || centerMoveY > 0.1;
+        }
+
+        // Update buildings source with new GeoJSON data
+        function updateBuildingsSource(geojson) {
+            // Clear any existing popups
+            document.querySelectorAll('.maplibregl-popup').forEach(p => p.remove());
+
+            const source = map.getSource('buildings');
+            if (source) {
+                source.setData(geojson);
             } else {
-                setTimeout(function() { waitForElement(id, callback); }, 100);
+                // Source doesn't exist yet, create it
+                map.addSource('buildings', {
+                    type: 'geojson',
+                    data: geojson
+                });
+
+                map.addLayer({
+                    id: 'building-3d',
+                    type: 'fill-extrusion',
+                    source: 'buildings',
+                    paint: {
+                        'fill-extrusion-color': '#8899aa',
+                        'fill-extrusion-height': ['coalesce', ['get', 'height'], 10],
+                        'fill-extrusion-base': 0,
+                        'fill-extrusion-opacity': 0.8
+                    }
+                });
             }
         }
 
-        function initMap3D() {
-            if (typeof window.maplibregl === 'undefined') {
+        // Show empty state when no buildings found
+        function showNoBuildingsMessage() {
+            const source = map.getSource('buildings');
+            if (source) {
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: []
+                });
+            }
+        }
+
+        // Show error message
+        function showErrorMessage(message) {
+            console.warn(message);
+        }
+
+        // Fetch buildings from API with WGS84 bbox
+        async function fetchBuildings(bbox) {
+            // Cancel any pending fetch
+            if (abortController) {
+                abortController.abort();
+            }
+
+            // Create new abort controller for this fetch
+            abortController = new AbortController();
+
+            try {
+                const response = await fetch(
+                    `/api/buildings-3d?bbox-wgs84=${bbox.join(',')}&limit=${BUILDINGS_FETCH_LIMIT}`,
+                    { signal: abortController.signal }
+                );
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showNoBuildingsMessage();
+                        return;
+                    }
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.features.length === 0) {
+                    showNoBuildingsMessage();
+                    return;
+                }
+
+                updateBuildingsSource(data);
+                // Update state AFTER successful fetch (fixes race condition)
+                lastFetchedBbox = bbox;
+                console.log('Loaded ' + data.features.length + ' buildings from 3DBAG');
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Fetch aborted due to new request');
+                    return;
+                }
+                console.error('Failed to fetch buildings:', error);
+                showErrorMessage('Kon gebouwen niet laden. Probeer het opnieuw.');
+            } finally {
+                abortController = null;
+            }
+        }
+
+        // Debounced fetch function
+        function debouncedFetch() {
+            clearTimeout(fetchTimeout);
+            fetchTimeout = setTimeout(() => {
+                const bounds = map.getBounds();
+                const bbox = [bounds.getWest(), bounds.getSouth(),
+                              bounds.getEast(), bounds.getNorth()];
+
+                if (shouldFetch(bbox)) {
+                    fetchBuildings(bbox);
+                    // Note: lastFetchedBbox is now updated inside fetchBuildings
+                    // after successful fetch to prevent race conditions
+                }
+            }, 300);
+        }
+    "#.to_string()
+}
+
+/// Returns the Map3D initialization script.
+fn get_map3d_init_script() -> String {
+    let fetch_script = build_buildings_fetch_script();
+    format!(
+        r#"
+    (function() {{
+        console.log('Map3D script loaded');
+
+        {fetch_script}
+
+        function waitForElement(id, callback) {{
+            var element = document.getElementById(id);
+            if (element) {{
+                callback(element);
+            }} else {{
+                setTimeout(function() {{ waitForElement(id, callback); }}, 100);
+            }}
+        }}
+
+        function initMap3D() {{
+            if (typeof window.maplibregl === 'undefined') {{
                 console.log('MapLibre GL not loaded yet, waiting...');
                 setTimeout(initMap3D, 200);
                 return;
-            }
+            }}
 
-            if (window.map_map) {
+            if (window.map_map) {{
                 console.log('Map already initialized');
                 return;
-            }
+            }}
 
             console.log('Initializing Map3D...');
 
-            try {
-                var map = new maplibregl.Map({
+            try {{
+                var map = new maplibregl.Map({{
                     container: 'map',
                     style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
                     center: [5.6, 52.4],
@@ -135,87 +290,38 @@ fn get_map3d_init_script() -> String {
                     pitch: 60,
                     bearing: 0,
                     antialias: true
-                });
+                }});
 
-                map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+                map.addControl(new maplibregl.NavigationControl({{ visualizePitch: true }}));
                 window.map_map = map;
 
-                map.on('load', function() {
-                    console.log('Map loaded, fetching buildings...');
+                map.on('load', function() {{
+                    console.log('Map loaded, setting up dynamic building loading...');
 
-                    fetch('/api/buildings-3d?bbox=150000,470000,170000,490000&limit=100')
-                        .then(r => {
-                            console.log('Buildings fetch status:', r.status, r.statusText);
-                            if (!r.ok) throw new Error('Failed to fetch: ' + r.status + ' ' + r.statusText);
-                            return r.json();
-                        })
-                        .then(data => {
-                            console.log('Buildings response:', data);
+                    // Add event listeners for dynamic loading
+                    map.on('moveend', debouncedFetch);
+                    map.on('zoomend', debouncedFetch);
 
-                            if (data.features && data.features.length > 0) {
-                                // Log first building coordinates for debugging
-                                console.log('First building coordinates:', data.features[0].geometry.coordinates);
+                    // Initial fetch for starting viewport
+                    debouncedFetch();
+                }});
 
-                                map.addSource('buildings', {
-                                    type: 'geojson',
-                                    data: data
-                                });
-
-                                map.addLayer({
-                                    id: 'building-3d',
-                                    type: 'fill-extrusion',
-                                    source: 'buildings',
-                                    paint: {
-                                        'fill-extrusion-color': '#8899aa',
-                                        'fill-extrusion-height': ['coalesce', ['get', 'height'], 10],
-                                        'fill-extrusion-base': 0,
-                                        'fill-extrusion-opacity': 0.8
-                                    }
-                                });
-
-                                // Fit map to buildings bounds
-                                var coordinates = [];
-                                data.features.forEach(function(f) {
-                                    if (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0]) {
-                                        var coords = f.geometry.coordinates[0];
-                                        coords.forEach(function(c) {
-                                            coordinates.push(c);
-                                        });
-                                    }
-                                });
-                                var bounds = coordinates.reduce(function(bounds, coord) {
-                                    return bounds.extend(coord);
-                                }, new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
-
-                                map.fitBounds(bounds, {
-                                    padding: 50,
-                                    pitch: 60
-                                });
-
-                                console.log('Loaded ' + data.features.length + ' buildings from 3DBAG');
-                                console.log('Map bounds fitted to buildings');
-                            } else {
-                                console.warn('No buildings found');
-                            }
-                        })
-                        .catch(err => console.error('Failed to load buildings:', err));
-                });
-
-                map.on('error', function(e) {
+                map.on('error', function(e) {{
                     console.error('Map error:', e);
-                });
+                }});
 
-            } catch (e) {
+            }} catch (e) {{
                 console.error('Error creating map:', e);
-            }
-        }
+            }}
+        }}
 
-        waitForElement('map', function() {
+        waitForElement('map', function() {{
             console.log('Map container found, initializing...');
             initMap3D();
-        });
-    })();
-    "#.to_string()
+        }});
+    }})();
+    "#
+    )
 }
 
 #[component]
@@ -398,5 +504,45 @@ pub fn DataVerkenner() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test_frontend_loading {
+    use super::*;
+
+    #[test]
+    fn test_fetch_script_includes_wgs84_endpoint() {
+        let script = build_buildings_fetch_script();
+        assert!(script.contains("bbox-wgs84"),
+                "Fetch script should use WGS84 bbox parameter");
+    }
+
+    #[test]
+    fn test_fetch_script_includes_debounce() {
+        let script = build_buildings_fetch_script();
+        assert!(script.contains("setTimeout") && script.contains("300"),
+                "Fetch script should include 300ms debounce");
+    }
+
+    #[test]
+    fn test_fetch_script_includes_state_variables() {
+        let script = build_buildings_fetch_script();
+        assert!(script.contains("lastFetchedBbox") && script.contains("fetchTimeout"),
+                "Fetch script should initialize state variables");
+    }
+
+    #[test]
+    fn test_fetch_script_includes_threshold_check() {
+        let script = build_buildings_fetch_script();
+        assert!(script.contains("0.1") || script.contains("10%"),
+                "Fetch script should include 10% threshold check");
+    }
+
+    #[test]
+    fn test_fetch_script_includes_error_handling() {
+        let script = build_buildings_fetch_script();
+        assert!(script.contains("catch") && script.contains("error"),
+                "Fetch script should include error handling");
     }
 }
