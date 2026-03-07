@@ -157,7 +157,15 @@ fn build_buildings_fetch_script() -> String {
                     type: 'fill-extrusion',
                     source: 'buildings',
                     paint: {
-                        'fill-extrusion-color': '#8899aa',
+                        'fill-extrusion-color': [
+                            'step',
+                            ['coalesce', ['get', 'height'], 0],
+                            '#64B5F6',  // 0-5m: Light blue
+                            5,
+                            '#9B59B6',  // 5-15m: Medium purple
+                            15,
+                            '#8E44AD'   // 15m+: Dark purple
+                        ],
                         'fill-extrusion-height': ['coalesce', ['get', 'height'], 10],
                         'fill-extrusion-base': 0,
                         'fill-extrusion-opacity': 0.8
