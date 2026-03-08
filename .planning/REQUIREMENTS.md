@@ -31,8 +31,8 @@ Requirements for Phase 2 release. Each maps to roadmap phases.
 ### Polish
 
 - [ ] **POLI-01**: Filter state persists in URL query parameters
-- [ ] **POLI-02**: View transitions have smooth animations
-- [ ] **POLI-03**: UI matches design system styling
+- [x] **POLI-02**: View transitions have smooth animations
+- [x] **POLI-03**: UI matches design system styling
 
 ## v2 Requirements
 
@@ -75,8 +75,8 @@ Deferred to future release.
 | DENS-02 | Phase 2.3 | Complete |
 | DENS-03 | Phase 2.3 | Complete |
 | POLI-01 | Phase 2.4 | Pending |
-| POLI-02 | Phase 2.4 | Pending |
-| POLI-03 | Phase 2.4 | Pending |
+| POLI-02 | Phase 2.4 | Complete |
+| POLI-03 | Phase 2.4 | Complete |
 
 **Coverage:**
 - v1 requirements: 15 total

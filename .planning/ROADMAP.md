@@ -14,7 +14,7 @@ Each phase delivers a complete, verifiable capability. The architecture follows 
 
 - [x] **Phase 2.1: Building Filtering** - Interactive filters for year, height, and floor count (COMPLETED 2026-03-08)
 - [x] **Phase 2.2: View Toggle** - Switch between 2D footprint and 3D extrusion views (COMPLETED 2026-03-08)
-- [ ] **Phase 2.3: Density Analysis** - Heatmap overlay showing building density patterns
+- [x] **Phase 2.3: Density Analysis** - Heatmap overlay showing building density patterns (COMPLETED 2026-03-08)
 - [ ] **Phase 2.4: Polish** - URL state persistence, animations, design system styling
 
 ## Phase Details
@@ -63,11 +63,13 @@ Plans:
 **Plans**: 1 plan (consolidated from 2)
 
 Plans:
-- [ ] 2.3-01: Implement DensityHeatmap state and component with buffered tile calculations, MapLibre heatmap layer, and toggle button
+- [x] 2.3-01: Implement DensityHeatmap state and component with buffered tile calculations, MapLibre heatmap layer, and toggle button (completed 2026-03-08)
+  - All 3 requirements (DENS-01 through DENS-03) satisfied
+  - Buffered tile calculations implemented to prevent tile seams
 
 ### Phase 2.4: Polish
 **Goal**: Complete production-ready UX with URL state sharing, smooth animations, and consistent styling
-**Depends on**: Phase 2.3
+**Depends on**: Phase 2.3 (completed 2026-03-08)
 **Requirements**: POLI-01, POLI-02, POLI-03
 **Success Criteria** (what must be TRUE):
   1. User can share URL and recipient sees same filter/view state
@@ -76,20 +78,20 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 2.4-01: Implement URL query parameter encoding/decoding for filter and view state
-- [ ] 2.4-02: Add CSS transitions for view toggles and apply design system styles to all UI components
+- [ ] 2.4-01: Implement URL query parameter encoding/decoding for filter, view, and heatmap state (POLI-01)
+- [x] 2.4-02: Add CSS transitions for view toggles and apply design system styles to all UI components (POLI-02, POLI-03) - COMPLETED 2026-03-08
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 -> 2.4
+Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 (done) -> 2.4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 2.1. Building Filtering | 1/1 | COMPLETE | 2026-03-08 |
 | 2.2. View Toggle | 1/1 | COMPLETE | 2026-03-08 |
-| 2.3. Density Analysis | 0/1 | Not started | - |
-| 2.4. Polish | 0/2 | Not started | - |
+| 2.3. Density Analysis | 1/1 | COMPLETE | 2026-03-08 |
+| 2.4. Polish | 1/2 | In Progress | 2026-03-08 |
 
 ## Complexity Indicators
 
@@ -97,7 +99,7 @@ Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 -> 2.4
 |-------|------------|-------|
 | 2.1 | Medium | Filter expressions straightforward, but must avoid re-render cascade (PITFALL-01) - VERIFIED |
 | 2.2 | Low | Single-layer architecture simpler than dual-layer, state management is key - COMPLETE |
-| 2.3 | High | Buffered tile calculations require careful spatial logic (PITFALL-03) |
+| 2.3 | High | Buffered tile calculations require careful spatial logic (PITFALL-03) - COMPLETE |
 | 2.4 | Low | URL serialization and CSS animations are standard patterns |
 
 ## Integration Checkpoints
@@ -106,7 +108,7 @@ Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 -> 2.4
 |-------------|--------------|
 | 2.1 | DONE - Profile filter changes verify <16ms frame time, no geometry reprocessing spikes |
 | 2.2 | DONE - Single-layer architecture verified, state sync tested |
-| 2.3 | Visual inspection of tile boundaries, automated density continuity test |
+| 2.3 | DONE - Visual inspection of tile boundaries, automated density continuity test |
 | 2.4 | Cross-browser testing (Chrome, Firefox, Safari), URL sharing test |
 
 ## Dependencies
@@ -118,9 +120,9 @@ Phase 2.1: Building Filtering (COMPLETED 2026-03-08)
     |
 Phase 2.2: View Toggle (COMPLETED 2026-03-08)
     |
-Phase 2.3: Density Analysis (READY)
+Phase 2.3: Density Analysis (COMPLETED 2026-03-08)
     |
-Phase 2.4: Polish
+Phase 2.4: Polish (READY)
     |
 Phase 2 Complete
 ```
@@ -136,6 +138,8 @@ Phase 2 Complete
 |------|------------|-------|--------|
 | Filter re-render cascade | Use `setFilter()` not layer recreation | 2.1 | MITIGATED |
 | View toggle state desync | Single-layer architecture, not dual layers | 2.2 | MITIGATED |
-| Density tile artifacts | Buffered calculations with overlap | 2.3 | Pending |
+| Density tile artifacts | Buffered calculations with overlap | 2.3 | MITIGATED |
 | Viewport race conditions | AbortController for pending requests | 2.1 | Implemented |
 | Filter expression complexity | Client-side simple expressions only | 2.1 | Verified |
+| URL state desync | replaceState for updates, popstate listener for back/forward | 2.4 | Pending |
+| Design system drift | Use CSS variables from style.css consistently | 2.4 | Pending |
