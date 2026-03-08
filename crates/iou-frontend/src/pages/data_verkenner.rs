@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use std::env;
 
-use crate::components::{Header, Panel, FilterPanel3D};
+use crate::components::{Header, Panel, FilterPanel3D, ViewToggle};
 use crate::components::{LayerControl3D, predefined_layers};
 
 /// Mock dataset metadata
@@ -557,14 +557,18 @@ pub fn DataVerkenner() -> Element {
                     style: "position: relative;",
 
                     if use_3d_map {
+                        // View toggle button (top-left)
+                        ViewToggle {}
+
+                        // Layer controls (top-right)
                         LayerControl3D {
                             layers: predefined_layers(),
                             map_id: "map".to_string(),
                         }
 
-                        // Add filter panel for 3D buildings
+                        // Filter panel for 3D buildings (right, below layer controls)
                         div {
-                            style: "position: absolute; top: 10px; right: 10px; z-index: 1000;",
+                            style: "position: absolute; top: 60px; right: 10px; z-index: 1000;",
                             FilterPanel3D {}
                         }
                     }
