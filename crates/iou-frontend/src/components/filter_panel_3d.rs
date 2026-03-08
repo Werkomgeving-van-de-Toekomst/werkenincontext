@@ -2,10 +2,12 @@
 //!
 //! Provides interactive slider controls for filtering 3D buildings
 //! by construction year, height, and floor count.
+//!
+//! URL state persistence: Filter changes update the browser URL immediately
+//! via inline JavaScript in slider oninput handlers.
 
 use dioxus::prelude::*;
-use crate::state::{BuildingFilter, ViewMode, DensityHeatmap, UrlState};
-use crate::components::build_update_url_script;
+use crate::state::BuildingFilter;
 
 /// Builds a MapLibre filter expression from BuildingFilter state
 ///
@@ -32,6 +34,9 @@ pub fn build_filter_expression(filter: &BuildingFilter) -> String {
 }
 
 /// Builds JavaScript to update the map filter and query visible count
+///
+/// Uses map.isStyleLoaded() check to defer filter application until
+/// MapLibre's style is fully loaded, preventing "Style is not done loading" errors.
 pub fn build_set_filter_script(filter_expr: &str) -> String {
     format!(
         r#"
@@ -42,33 +47,50 @@ pub fn build_set_filter_script(filter_expr: &str) -> String {
                 return;
             }}
 
-            try {{
-                const filter = {};
-                map.setFilter('building-3d', filter);
+            const applyFilter = function() {{
+                try {{
+                    // Log filter expression as string to avoid circular reference error
+                    const filterExpr = '{filter_expr}';
+                    map.setFilter('building-3d', JSON.parse(filterExpr));
 
-                // Query visible buildings and update count
-                const features = map.queryRenderedFeatures({{
-                    layers: ['building-3d']
-                }});
-                const count = features.length;
+                    // Query visible buildings and update count
+                    const features = map.queryRenderedFeatures({{
+                        layers: ['building-3d']
+                    }});
+                    const count = features.length;
 
-                // Update DOM element
-                const countEl = document.getElementById('building-count');
-                if (countEl) {{
-                    countEl.textContent = count.toString();
+                    // Update DOM element
+                    const countEl = document.getElementById('building-count');
+                    if (countEl) {{
+                        countEl.textContent = count.toString();
+                    }}
+
+                    console.log('Filter updated:', filterExpr, 'Visible buildings:', count);
+                }} catch (e) {{
+                    console.error('Filter update error:', e);
                 }}
+            }};
 
-                console.log('Filter updated:', filter, 'Visible buildings:', count);
-            }} catch (e) {{
-                console.error('Filter update error:', e);
+            // Check if style is loaded before applying filter
+            if (map.isStyleLoaded()) {{
+                applyFilter();
+            }} else {{
+                // Defer filter application until style is loaded
+                map.once('load', function() {{
+                    console.log('Style loaded, applying deferred filter');
+                    applyFilter();
+                }});
             }}
         }})();
     "#,
-        filter_expr
+        filter_expr = filter_expr.replace('\'', "\\'")  // Escape single quotes for JS string
     )
 }
 
 /// Builds JavaScript to clear all filters (show all buildings)
+///
+/// Uses map.isStyleLoaded() check to defer filter clearing until
+/// MapLibre's style is fully loaded, preventing "Style is not done loading" errors.
 pub fn build_clear_filter_script() -> String {
     r#"
         (function() {
@@ -78,27 +100,85 @@ pub fn build_clear_filter_script() -> String {
                 return;
             }
 
-            try {
-                map.setFilter('building-3d', null);
+            const clearFilter = function() {
+                try {
+                    map.setFilter('building-3d', null);
 
-                // Query all buildings and update count
-                const features = map.queryRenderedFeatures({
-                    layers: ['building-3d']
-                });
-                const count = features.length;
+                    // Query all buildings and update count
+                    const features = map.queryRenderedFeatures({
+                        layers: ['building-3d']
+                    });
+                    const count = features.length;
 
-                const countEl = document.getElementById('building-count');
-                if (countEl) {
-                    countEl.textContent = count.toString();
+                    const countEl = document.getElementById('building-count');
+                    if (countEl) {
+                        countEl.textContent = count.toString();
+                    }
+
+                    console.log('Filters cleared, all buildings visible');
+                } catch (e) {
+                    console.error('Clear filter error:', e);
                 }
+            };
 
-                console.log('Filters cleared, all buildings visible');
-            } catch (e) {
-                console.error('Clear filter error:', e);
+            // Check if style is loaded before clearing filter
+            if (map.isStyleLoaded()) {
+                clearFilter();
+            } else {
+                // Defer filter clearing until style is loaded
+                map.once('load', function() {
+                    console.log('Style loaded, applying deferred filter clear');
+                    clearFilter();
+                });
             }
         })();
     "#
     .to_string()
+}
+
+/// Builds JavaScript to update URL with current filter values
+///
+/// Reads filter values directly from DOM and updates URL via history.replaceState()
+/// This function is designed to be called from inline oninput handlers.
+fn build_update_url_from_filters_script(
+    year_min: u32,
+    year_max: u32,
+    height_min: f64,
+    height_max: f64,
+    floors_min: u32,
+    floors_max: u32,
+) -> String {
+    format!(
+        r#"
+        (function() {{
+            try {{
+                // Read view mode and heatmap state from localStorage
+                const viewMode = localStorage.getItem('viewMode') || '3d';
+                const heatmapEnabled = localStorage.getItem('densityHeatmapEnabled') === 'true';
+
+                // Build URL params with current filter values
+                const params = new URLSearchParams();
+                params.set('view', viewMode);
+                params.set('year_min', '{year_min}');
+                params.set('year_max', '{year_max}');
+                params.set('height_min', '{height_min}');
+                params.set('height_max', '{height_max}');
+                params.set('floors_min', '{floors_min}');
+                params.set('floors_max', '{floors_max}');
+                params.set('heatmap', heatmapEnabled.toString());
+
+                // Update URL without adding history entry
+                const url = new URL(window.location.href);
+                url.search = params.toString();
+                window.history.replaceState({{state: 'urlStateUpdated'}}, '', url);
+
+                console.log('Filter URL updated:', url.toString());
+            }} catch (e) {{
+                console.error('Failed to update filter URL:', e);
+            }}
+        }})();
+        "#
+    )
 }
 
 /// Filter Panel Component for 3D Buildings
@@ -113,6 +193,8 @@ pub fn FilterPanel3D() -> Element {
     let mut max_floors = use_signal(|| 10u32);
 
     // Apply filter when any value changes
+    // Note: use_effect runs on mount and re-runs when signals are read
+    // The URL update happens in each slider's oninput handler
     use_effect(move || {
         let filter = BuildingFilter {
             min_year: *min_year.read(),
@@ -164,6 +246,16 @@ pub fn FilterPanel3D() -> Element {
                         oninput: move |e: Event<FormData>| {
                             if let Ok(v) = e.value().parse::<u32>() {
                                 min_year.set(v.min(*max_year.read()));
+                                // Update URL immediately with new filter values
+                                let url_script = build_update_url_from_filters_script(
+                                    *min_year.read(),
+                                    *max_year.read(),
+                                    *min_height.read(),
+                                    *max_height.read(),
+                                    *min_floors.read(),
+                                    *max_floors.read(),
+                                );
+                                document::eval(&url_script);
                             }
                         }
                     }
@@ -176,6 +268,16 @@ pub fn FilterPanel3D() -> Element {
                         oninput: move |e: Event<FormData>| {
                             if let Ok(v) = e.value().parse::<u32>() {
                                 max_year.set(v.max(*min_year.read()));
+                                // Update URL immediately with new filter values
+                                let url_script = build_update_url_from_filters_script(
+                                    *min_year.read(),
+                                    *max_year.read(),
+                                    *min_height.read(),
+                                    *max_height.read(),
+                                    *min_floors.read(),
+                                    *max_floors.read(),
+                                );
+                                document::eval(&url_script);
                             }
                         }
                     }
@@ -198,6 +300,16 @@ pub fn FilterPanel3D() -> Element {
                         oninput: move |e: Event<FormData>| {
                             if let Ok(v) = e.value().parse::<f64>() {
                                 min_height.set(v.min(*max_height.read()));
+                                // Update URL immediately with new filter values
+                                let url_script = build_update_url_from_filters_script(
+                                    *min_year.read(),
+                                    *max_year.read(),
+                                    *min_height.read(),
+                                    *max_height.read(),
+                                    *min_floors.read(),
+                                    *max_floors.read(),
+                                );
+                                document::eval(&url_script);
                             }
                         }
                     }
@@ -211,6 +323,16 @@ pub fn FilterPanel3D() -> Element {
                         oninput: move |e: Event<FormData>| {
                             if let Ok(v) = e.value().parse::<f64>() {
                                 max_height.set(v.max(*min_height.read()));
+                                // Update URL immediately with new filter values
+                                let url_script = build_update_url_from_filters_script(
+                                    *min_year.read(),
+                                    *max_year.read(),
+                                    *min_height.read(),
+                                    *max_height.read(),
+                                    *min_floors.read(),
+                                    *max_floors.read(),
+                                );
+                                document::eval(&url_script);
                             }
                         }
                     }
@@ -233,6 +355,16 @@ pub fn FilterPanel3D() -> Element {
                         oninput: move |e: Event<FormData>| {
                             if let Ok(v) = e.value().parse::<u32>() {
                                 min_floors.set(v.min(*max_floors.read()));
+                                // Update URL immediately with new filter values
+                                let url_script = build_update_url_from_filters_script(
+                                    *min_year.read(),
+                                    *max_year.read(),
+                                    *min_height.read(),
+                                    *max_height.read(),
+                                    *min_floors.read(),
+                                    *max_floors.read(),
+                                );
+                                document::eval(&url_script);
                             }
                         }
                     }
@@ -246,6 +378,16 @@ pub fn FilterPanel3D() -> Element {
                         oninput: move |e: Event<FormData>| {
                             if let Ok(v) = e.value().parse::<u32>() {
                                 max_floors.set(v.max(*min_floors.read()));
+                                // Update URL immediately with new filter values
+                                let url_script = build_update_url_from_filters_script(
+                                    *min_year.read(),
+                                    *max_year.read(),
+                                    *min_height.read(),
+                                    *max_height.read(),
+                                    *min_floors.read(),
+                                    *max_floors.read(),
+                                );
+                                document::eval(&url_script);
                             }
                         }
                     }
@@ -355,5 +497,26 @@ mod tests {
         let script = build_clear_filter_script();
 
         assert!(script.contains("map.setFilter('building-3d', null)"));
+    }
+
+    #[test]
+    fn test_build_set_filter_script_has_style_loaded_check() {
+        let expr = r#"["all"]"#;
+        let script = build_set_filter_script(expr);
+
+        // Verify isStyleLoaded() check is present
+        assert!(script.contains("isStyleLoaded()"));
+        // Verify map.once('load') deferred execution is present
+        assert!(script.contains("map.once('load'"));
+    }
+
+    #[test]
+    fn test_build_clear_filter_script_has_style_loaded_check() {
+        let script = build_clear_filter_script();
+
+        // Verify isStyleLoaded() check is present
+        assert!(script.contains("isStyleLoaded()"));
+        // Verify map.once('load') deferred execution is present
+        assert!(script.contains("map.once('load'"));
     }
 }
