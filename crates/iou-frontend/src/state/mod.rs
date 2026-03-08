@@ -6,6 +6,9 @@ pub use building_filter::BuildingFilter;
 pub mod view_toggle;
 pub use view_toggle::{ViewMode, ViewToggle};
 
+pub mod density_heatmap;
+pub use density_heatmap::DensityHeatmap;
+
 use uuid::Uuid;
 
 use iou_core::domain::InformationDomain;
