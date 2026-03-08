@@ -5,6 +5,10 @@ asset_dir = "assets"
 
 [web.app]
 title = "IOU-Modern - Informatie Ondersteunde Werkomgeving"
+# Proxy configuration for development API requests
+# Note: Dioxus proxy may not properly forward /api/* requests in all versions
+# Fallback: density_heatmap.rs uses absolute localhost:8000 URLs
+proxy = "http://localhost:8000"
 
 [web.watcher]
 reload_html = true
