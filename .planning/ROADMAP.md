@@ -143,3 +143,7 @@ Phase 2 Complete
 | Filter expression complexity | Client-side simple expressions only | 2.1 | Verified |
 | URL state desync | replaceState for updates, popstate listener for back/forward | 2.4 | Pending |
 | Design system drift | Use CSS variables from style.css consistently | 2.4 | Pending |
+
+---
+
+## Gap Closure Phases (from v1.0 Milestone Audit)
