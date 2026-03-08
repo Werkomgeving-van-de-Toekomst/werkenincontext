@@ -9,6 +9,9 @@ pub use view_toggle::{ViewMode, ViewToggle};
 pub mod density_heatmap;
 pub use density_heatmap::DensityHeatmap;
 
+pub mod url_state;
+pub use url_state::UrlState;
+
 use uuid::Uuid;
 
 use iou_core::domain::InformationDomain;
