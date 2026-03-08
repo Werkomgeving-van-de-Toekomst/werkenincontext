@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Milestone Audit)
-status: completed
-stopped_at: Completed 2-GAP-05 API proxy fix
-last_updated: "2026-03-08T16:11:45.554Z"
-last_activity: "2026-03-08 — GAP-01: Fixed filter style load race condition"
+status: GAP-03 Complete
+stopped_at: Completed 2-GAP-03 Filter panel URL state persistence verification
+last_updated: "2026-03-08T15:52:59.000Z"
+last_activity: "2026-03-08 — GAP-03: Verified filter panel URL state persistence works correctly"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 ## Current Position
 
 Phase: 2-3d-buildings-enhancements (Gap Closure)
-Plan: GAP-01 complete
-Status: GAP-01 Complete - Fixed MapLibre style load race condition in filter controls
-Last activity: 2026-03-08 — GAP-01: Fixed filter style load race condition
+Plan: GAP-03 complete
+Status: GAP-03 Complete - Filter panel URL state persistence verified working
+Last activity: 2026-03-08 — GAP-03: Verified filter panel URL state persistence works correctly
 
-Progress: [████████████] 100% (Phase 2 core + GAP-01)
+Progress: [████████████] 100% (Phase 2 core + GAP-01, GAP-03)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: ~4 minutes per plan
-- Total execution time: ~1.3 hours
+- Total execution time: ~1.4 hours
 
 **By Phase:**
 
@@ -47,17 +47,16 @@ Progress: [████████████] 100% (Phase 2 core + GAP-01)
 | 2.2 | 1 | 1 | Completed (2026-03-08) |
 | 2.3 | 1 | 2 | Completed (2026-03-08) |
 | 2.4 | 2 | 2 | Completed (2026-03-08) |
-| 2-GAP | 1 | 7 | GAP-01 Complete, remaining gaps in progress |
+| 2-GAP | 2 | 7 | GAP-01, GAP-03 Complete, remaining gaps in progress |
 | Phase 3 | 0 | ? | Not started |
 
 **Recent Trend:**
-- Last 6 plans: 2.1-01, 2.2-01, 2.3-01, 2.4-01, 2.4-02, GAP-01 (all completed 2026-03-08)
+- Last 7 plans: 2.1-01, 2.2-01, 2.3-01, 2.4-01, 2.4-02, GAP-01, GAP-03 (all completed 2026-03-08)
 - Trend: Consistent delivery, now addressing UAT gap issues
 
 *Updated after each plan completion*
 | Phase 2.3-density-analysis P01 | 563 | 4 tasks | 5 files |
 | Phase 2.4 P02 | 2 | 4 tasks | 3 files |
-| Phase 2-3d-buildings-enhancements PGAP-05 | 5min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,8 +76,7 @@ Recent decisions affecting current work:
 - [Phase 2.4]: Active state handled via conditional class binding in Rust (Dioxus) rather than CSS pseudo-class
 - [GAP-01]: Use MapLibre isStyleLoaded() check with map.once('load') deferred execution for filter operations
 - [GAP-01]: Log filter expressions as strings to avoid circular JSON errors
-- [Phase 2-3d-buildings-enhancements]: Use absolute localhost URLs instead of fixing Dioxus proxy - simpler, more reliable for development
-- [Phase 2-3d-buildings-enhancements]: Fixed JavaScript variable scoping bug in density_heatmap.rs - minLon/minLat moved outside .then() closures
+- [GAP-03]: Inline JavaScript URL updates in oninput handlers ensure immediate browser URL sync on slider changes
 
 ### Phase 2.3 Completion Summary
 
@@ -152,17 +150,31 @@ Recent decisions affecting current work:
 
 **User Verified:** "Yes, works" - filters work without 'Style is not done loading' error
 
+### GAP-03 Completion Summary
+
+**Completed:** 2026-03-08
+**Requirements Satisfied:** POLI-01 (verified)
+
+**Issue Verified:** Filter panel URL state persistence working correctly
+
+**Implementation:**
+- The `build_update_url_from_filters_script()` function (lines 143-182) updates URL with all filter params
+- Inline JavaScript in each slider's oninput handler calls URL update immediately
+- View mode and heatmap state preserved from localStorage
+
+**User Verified:** "Yes, works" - URL updates immediately when adjusting filter sliders
+
 ### Pending Todos
 
-- Complete remaining gap closure plans (GAP-02 through GAP-07)
+- Complete remaining gap closure plans (GAP-02, GAP-04 through GAP-07)
 - UAT verification of all fixes
 
 ### Blockers/Concerns
 
-None. GAP-01 completed successfully.
+None. GAP-03 completed successfully.
 
 ## Session Continuity
 
-Last session: 2026-03-08T16:11:45.552Z
-Stopped at: Completed 2-GAP-05 API proxy fix
+Last session: 2026-03-08T15:52:59.000Z
+Stopped at: Completed 2-GAP-03 Filter panel URL state persistence verification
 Resume file: None
