@@ -149,12 +149,16 @@ Phase 2 Complete
 
 ## Gap Closure Phases (from v1.0 Milestone Audit)
 
-**Status:** GAP-01 Complete (2026-03-08)
+**Status:** GAP-01, GAP-05 Complete (2026-03-08)
 
 Plans:
 - [x] GAP-01: Fix MapLibre style load race condition causing "Style is not done loading" errors - COMPLETED 2026-03-08
   - User verified: "Yes, works" - filters work without errors
   - Commit: 5a6e686
   - Files: crates/iou-frontend/src/components/filter_panel_3d.rs
+- [x] GAP-05: Fix Dioxus proxy configuration for API requests - COMPLETED 2026-03-08
+  - User verified: "No errors" - API returns JSON instead of HTML
+  - Commits: 5748c6c, a75ddbd
+  - Files: crates/iou-frontend/Dioxus.toml, crates/iou-frontend/src/components/density_heatmap.rs
 - [ ] GAP-02: [Next gap from UAT]
 - [ ] GAP-03 through GAP-07: [Remaining gaps]

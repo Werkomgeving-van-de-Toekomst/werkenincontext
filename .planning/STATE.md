@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: GAP-01 Complete
-stopped_at: Completed 2-GAP-01 MapLibre style load race condition fix
-last_updated: "2026-03-08T10:23:00.000Z"
+milestone_name: Milestone Audit)
+status: completed
+stopped_at: Completed 2-GAP-05 API proxy fix
+last_updated: "2026-03-08T16:11:45.554Z"
 last_activity: "2026-03-08 — GAP-01: Fixed filter style load race condition"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 5
+  completed_plans: 4
   percent: 100
 ---
 
@@ -57,6 +57,7 @@ Progress: [████████████] 100% (Phase 2 core + GAP-01)
 *Updated after each plan completion*
 | Phase 2.3-density-analysis P01 | 563 | 4 tasks | 5 files |
 | Phase 2.4 P02 | 2 | 4 tasks | 3 files |
+| Phase 2-3d-buildings-enhancements PGAP-05 | 5min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 2.4]: Active state handled via conditional class binding in Rust (Dioxus) rather than CSS pseudo-class
 - [GAP-01]: Use MapLibre isStyleLoaded() check with map.once('load') deferred execution for filter operations
 - [GAP-01]: Log filter expressions as strings to avoid circular JSON errors
+- [Phase 2-3d-buildings-enhancements]: Use absolute localhost URLs instead of fixing Dioxus proxy - simpler, more reliable for development
+- [Phase 2-3d-buildings-enhancements]: Fixed JavaScript variable scoping bug in density_heatmap.rs - minLon/minLat moved outside .then() closures
 
 ### Phase 2.3 Completion Summary
 
@@ -160,6 +163,6 @@ None. GAP-01 completed successfully.
 
 ## Session Continuity
 
-Last session: 2026-03-08T10:23:00.000Z
-Stopped at: Completed 2-GAP-01 MapLibre style load race condition fix
+Last session: 2026-03-08T16:11:45.552Z
+Stopped at: Completed 2-GAP-05 API proxy fix
 Resume file: None
