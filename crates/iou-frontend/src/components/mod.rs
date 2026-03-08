@@ -15,6 +15,7 @@ mod panel;
 mod terrain_encoding;
 mod timeline;
 mod view_toggle;
+mod density_heatmap;
 
 pub use approval_actions::ApprovalActions;
 pub use app_card::AppCard;
@@ -37,6 +38,8 @@ pub use terrain_encoding::{elevation_to_terrain_rgb, terrain_rgb_to_elevation};
 pub use filter_panel_3d::{FilterPanel3D, build_filter_expression, build_set_filter_script, build_clear_filter_script};
 // View Toggle for 2D/3D switching
 pub use view_toggle::{ViewToggle, build_set_view_mode_script, build_get_initial_view_script};
+// Density Heatmap for building density visualization
+pub use density_heatmap::{DensityHeatmap, build_add_heatmap_layer_script, build_density_calculation_script, build_setup_density_update_script};
 
 #[cfg(test)]
 mod tests {

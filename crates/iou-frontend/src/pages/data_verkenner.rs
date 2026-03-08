@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use std::env;
 
-use crate::components::{Header, Panel, FilterPanel3D, ViewToggle};
+use crate::components::{Header, Panel, FilterPanel3D, ViewToggle, DensityHeatmap};
 use crate::components::{LayerControl3D, predefined_layers};
 
 /// Mock dataset metadata
@@ -570,6 +570,12 @@ pub fn DataVerkenner() -> Element {
                         div {
                             style: "position: absolute; top: 60px; right: 10px; z-index: 1000;",
                             FilterPanel3D {}
+                        }
+
+                        // Density heatmap toggle (top-right, positioned below layer controls)
+                        div {
+                            style: "position: absolute; top: 10px; right: 10px; z-index: 1000;",
+                            DensityHeatmap {}
                         }
                     }
 

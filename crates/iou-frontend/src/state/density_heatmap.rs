@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 /// Simple boolean state for heatmap toggle.
 /// More complex than ViewMode enum since it's just on/off,
 /// but follows same pattern for consistency.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct DensityHeatmap {
     /// Whether the density heatmap is currently enabled
     pub enabled: bool,
