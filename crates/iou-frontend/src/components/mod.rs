@@ -14,6 +14,7 @@ mod filter_panel_3d;
 mod panel;
 mod terrain_encoding;
 mod timeline;
+mod view_toggle;
 
 pub use approval_actions::ApprovalActions;
 pub use app_card::AppCard;
@@ -34,6 +35,8 @@ pub use layer_detection::{detect_layer_type, has_mixed_geometries};
 pub use terrain_encoding::{elevation_to_terrain_rgb, terrain_rgb_to_elevation};
 // Filter Panel for 3D buildings
 pub use filter_panel_3d::{FilterPanel3D, build_filter_expression, build_set_filter_script, build_clear_filter_script};
+// View Toggle for 2D/3D switching
+pub use view_toggle::{ViewToggle, build_set_view_mode_script, build_get_initial_view_script};
 
 #[cfg(test)]
 mod tests {
