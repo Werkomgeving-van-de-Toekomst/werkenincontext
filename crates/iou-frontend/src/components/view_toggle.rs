@@ -4,6 +4,7 @@
 
 use dioxus::prelude::*;
 use crate::state::ViewMode;
+use crate::state::BuildingFilter;
 
 /// LocalStorage key for persisting view mode
 const STORAGE_KEY: &'static str = "viewMode";
@@ -147,6 +148,46 @@ pub fn ViewToggle() -> Element {
                         let new_mode = *view_mode.read();
                         let script = build_set_view_mode_script(new_mode);
                         document::eval(&script);
+
+                        // Update URL with new view mode
+                        // Read filter state from current UI signals and heatmap from localStorage
+                        let url_update_script = format!(
+                            r#"
+                            (function() {{
+                                try {{
+                                    // Read heatmap state from localStorage
+                                    const heatmapEnabled = localStorage.getItem('densityHeatmapEnabled') === 'true';
+
+                                    // Build URL params with new view mode
+                                    const params = new URLSearchParams();
+                                    params.set('view', '{}');
+
+                                    // Note: We can't read the current filter values directly here,
+                                    // so we preserve any existing filter params from the current URL
+                                    const currentParams = new URLSearchParams(window.location.search);
+                                    if (currentParams.has('year_min')) params.set('year_min', currentParams.get('year_min'));
+                                    if (currentParams.has('year_max')) params.set('year_max', currentParams.get('year_max'));
+                                    if (currentParams.has('height_min')) params.set('height_min', currentParams.get('height_min'));
+                                    if (currentParams.has('height_max')) params.set('height_max', currentParams.get('height_max'));
+                                    if (currentParams.has('floors_min')) params.set('floors_min', currentParams.get('floors_min'));
+                                    if (currentParams.has('floors_max')) params.set('floors_max', currentParams.get('floors_max'));
+
+                                    params.set('heatmap', heatmapEnabled.toString());
+
+                                    // Update URL
+                                    const url = new URL(window.location.href);
+                                    url.search = params.toString();
+                                    window.history.replaceState({{state: 'urlStateUpdated'}}, '', url);
+
+                                    console.log('URL updated with view mode:', url.toString());
+                                }} catch (e) {{
+                                    console.error('Failed to update URL:', e);
+                                }}
+                            }})();
+                            "#,
+                            if new_mode.is_3d() { "3d" } else { "2d" }
+                        );
+                        document::eval(&url_update_script);
                     },
                     "{current_mode.button_label()}"
                 }
