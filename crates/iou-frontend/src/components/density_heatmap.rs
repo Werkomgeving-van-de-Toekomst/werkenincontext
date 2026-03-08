@@ -451,6 +451,44 @@ pub fn DensityHeatmap() -> Element {
                             let setup_script = build_setup_density_update_script();
                             document::eval(&setup_script);
                         }
+
+                        // Update URL with new heatmap state
+                        let url_update_script = format!(
+                            r#"
+                            (function() {{
+                                try {{
+                                    // Read view mode from localStorage
+                                    const viewMode = localStorage.getItem('viewMode') || '3d';
+
+                                    // Build URL params with new heatmap state
+                                    const params = new URLSearchParams();
+                                    params.set('view', viewMode);
+
+                                    // Preserve any existing filter params from current URL
+                                    const currentParams = new URLSearchParams(window.location.search);
+                                    if (currentParams.has('year_min')) params.set('year_min', currentParams.get('year_min'));
+                                    if (currentParams.has('year_max')) params.set('year_max', currentParams.get('year_max'));
+                                    if (currentParams.has('height_min')) params.set('height_min', currentParams.get('height_min'));
+                                    if (currentParams.has('height_max')) params.set('height_max', currentParams.get('height_max'));
+                                    if (currentParams.has('floors_min')) params.set('floors_min', currentParams.get('floors_min'));
+                                    if (currentParams.has('floors_max')) params.set('floors_max', currentParams.get('floors_max'));
+
+                                    params.set('heatmap', '{}');
+
+                                    // Update URL
+                                    const url = new URL(window.location.href);
+                                    url.search = params.toString();
+                                    window.history.replaceState({{state: 'urlStateUpdated'}}, '', url);
+
+                                    console.log('URL updated with heatmap state:', url.toString());
+                                }} catch (e) {{
+                                    console.error('Failed to update URL:', e);
+                                }}
+                            }})();
+                            "#,
+                            if new_state.is_enabled() { "true" } else { "false" }
+                        );
+                        document::eval(&url_update_script);
                     },
                     "Densiteitskaart"
                 }
