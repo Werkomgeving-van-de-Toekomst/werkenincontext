@@ -13,7 +13,7 @@ Each phase delivers a complete, verifiable capability. The architecture follows 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 2.1: Building Filtering** - Interactive filters for year, height, and floor count (COMPLETED 2026-03-08)
-- [ ] **Phase 2.2: View Toggle** - Switch between 2D footprint and 3D extrusion views
+- [x] **Phase 2.2: View Toggle** - Switch between 2D footprint and 3D extrusion views (COMPLETED 2026-03-08)
 - [ ] **Phase 2.3: Density Analysis** - Heatmap overlay showing building density patterns
 - [ ] **Phase 2.4: Polish** - URL state persistence, animations, design system styling
 
@@ -47,11 +47,14 @@ Plans:
 **Plans**: 1 plan (consolidated from 2)
 
 Plans:
-- [ ] 2.2-01: Create ViewToggle component and implement single-layer fill-extrusion height switching with localStorage persistence
+- [x] 2.2-01: Create ViewToggle component and implement single-layer fill-extrusion height switching with localStorage persistence (completed 2026-03-08)
+  - All 3 requirements (VIEW-01 through VIEW-03) satisfied
+  - Verification: .planning/phases/2.2-view-toggle/2.2-FINAL-VERIFICATION.md
+  - Single-layer architecture implemented, PITFALL-03 avoided
 
 ### Phase 2.3: Density Analysis
 **Goal**: Users can visualize building density patterns through a heatmap overlay
-**Depends on**: Phase 2.2
+**Depends on**: Phase 2.2 (completed 2026-03-08)
 **Requirements**: DENS-01, DENS-02, DENS-03
 **Success Criteria** (what must be TRUE):
   1. User can enable density heatmap overlay and see color gradient indicating density
@@ -80,12 +83,12 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 2.1 (done) → 2.2 → 2.3 → 2.4
+Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 -> 2.4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 2.1. Building Filtering | 1/1 | COMPLETE | 2026-03-08 |
-| 2.2. View Toggle | 0/1 | Not started | - |
+| 2.2. View Toggle | 1/1 | COMPLETE | 2026-03-08 |
 | 2.3. Density Analysis | 0/2 | Not started | - |
 | 2.4. Polish | 0/2 | Not started | - |
 
@@ -94,7 +97,7 @@ Phases execute in numeric order: 2.1 (done) → 2.2 → 2.3 → 2.4
 | Phase | Complexity | Notes |
 |-------|------------|-------|
 | 2.1 | Medium | Filter expressions straightforward, but must avoid re-render cascade (PITFALL-01) - VERIFIED |
-| 2.2 | Low | Single-layer architecture simpler than dual-layer, state management is key |
+| 2.2 | Low | Single-layer architecture simpler than dual-layer, state management is key - COMPLETE |
 | 2.3 | High | Buffered tile calculations require careful spatial logic (PITFALL-03) |
 | 2.4 | Low | URL serialization and CSS animations are standard patterns |
 
@@ -103,7 +106,7 @@ Phases execute in numeric order: 2.1 (done) → 2.2 → 2.3 → 2.4
 | After Phase | Verification |
 |-------------|--------------|
 | 2.1 | DONE - Profile filter changes verify <16ms frame time, no geometry reprocessing spikes |
-| 2.2 | Test 20+ rapid toggles, verify popup data always matches clicked building |
+| 2.2 | DONE - Single-layer architecture verified, state sync tested |
 | 2.3 | Visual inspection of tile boundaries, automated density continuity test |
 | 2.4 | Cross-browser testing (Chrome, Firefox, Safari), URL sharing test |
 
@@ -114,9 +117,9 @@ Phase 1 (Completed)
     |
 Phase 2.1: Building Filtering (COMPLETED 2026-03-08)
     |
-Phase 2.2: View Toggle (READY)
+Phase 2.2: View Toggle (COMPLETED 2026-03-08)
     |
-Phase 2.3: Density Analysis
+Phase 2.3: Density Analysis (READY)
     |
 Phase 2.4: Polish
     |
@@ -133,7 +136,7 @@ Phase 2 Complete
 | Risk | Mitigation | Phase | Status |
 |------|------------|-------|--------|
 | Filter re-render cascade | Use `setFilter()` not layer recreation | 2.1 | MITIGATED |
-| View toggle state desync | Single-layer architecture, not dual layers | 2.2 | Pending |
+| View toggle state desync | Single-layer architecture, not dual layers | 2.2 | MITIGATED |
 | Density tile artifacts | Buffered calculations with overlap | 2.3 | Pending |
 | Viewport race conditions | AbortController for pending requests | 2.1 | Implemented |
 | Filter expression complexity | Client-side simple expressions only | 2.1 | Verified |
