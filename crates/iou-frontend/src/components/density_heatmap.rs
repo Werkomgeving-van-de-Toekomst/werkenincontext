@@ -427,37 +427,39 @@ pub fn DensityHeatmap() -> Element {
 
     let current_state = *heatmap.read();
 
+    let is_enabled = current_state.is_enabled();
+
     rsx! {
         div {
             class: "density-heatmap-container",
-            style: "position: absolute; top: 10px; right: 10px; z-index: 1000;",
 
-            button {
-                class: "btn-density-heatmap",
-                style: "background: white; padding: 8px 12px; border: 1px solid #ccc;
-                        border-radius: 4px; cursor: pointer; font-size: 14px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
-                onclick: move |_| {
-                    heatmap.write().toggle();
-                    let new_state = *heatmap.read();
-
-                    // Toggle heatmap layer
-                    let layer_script = build_add_heatmap_layer_script(new_state.is_enabled());
-                    document::eval(&layer_script);
-
-                    // If enabling, setup viewport event listeners and trigger initial calculation
-                    if new_state.is_enabled() {
-                        let setup_script = build_setup_density_update_script();
-                        document::eval(&setup_script);
-                    }
-                },
-                "Densiteitskaart"
-            }
-
-            // Current state indicator
             div {
-                style: "margin-top: 4px; font-size: 11px; color: #666; text-align: center;",
-                "{current_state.label()}"
+                class: "density-heatmap-content",
+
+                button {
+                    class: if is_enabled { "btn-3d-control active" } else { "btn-3d-control" },
+                    onclick: move |_| {
+                        heatmap.write().toggle();
+                        let new_state = *heatmap.read();
+
+                        // Toggle heatmap layer
+                        let layer_script = build_add_heatmap_layer_script(new_state.is_enabled());
+                        document::eval(&layer_script);
+
+                        // If enabling, setup viewport event listeners and trigger initial calculation
+                        if new_state.is_enabled() {
+                            let setup_script = build_setup_density_update_script();
+                            document::eval(&setup_script);
+                        }
+                    },
+                    "Densiteitskaart"
+                }
+
+                // Current state indicator
+                div {
+                    class: "density-heatmap-label",
+                    "{current_state.label()}"
+                }
             }
         }
     }
