@@ -131,29 +131,31 @@ pub fn ViewToggle() -> Element {
 
     let current_mode = *view_mode.read();
 
+    let is_3d = current_mode.is_3d();
+
     rsx! {
         div {
             class: "view-toggle-container",
-            style: "position: absolute; top: 10px; left: 10px; z-index: 1000;",
 
-            button {
-                class: "btn-view-toggle",
-                style: "background: white; padding: 8px 12px; border: 1px solid #ccc;
-                        border-radius: 4px; cursor: pointer; font-size: 14px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
-                onclick: move |_| {
-                    view_mode.write().toggle();
-                    let new_mode = *view_mode.read();
-                    let script = build_set_view_mode_script(new_mode);
-                    document::eval(&script);
-                },
-                "{current_mode.button_label()}"
-            }
-
-            // Current mode indicator
             div {
-                style: "margin-top: 4px; font-size: 11px; color: #666; text-align: center;",
-                "{current_mode.label()}"
+                class: "view-toggle-content",
+
+                button {
+                    class: if is_3d { "btn-3d-control active" } else { "btn-3d-control" },
+                    onclick: move |_| {
+                        view_mode.write().toggle();
+                        let new_mode = *view_mode.read();
+                        let script = build_set_view_mode_script(new_mode);
+                        document::eval(&script);
+                    },
+                    "{current_mode.button_label()}"
+                }
+
+                // Current mode indicator
+                div {
+                    class: "view-toggle-label",
+                    "{current_mode.label()}"
+                }
             }
         }
     }
