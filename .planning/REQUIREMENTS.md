@@ -18,9 +18,9 @@ Requirements for Phase 2 release. Each maps to roadmap phases.
 
 ### View Toggle
 
-- [ ] **VIEW-01**: User can toggle between 2D footprint and 3D extrusion views
-- [ ] **VIEW-02**: Toggle state persists across browser session
-- [ ] **VIEW-03**: Single-layer architecture prevents state desync
+- [x] **VIEW-01**: User can toggle between 2D footprint and 3D extrusion views
+- [x] **VIEW-02**: Toggle state persists across browser session
+- [x] **VIEW-03**: Single-layer architecture prevents state desync
 
 ### Density Analysis
 
@@ -68,9 +68,9 @@ Deferred to future release.
 | FILT-04 | Phase 2.1 | Complete (2026-03-08) |
 | FILT-05 | Phase 2.1 | Complete (2026-03-08) |
 | FILT-06 | Phase 2.1 | Complete (2026-03-08) |
-| VIEW-01 | Phase 2.2 | Pending |
-| VIEW-02 | Phase 2.2 | Pending |
-| VIEW-03 | Phase 2.2 | Pending |
+| VIEW-01 | Phase 2.2 | Complete |
+| VIEW-02 | Phase 2.2 | Complete |
+| VIEW-03 | Phase 2.2 | Complete |
 | DENS-01 | Phase 2.3 | Pending |
 | DENS-02 | Phase 2.3 | Pending |
 | DENS-03 | Phase 2.3 | Pending |
