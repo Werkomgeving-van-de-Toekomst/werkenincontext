@@ -5,6 +5,7 @@ use std::env;
 
 use crate::components::{Header, Panel, FilterPanel3D, ViewToggle, DensityHeatmap};
 use crate::components::{LayerControl3D, predefined_layers};
+use crate::components::{build_restore_state_script};
 
 /// Mock dataset metadata
 struct DatasetInfo {
@@ -489,6 +490,16 @@ pub fn DataVerkenner() -> Element {
 
         let map_script = get_map3d_init_script();
         document::eval(&map_script);
+    });
+
+    // Restore URL state on mount (after map initialization)
+    use_effect(move || {
+        if !use_3d_map {
+            return;
+        }
+
+        let restore_script = build_restore_state_script();
+        document::eval(&restore_script);
     });
 
     let idx = *selected.read();

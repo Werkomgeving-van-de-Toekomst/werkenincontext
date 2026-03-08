@@ -16,6 +16,7 @@ mod terrain_encoding;
 mod timeline;
 mod view_toggle;
 mod density_heatmap;
+mod url_state;
 
 pub use approval_actions::ApprovalActions;
 pub use app_card::AppCard;
@@ -40,6 +41,8 @@ pub use filter_panel_3d::{FilterPanel3D, build_filter_expression, build_set_filt
 pub use view_toggle::{ViewToggle, build_set_view_mode_script, build_get_initial_view_script};
 // Density Heatmap for building density visualization
 pub use density_heatmap::{DensityHeatmap, build_add_heatmap_layer_script, build_density_calculation_script, build_setup_density_update_script};
+// URL state management for shareable URLs
+pub use url_state::{build_update_url_script, build_restore_state_script, build_get_url_params_script};
 
 #[cfg(test)]
 mod tests {
