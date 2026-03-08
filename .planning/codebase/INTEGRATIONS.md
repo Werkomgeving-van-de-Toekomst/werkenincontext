@@ -11,6 +11,20 @@
   - Location: `crates/iou-ai/src/llm.rs`
   - Default model: `mistral-small-latest`
 
+**3D Building Data:**
+- 3DBAG API - Dutch 3D building data
+  - SDK: Direct HTTP requests via reqwest
+  - Endpoint: `https://api.3dbag.nl/collections/pand/items`
+  - Location: `crates/iou-api/src/routes/buildings_3d.rs`
+  - Format: CityJSON
+
+**Terrain Data:**
+- MapTiler API - Terrain tiles
+  - SDK: Direct HTTP requests
+  - Endpoint: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json`
+  - Auth: `MAPTILER_API_KEY` environment variable
+  - Location: `crates/iou-frontend/src/components/map_3d.rs`
+
 **Government Data:**
 - Open Regels (regels.overheid.nl) - Dutch government rules and regulations
   - SDK: Custom SPARQL client

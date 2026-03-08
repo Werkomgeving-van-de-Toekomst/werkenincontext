@@ -82,8 +82,7 @@
 
 **Environment:**
 - dotenvy 0.15 - Environment variable loading
-  - Location: `crates/iou-api`
-  - File: `.env.example`
+- Environment variables for configuration
 
 **Build:**
 - Workspace configuration in `Cargo.toml`

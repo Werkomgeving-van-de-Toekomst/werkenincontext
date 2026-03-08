@@ -4,158 +4,131 @@
 
 ## Pattern Overview
 
-**Overall:** Clean Architecture with Domain-Driven Design + Microservices
+**Overall:** Modular Monolith with Domain-Driven Design
 
 **Key Characteristics:**
-- Hexagonal architecture with clear separation of concerns
-- Rust workspace with loosely coupled crates
-- Event-driven workflow engine for document processing
-- Multi-agent AI pipeline for document creation
-- Embedded DuckDB for analytical workloads
-- WebAssembly frontend with reactive state
+- Multi-crate workspace with clear domain boundaries
+- REST API backend with Axum web framework
+- WebAssembly frontend with Dioxus
+- Embedded DuckDB for data storage
+- Domain-driven design with rich domain models
+- Event-driven workflows for document processing
 
 ## Layers
 
-**[API Layer - `crates/iou-api/src/]`:**
-- Purpose: HTTP API server and route handling
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-api/src/`
-- Contains: Axum routes, middleware, database access, workflow coordination
-- Depends on: `iou-core` (domain models), `iou-ai` (AI services)
-- Used by: HTTP clients, frontend
-
-**[Domain Layer - `crates/iou-core/src/`]**
+**Domain Layer:**
 - Purpose: Core business logic and domain models
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-core/src/`
-- Contains: Domain entities, value objects, workflows, document types
-- Depends on: None (pure domain)
-- Used by: API, AI services, storage
+- Location: `crates/iou-core/src/`
+- Contains: Domain entities, value objects, domain services
+- Depends on: Standard Rust libraries
+- Used by: API layer, AI layer, workflows
 
-**[AI Layer - `crates/iou-ai/src/`]**
-- Purpose: AI/ML services and multi-agent pipeline
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-ai/src/`
-- Contains: NER, GraphRAG, compliance assessment, document generation agents
-- Depends on: `iou-core` (domain models)
-- Used by: API layer for document creation
+**API Layer:**
+- Purpose: HTTP API endpoints and request handling
+- Location: `crates/iou-api/src/`
+- Contains: Route handlers, middleware, request/response DTOs
+- Depends on: Domain layer, database layer
+- Used by: Frontend, external clients
 
-**[Storage Layer - `crates/iou-storage/src/`]**
-- Purpose: External storage abstraction (S3/MinIO)
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-storage/src/`
-- Contains: Storage client, metadata management
-- Depends on: External SDKs
-- Used by: API layer for document storage
+**Database Layer:**
+- Purpose: Data persistence and querying
+- Location: `crates/iou-api/src/db.rs`
+- Contains: Database connection, schema management, query functions
+- Depends on: Domain layer (for types)
+- Used by: API layer, workflows
 
-**[Frontend Layer - `crates/iou-frontend/src/`]**
-- Purpose: WebAssembly UI application
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/`
-- Contains: Dioxus components, pages, API client, state management
-- Depends on: Web APIs, HTTP client
+**Workflow Layer:**
+- Purpose: Document workflow management
+- Location: `crates/iou-api/src/workflows/`
+- Contains: Workflow definitions, execution engine, state transitions
+- Depends on: Domain layer, database layer
+- Used by: API layer
+
+**AI Layer:**
+- Purpose: AI-powered document analysis and processing
+- Location: `crates/iou-ai/src/`
+- Contains: NER, compliance checking, document analysis
+- Depends on: Domain layer
+- Used by: API layer, workflows
+
+**Frontend Layer:**
+- Purpose: User interface
+- Location: `crates/iou-frontend/src/`
+- Contains: Pages, components, state management, API clients
+- Depends on: API layer (via HTTP)
 - Used by: End users
-
-**[Rules Layer - `crates/iou-regels/src/`]**
-- Purpose: Business rules and domain-specific logic
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-regels/src/`
-- Contains: Compliance rules, validation logic
-- Depends on: `iou-core` (domain models)
-- Used by: AI layer and API layer
 
 ## Data Flow
 
-**[Request Processing Flow]:**
+**Document Creation Flow:**
 
-1. HTTP Request → API Router (`/Users/marc/Projecten/iou-modern/crates/iou-api/src/main.rs`)
-2. Authentication Middleware (Optional)
-3. Route Handler → Domain Service
-4. Domain Service → Database/External Services
-5. Response Generation → HTTP Response
+1. User submits document via frontend (`DocumentCreator` component)
+2. Frontend calls API endpoint (`/documents/create`)
+3. API validates and creates document record in DuckDB
+4. Workflow engine starts approval workflow
+5. AI services analyze document for compliance
+6. Document moves through approval states
+7. Final document is stored and indexed
 
-**[Document Creation Flow]:**
-
-```
-User Request → Research Agent (Query Knowledge Graph) →
-Content Agent (Generate Document) →
-Compliance Agent (Validate PII/Woo) →
-Review Agent (Quality Check) →
-Workflow Engine →
-Storage
-```
-
-**[State Management]:**
-- Global state via Dioxus signals (`AppState` in `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/state/mod.rs`)
-- Domain entities managed as Rust structs
-- Workflow state persisted in DuckDB
+**State Management:**
+- Workflow engine tracks document state
+- Database stores current state and history
+- Frontend subscribes to state changes via API
 
 ## Key Abstractions
 
-**[InformationDomain]:**
-- Purpose: Central organizing unit for information contexts
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-core/src/domain.rs`
-- Pattern: Domain entity with subtypes (Case, Project, PolicyTopic)
-- Four types: Zaak, Project, Beleid, Expertise
+**Domain Entities:**
+- Purpose: Represent core business concepts
+- Examples: `InformationDomain`, `InformationObject`, `WorkflowExecution`
+- Pattern: Rich domain models with behavior
 
-**[Multi-Agent Pipeline]:**
-- Purpose: Coordinated document generation with maker-checker pattern
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-ai/src/agents/pipeline.rs`
-- Pattern: Sequential pipeline with retry and checkpointing
-- Four agents: Research, Content, Compliance, Review
+**Repositories:**
+- Purpose: Data access patterns
+- Examples: Database queries in `db.rs`
+- Pattern: Query functions per entity type
 
-**[Knowledge Graph (GraphRAG)]:**
-- Purpose: Automatic relation detection and semantic analysis
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-ai/src/graphrag.rs`
-- Pattern: Graph-based knowledge representation
-- Algorithms: Community detection, path finding, similarity scoring
+**Services:**
+- Purpose: Business logic coordination
+- Examples: Workflow engine, AI analysis services
+- Pattern: Stateless services with clear interfaces
 
-**[Workflow Engine]:**
-- Purpose: State management for document processing
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-api/src/workflows/mod.rs`
-- Pattern: State machine with transitions
-- Supports: Document approval, task assignment
+**Value Objects:**
+- Purpose: Immutable domain concepts
+- Examples: `DocumentId`, `WorkflowStatus`, `TrustLevel`
+- Pattern: Simple structs with validation
 
 ## Entry Points
 
-**[API Server Entry Point]:**
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-api/src/main.rs`
-- Triggers: HTTP requests on port 8000
-- Responsibilities: HTTP routing, middleware, database initialization
+**API Entry Point:**
+- Location: `crates/iou-api/src/main.rs`
+- Triggers: HTTP requests to various endpoints
+- Responsibilities: Request routing, middleware application, service orchestration
 
-**[Frontend Application Entry Point]:**
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-frontend/src/main.rs`
-- Triggers: Dioxus WASM launch
-- Responsibilities: UI initialization, routing, state management
+**Frontend Entry Point:**
+- Location: `crates/iou-frontend/src/main.rs`
+- Triggers: Browser navigation
+- Responsibilities: Route handling, state initialization, component rendering
 
-**[Domain Library Entry Point]:**
-- Location: `/Users/marc/Projecten/iou-modern/crates/iou-core/src/lib.rs`
-- Triggers: Import by other crates
-- Responsibilities: Model exports and re-exports
+**Workflow Entry Point:**
+- Location: `crates/iou-api/src/workflows/mod.rs`
+- Triggers: API calls, document events
+- Responsibilities: Workflow execution, state transitions, notifications
 
 ## Error Handling
 
-**Strategy:** Error hierarchy with typed errors
-- API layer: Axum responses with HTTP status codes
-- Domain layer: Domain-specific error types
-- AI layer: Agent-specific errors with retry logic
-- Storage layer: Provider-agnostic errors
+**Strategy:** Structured error handling with custom error types
 
 **Patterns:**
-- `anyhow` for quick error propagation
-- `thiserror` for domain-specific errors
-- Error context preservation through layers
+- Custom `ApiError` type for API responses
+- `anyhow::Result` for internal operations
+- HTTP status codes mapped to error types
+- Logging for error tracking
 
 ## Cross-Cutting Concerns
 
-**Logging:** Tracing with structured logs
-- Subsystem-based loggers
-- JSON output for production
-- Console formatting for development
-
-**Validation:** Multiple layers
-- Domain validation in entity methods
-- API validation via Axum extractors
-- Input sanitization in middleware
-
-**Authentication:** JWT-based with optional middleware
-- Bearer token extraction
-- Claims validation
-- Context injection for routes
+**Logging:** Structured logging with tracing
+**Validation:** Input validation in API layer
+**Authentication:** JWT-based authentication middleware
 
 ---
 
