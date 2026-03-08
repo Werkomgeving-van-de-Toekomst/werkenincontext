@@ -24,9 +24,9 @@ Requirements for Phase 2 release. Each maps to roadmap phases.
 
 ### Density Analysis
 
-- [ ] **DENS-01**: User can enable density heatmap overlay
-- [ ] **DENS-02**: Heatmap colors indicate building density (low → high)
-- [ ] **DENS-03**: Heatmap uses buffered tile calculations to avoid edge artifacts
+- [x] **DENS-01**: User can enable density heatmap overlay
+- [x] **DENS-02**: Heatmap colors indicate building density (low → high)
+- [x] **DENS-03**: Heatmap uses buffered tile calculations to avoid edge artifacts
 
 ### Polish
 
@@ -71,9 +71,9 @@ Deferred to future release.
 | VIEW-01 | Phase 2.2 | Complete |
 | VIEW-02 | Phase 2.2 | Complete |
 | VIEW-03 | Phase 2.2 | Complete |
-| DENS-01 | Phase 2.3 | Pending |
-| DENS-02 | Phase 2.3 | Pending |
-| DENS-03 | Phase 2.3 | Pending |
+| DENS-01 | Phase 2.3 | Complete |
+| DENS-02 | Phase 2.3 | Complete |
+| DENS-03 | Phase 2.3 | Complete |
 | POLI-01 | Phase 2.4 | Pending |
 | POLI-02 | Phase 2.4 | Pending |
 | POLI-03 | Phase 2.4 | Pending |
