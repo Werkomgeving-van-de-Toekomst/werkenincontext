@@ -1,5 +1,8 @@
 //! Application state management
 
+pub mod building_filter;
+pub use building_filter::BuildingFilter;
+
 use uuid::Uuid;
 
 use iou_core::domain::InformationDomain;
