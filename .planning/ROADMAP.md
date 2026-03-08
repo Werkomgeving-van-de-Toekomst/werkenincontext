@@ -44,11 +44,10 @@ Plans:
   1. User can click toggle button and map switches between 2D (footprints) and 3D (extruded) views
   2. Toggle state persists when user refreshes browser page
   3. Clicking building after toggle shows correct popup data (no state desync)
-**Plans**: 2 plans
+**Plans**: 1 plan (consolidated from 2)
 
 Plans:
-- [ ] 2.2-01: Create ViewToggle component and implement single-layer fill-extrusion height switching
-- [ ] 2.2-02: Add localStorage persistence for toggle state and verify event handler consistency
+- [ ] 2.2-01: Create ViewToggle component and implement single-layer fill-extrusion height switching with localStorage persistence
 
 ### Phase 2.3: Density Analysis
 **Goal**: Users can visualize building density patterns through a heatmap overlay
@@ -86,7 +85,7 @@ Phases execute in numeric order: 2.1 (done) → 2.2 → 2.3 → 2.4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 2.1. Building Filtering | 1/1 | COMPLETE | 2026-03-08 |
-| 2.2. View Toggle | 0/2 | Not started | - |
+| 2.2. View Toggle | 0/1 | Not started | - |
 | 2.3. Density Analysis | 0/2 | Not started | - |
 | 2.4. Polish | 0/2 | Not started | - |
 
