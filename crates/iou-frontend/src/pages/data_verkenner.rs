@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use std::env;
 
-use crate::components::{Header, Panel};
+use crate::components::{Header, Panel, FilterPanel3D};
 use crate::components::{LayerControl3D, predefined_layers};
 
 /// Mock dataset metadata
@@ -560,6 +560,12 @@ pub fn DataVerkenner() -> Element {
                         LayerControl3D {
                             layers: predefined_layers(),
                             map_id: "map".to_string(),
+                        }
+
+                        // Add filter panel for 3D buildings
+                        div {
+                            style: "position: absolute; top: 10px; right: 10px; z-index: 1000;",
+                            FilterPanel3D {}
                         }
                     }
 
