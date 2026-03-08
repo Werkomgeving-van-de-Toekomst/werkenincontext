@@ -131,7 +131,9 @@ pub fn build_density_calculation_script(bbox_str: String) -> String {
                 ].join(',');
 
                 // Fetch buildings from API
-                fetch(`/api/buildings-3d?bbox-wgs84=${{bufferedBbox}}&limit=500`)
+                // Note: Using absolute localhost URL for development to bypass Dioxus proxy issues
+                // Production should use relative URLs with proper proxy configuration
+                fetch(`http://localhost:8000/api/buildings-3d?bbox-wgs84=${{bufferedBbox}}&limit=500`)
                     .then(response => {{
                         if (!response.ok) {{
                             throw new Error(`API error: ${{response.status}}`);
@@ -286,7 +288,8 @@ pub fn build_setup_density_update_script() -> String {
 
                             densityAbortController = new AbortController();
 
-                            fetch(`/api/buildings-3d?bbox-wgs84=${{bboxStr}}&limit=500`, {{
+                            // Note: Using absolute localhost URL for development to bypass Dioxus proxy issues
+                            fetch(`http://localhost:8000/api/buildings-3d?bbox-wgs84=${{bboxStr}}&limit=500`, {{
                                 signal: densityAbortController.signal
                             }})
                             .then(response => response.json())
@@ -307,7 +310,8 @@ pub fn build_setup_density_update_script() -> String {
                                 ].join(',');
 
                                 // Re-fetch with buffer for seamless density
-                                return fetch(`/api/buildings-3d?bbox-wgs84=${{bufferedBbox}}&limit=500`);
+                                // Note: Using absolute localhost URL for development to bypass Dioxus proxy issues
+                                return fetch(`http://localhost:8000/api/buildings-3d?bbox-wgs84=${{bufferedBbox}}&limit=500`);
                             }})
                             .then(response => response.json())
                             .then(data => {{
