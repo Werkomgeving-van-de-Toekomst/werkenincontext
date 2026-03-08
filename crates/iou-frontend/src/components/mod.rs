@@ -10,6 +10,7 @@ mod layer_control_3d;
 mod layer_detection;
 mod loading;
 mod map_3d;
+mod filter_panel_3d;
 mod panel;
 mod terrain_encoding;
 mod timeline;
@@ -31,6 +32,8 @@ pub use map_3d::{Map3DConfig, ConfigError, TerrainSource};
 pub use layer_control_3d::{GeoJsonLayer, LayerType, GeoJsonLayerBuilder, predefined_layers, LayerCheckbox};
 pub use layer_detection::{detect_layer_type, has_mixed_geometries};
 pub use terrain_encoding::{elevation_to_terrain_rgb, terrain_rgb_to_elevation};
+// Filter Panel for 3D buildings
+pub use filter_panel_3d::{FilterPanel3D, build_filter_expression, build_set_filter_script, build_clear_filter_script};
 
 #[cfg(test)]
 mod tests {
