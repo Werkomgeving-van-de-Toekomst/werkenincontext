@@ -3,6 +3,9 @@
 pub mod building_filter;
 pub use building_filter::BuildingFilter;
 
+pub mod view_toggle;
+pub use view_toggle::{ViewMode, ViewToggle};
+
 use uuid::Uuid;
 
 use iou_core::domain::InformationDomain;
