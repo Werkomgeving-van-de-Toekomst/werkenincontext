@@ -4,7 +4,8 @@
 //! by construction year, height, and floor count.
 
 use dioxus::prelude::*;
-use crate::state::BuildingFilter;
+use crate::state::{BuildingFilter, ViewMode, DensityHeatmap, UrlState};
+use crate::components::build_update_url_script;
 
 /// Builds a MapLibre filter expression from BuildingFilter state
 ///
@@ -264,6 +265,40 @@ pub fn FilterPanel3D() -> Element {
                         max_floors.set(10);
                         let script = build_clear_filter_script();
                         document::eval(&script);
+
+                        // Update URL with default filter values
+                        let url_update_script = format!(
+                            r#"
+                            (function() {{
+                                try {{
+                                    // Read view mode and heatmap state from localStorage
+                                    const viewMode = localStorage.getItem('viewMode') || '3d';
+                                    const heatmapEnabled = localStorage.getItem('densityHeatmapEnabled') === 'true';
+
+                                    // Build URL params with default filter values
+                                    const params = new URLSearchParams();
+                                    params.set('view', viewMode);
+                                    params.set('year_min', '1900');
+                                    params.set('year_max', '2024');
+                                    params.set('height_min', '0');
+                                    params.set('height_max', '100');
+                                    params.set('floors_min', '1');
+                                    params.set('floors_max', '10');
+                                    params.set('heatmap', heatmapEnabled.toString());
+
+                                    // Update URL
+                                    const url = new URL(window.location.href);
+                                    url.search = params.toString();
+                                    window.history.replaceState({{state: 'urlStateUpdated'}}, '', url);
+
+                                    console.log('URL updated with cleared filters:', url.toString());
+                                }} catch (e) {{
+                                    console.error('Failed to update URL:', e);
+                                }}
+                            }})();
+                            "#
+                        );
+                        document::eval(&url_update_script);
                     },
                     "Filters wissen"
                 }
