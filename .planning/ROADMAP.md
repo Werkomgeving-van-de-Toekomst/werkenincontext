@@ -60,11 +60,10 @@ Plans:
   1. User can enable density heatmap overlay and see color gradient indicating density
   2. Heatmap colors transition from low (light) to high (dark/intense) density
   3. No visible seams or discontinuities at tile boundaries when panning map
-**Plans**: 2 plans
+**Plans**: 1 plan (consolidated from 2)
 
 Plans:
-- [ ] 2.3-01: Implement density calculation with buffered tile regions and grid-based aggregation
-- [ ] 2.3-02: Create DensityHeatmap component with MapLibre heatmap layer and enable toggle
+- [ ] 2.3-01: Implement DensityHeatmap state and component with buffered tile calculations, MapLibre heatmap layer, and toggle button
 
 ### Phase 2.4: Polish
 **Goal**: Complete production-ready UX with URL state sharing, smooth animations, and consistent styling
@@ -89,7 +88,7 @@ Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 -> 2.4
 |-------|----------------|--------|-----------|
 | 2.1. Building Filtering | 1/1 | COMPLETE | 2026-03-08 |
 | 2.2. View Toggle | 1/1 | COMPLETE | 2026-03-08 |
-| 2.3. Density Analysis | 0/2 | Not started | - |
+| 2.3. Density Analysis | 0/1 | Not started | - |
 | 2.4. Polish | 0/2 | Not started | - |
 
 ## Complexity Indicators
