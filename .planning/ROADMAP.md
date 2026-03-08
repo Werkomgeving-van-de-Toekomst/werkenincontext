@@ -12,7 +12,7 @@ Each phase delivers a complete, verifiable capability. The architecture follows 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 2.1: Building Filtering** - Interactive filters for year, height, and floor count
+- [x] **Phase 2.1: Building Filtering** - Interactive filters for year, height, and floor count (COMPLETED 2026-03-08)
 - [ ] **Phase 2.2: View Toggle** - Switch between 2D footprint and 3D extrusion views
 - [ ] **Phase 2.3: Density Analysis** - Heatmap overlay showing building density patterns
 - [ ] **Phase 2.4: Polish** - URL state persistence, animations, design system styling
@@ -29,16 +29,16 @@ Each phase delivers a complete, verifiable capability. The architecture follows 
   3. User can adjust floor count slider and see only buildings with matching floor counts
   4. User can click "Clear Filters" button and all buildings become visible again
   5. Filter changes update visible building count without full map re-render (performance verified)
-**Plans**: 3 plans
+**Plans**: 1 plan (consolidated from 3)
 
 Plans:
 - [x] 2.1-01: Create BuildingFilter state struct and FilterPanel Dioxus component with slider controls (completed 2026-03-08)
-- [ ] 2.1-02: Implement MapLibre filter expression builder and setFilter() integration
-- [ ] 2.1-03: Add visible building count display and clear filters button
+  - All 6 requirements (FILT-01 through FILT-06) satisfied in single comprehensive plan
+  - Verification: .planning/phases/2.1-building-filtering/2.1-VERIFICATION.md
 
 ### Phase 2.2: View Toggle
 **Goal**: Users can switch between 2D footprint view and 3D extrusion view
-**Depends on**: Phase 2.1
+**Depends on**: Phase 2.1 (completed 2026-03-08)
 **Requirements**: VIEW-01, VIEW-02, VIEW-03
 **Success Criteria** (what must be TRUE):
   1. User can click toggle button and map switches between 2D (footprints) and 3D (extruded) views
@@ -81,11 +81,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 2.1 → 2.2 → 2.3 → 2.4
+Phases execute in numeric order: 2.1 (done) → 2.2 → 2.3 → 2.4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 2.1. Building Filtering | 1/3 | In progress | 2026-03-08 |
+| 2.1. Building Filtering | 1/1 | COMPLETE | 2026-03-08 |
 | 2.2. View Toggle | 0/2 | Not started | - |
 | 2.3. Density Analysis | 0/2 | Not started | - |
 | 2.4. Polish | 0/2 | Not started | - |
@@ -94,7 +94,7 @@ Phases execute in numeric order: 2.1 → 2.2 → 2.3 → 2.4
 
 | Phase | Complexity | Notes |
 |-------|------------|-------|
-| 2.1 | Medium | Filter expressions straightforward, but must avoid re-render cascade (PITFALL-01) |
+| 2.1 | Medium | Filter expressions straightforward, but must avoid re-render cascade (PITFALL-01) - VERIFIED |
 | 2.2 | Low | Single-layer architecture simpler than dual-layer, state management is key |
 | 2.3 | High | Buffered tile calculations require careful spatial logic (PITFALL-03) |
 | 2.4 | Low | URL serialization and CSS animations are standard patterns |
@@ -103,7 +103,7 @@ Phases execute in numeric order: 2.1 → 2.2 → 2.3 → 2.4
 
 | After Phase | Verification |
 |-------------|--------------|
-| 2.1 | Profile filter changes verify <16ms frame time, no geometry reprocessing spikes |
+| 2.1 | DONE - Profile filter changes verify <16ms frame time, no geometry reprocessing spikes |
 | 2.2 | Test 20+ rapid toggles, verify popup data always matches clicked building |
 | 2.3 | Visual inspection of tile boundaries, automated density continuity test |
 | 2.4 | Cross-browser testing (Chrome, Firefox, Safari), URL sharing test |
@@ -112,15 +112,15 @@ Phases execute in numeric order: 2.1 → 2.2 → 2.3 → 2.4
 
 ```
 Phase 1 (Completed)
-    ↓
-Phase 2.1: Building Filtering
-    ↓
-Phase 2.2: View Toggle
-    ↓
+    |
+Phase 2.1: Building Filtering (COMPLETED 2026-03-08)
+    |
+Phase 2.2: View Toggle (READY)
+    |
 Phase 2.3: Density Analysis
-    ↓
+    |
 Phase 2.4: Polish
-    ↓
+    |
 Phase 2 Complete
 ```
 
@@ -131,10 +131,10 @@ Phase 2 Complete
 
 ## Risk Mitigation
 
-| Risk | Mitigation | Phase |
-|------|------------|-------|
-| Filter re-render cascade | Use `setFilter()` not layer recreation | 2.1 |
-| View toggle state desync | Single-layer architecture, not dual layers | 2.2 |
-| Density tile artifacts | Buffered calculations with overlap | 2.3 |
-| Viewport race conditions | AbortController for pending requests | 2.1 |
-| Filter expression complexity | Client-side simple expressions only | 2.1 |
+| Risk | Mitigation | Phase | Status |
+|------|------------|-------|--------|
+| Filter re-render cascade | Use `setFilter()` not layer recreation | 2.1 | MITIGATED |
+| View toggle state desync | Single-layer architecture, not dual layers | 2.2 | Pending |
+| Density tile artifacts | Buffered calculations with overlap | 2.3 | Pending |
+| Viewport race conditions | AbortController for pending requests | 2.1 | Implemented |
+| Filter expression complexity | Client-side simple expressions only | 2.1 | Verified |
