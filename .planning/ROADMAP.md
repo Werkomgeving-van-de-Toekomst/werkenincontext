@@ -32,7 +32,7 @@ Each phase delivers a complete, verifiable capability. The architecture follows 
 **Plans**: 3 plans
 
 Plans:
-- [ ] 2.1-01: Create BuildingFilter state struct and FilterPanel Dioxus component with slider controls
+- [x] 2.1-01: Create BuildingFilter state struct and FilterPanel Dioxus component with slider controls (completed 2026-03-08)
 - [ ] 2.1-02: Implement MapLibre filter expression builder and setFilter() integration
 - [ ] 2.1-03: Add visible building count display and clear filters button
 
@@ -85,7 +85,7 @@ Phases execute in numeric order: 2.1 → 2.2 → 2.3 → 2.4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 2.1. Building Filtering | 0/3 | Not started | - |
+| 2.1. Building Filtering | 1/3 | In progress | 2026-03-08 |
 | 2.2. View Toggle | 0/2 | Not started | - |
 | 2.3. Density Analysis | 0/2 | Not started | - |
 | 2.4. Polish | 0/2 | Not started | - |

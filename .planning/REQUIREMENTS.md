@@ -9,12 +9,12 @@ Requirements for Phase 2 release. Each maps to roadmap phases.
 
 ### Filtering
 
-- [ ] **FILT-01**: User can filter buildings by construction year range (min/max sliders)
-- [ ] **FILT-02**: User can filter buildings by height range (min/max sliders)
-- [ ] **FILT-03**: User can filter buildings by floor count range (min/max sliders)
-- [ ] **FILT-04**: User can clear all filters with single button
-- [ ] **FILT-05**: Filter results display visible building count
-- [ ] **FILT-06**: Filters use MapLibre `setFilter()` for performance (no re-render cascade)
+- [x] **FILT-01**: User can filter buildings by construction year range (min/max sliders)
+- [x] **FILT-02**: User can filter buildings by height range (min/max sliders)
+- [x] **FILT-03**: User can filter buildings by floor count range (min/max sliders)
+- [x] **FILT-04**: User can clear all filters with single button
+- [x] **FILT-05**: Filter results display visible building count
+- [x] **FILT-06**: Filters use MapLibre `setFilter()` for performance (no re-render cascade)
 
 ### View Toggle
 
@@ -62,12 +62,12 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FILT-01 | Phase 2.1 | Pending |
-| FILT-02 | Phase 2.1 | Pending |
-| FILT-03 | Phase 2.1 | Pending |
-| FILT-04 | Phase 2.1 | Pending |
-| FILT-05 | Phase 2.1 | Pending |
-| FILT-06 | Phase 2.1 | Pending |
+| FILT-01 | Phase 2.1 | Complete (2026-03-08) |
+| FILT-02 | Phase 2.1 | Complete (2026-03-08) |
+| FILT-03 | Phase 2.1 | Complete (2026-03-08) |
+| FILT-04 | Phase 2.1 | Complete (2026-03-08) |
+| FILT-05 | Phase 2.1 | Complete (2026-03-08) |
+| FILT-06 | Phase 2.1 | Complete (2026-03-08) |
 | VIEW-01 | Phase 2.2 | Pending |
 | VIEW-02 | Phase 2.2 | Pending |
 | VIEW-03 | Phase 2.2 | Pending |
@@ -82,7 +82,8 @@ Deferred to future release.
 - v1 requirements: 15 total
 - Mapped to phases: 15
 - Unmapped: 0 ✓
+- Complete: 6 (40%)
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-08 after initial definition*
+*Last updated: 2026-03-08 after Phase 2.1-01 completion*
