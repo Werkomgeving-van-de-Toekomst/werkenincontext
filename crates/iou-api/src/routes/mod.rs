@@ -2,6 +2,7 @@
 
 pub mod apps;
 pub mod auth;
+pub mod buildings_3d;
 pub mod compliance;
 pub mod context;
 pub mod documents;
@@ -10,6 +11,7 @@ pub mod health;
 pub mod objects;
 pub mod search;
 pub mod templates;
+pub mod terrain;
 
 // Re-export document and template handlers for use in main.rs
 pub use documents::create_document as documents_create;

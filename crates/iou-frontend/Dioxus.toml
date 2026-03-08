@@ -11,12 +11,16 @@ reload_html = true
 watch_path = ["src", "assets"]
 
 [web.resource]
+# Leaflet CSS (existing 2D map)
 style = [
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+    "https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css",
 ]
+# Leaflet JS, vis-network, and MapLibre GL JS (for 3D map)
 script = [
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
     "https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js",
+    "https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js",
 ]
 
 [web.resource.dev]
