@@ -140,6 +140,11 @@ fn build_buildings_fetch_script() -> String {
 
         // Update buildings source with new GeoJSON data
         function updateBuildingsSource(geojson) {
+            const map = window['map_map'];
+            if (!map) {
+                console.error('Map not found in updateBuildingsSource');
+                return;
+            }
             // Clear any existing popups
             document.querySelectorAll('.maplibregl-popup').forEach(p => p.remove());
 
@@ -177,6 +182,8 @@ fn build_buildings_fetch_script() -> String {
 
         // Show empty state when no buildings found
         function showNoBuildingsMessage() {
+            const map = window['map_map'];
+            if (!map) return;
             const source = map.getSource('buildings');
             if (source) {
                 source.setData({
@@ -203,7 +210,7 @@ fn build_buildings_fetch_script() -> String {
 
             try {
                 const response = await fetch(
-                    `/api/buildings-3d?bbox-wgs84=${bbox.join(',')}&limit=${BUILDINGS_FETCH_LIMIT}`,
+                    `http://localhost:8000/api/buildings-3d?bbox-wgs84=${bbox.join(',')}&limit=${BUILDINGS_FETCH_LIMIT}`,
                     { signal: abortController.signal }
                 );
 
@@ -243,6 +250,11 @@ fn build_buildings_fetch_script() -> String {
         function debouncedFetch() {
             clearTimeout(fetchTimeout);
             fetchTimeout = setTimeout(() => {
+                const map = window['map_map'];
+                if (!map) {
+                    console.error('Map not found for debounced fetch');
+                    return;
+                }
                 const bounds = map.getBounds();
                 const bbox = [bounds.getWest(), bounds.getSouth(),
                               bounds.getEast(), bounds.getNorth()];

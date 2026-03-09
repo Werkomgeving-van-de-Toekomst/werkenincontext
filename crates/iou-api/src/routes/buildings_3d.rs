@@ -167,7 +167,7 @@ pub async fn get_buildings_3d(Query(params): Query<BboxParams>) -> Result<Json<s
         params.bbox.as_deref().unwrap_or("150000,470000,170000,490000").to_string()
     };
 
-    let limit = params.limit.unwrap_or(50).min(150); // Enforce max limit of 150
+    let limit = params.limit.unwrap_or(150).min(500); // Default 150, max 500
 
     let url = format!(
         "https://api.3dbag.nl/collections/pand/items?bbox={}&limit={}",

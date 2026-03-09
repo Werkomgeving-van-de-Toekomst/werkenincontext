@@ -288,6 +288,11 @@ pub fn build_setup_density_update_script() -> String {
 
                             densityAbortController = new AbortController();
 
+                            // Calculate grid parameters before fetch (needed in all .then() closures)
+                            const minLon = bbox[0];
+                            const minLat = bbox[1];
+                            const cellSize = 0.0009;  // ~100m
+
                             // Note: Using absolute localhost URL for development to bypass Dioxus proxy issues
                             fetch(`http://localhost:8000/api/buildings-3d?bbox-wgs84=${{bboxStr}}&limit=500`, {{
                                 signal: densityAbortController.signal
@@ -298,9 +303,6 @@ pub fn build_setup_density_update_script() -> String {
                                 densityLastFetchedBbox = bbox;
 
                                 // Process data and update heatmap...
-                                const minLon = bbox[0];
-                                const minLat = bbox[1];
-                                const cellSize = 0.0009;  // ~100m
                                 const buffer = 0.00045;   // ~50m
                                 const bufferedBbox = [
                                     minLon - buffer,
@@ -317,7 +319,6 @@ pub fn build_setup_density_update_script() -> String {
                             .then(data => {{
                                 // Grid aggregation (same as calculation script)
                                 const grid = {{}};
-                                const cellSize = 0.0009;
 
                                 data.features.forEach(feature => {{
                                     let point = null;

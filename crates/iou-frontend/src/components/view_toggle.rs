@@ -41,6 +41,8 @@ pub fn build_set_view_mode_script(mode: ViewMode) -> String {
                 if (layer) {{
                     map.setPaintProperty('building-3d', 'fill-extrusion-height', {});
                     console.log('View mode set to: {}', {});
+                }} else {{
+                    console.warn('Building layer not found, skipping paint property update');
                 }}
 
                 // Adjust pitch for better 2D/3D visualization
