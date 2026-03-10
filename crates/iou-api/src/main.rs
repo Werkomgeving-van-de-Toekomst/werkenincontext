@@ -111,6 +111,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/templates/{id}", delete(routes::delete_template))
         // 3D Buildings proxy
         .route("/buildings-3d", get(routes::buildings_3d::get_buildings_3d))
+        .route("/buildings-3d-cached", get(routes::buildings_3d::get_buildings_3d_cached))
         .without_v07_checks();
 
     // Combine API with static file serving

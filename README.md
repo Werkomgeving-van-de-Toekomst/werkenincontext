@@ -71,13 +71,14 @@ cargo run -p iou-api
 ### Frontend Development
 
 ```bash
-cd crates/iou-frontend
+# Development server met hot reload (vanuit project root)
+dx serve --package iou-frontend --port 8080
 
-# Development server met hot reload
-dx serve
+# Of met expliciet poortnummer
+dx serve --package iou-frontend
 
 # Production build
-dx build --release
+dx build --release --package iou-frontend
 ```
 
 ## 🗄️ Database (DuckDB)

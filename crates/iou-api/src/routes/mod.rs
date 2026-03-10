@@ -3,6 +3,9 @@
 pub mod apps;
 pub mod auth;
 pub mod buildings_3d;
+
+// Re-export buildings handlers
+pub use buildings_3d::{get_buildings_3d, get_buildings_3d_cached};
 pub mod compliance;
 pub mod context;
 pub mod documents;

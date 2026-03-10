@@ -104,7 +104,14 @@ pub fn ViewToggle() -> Element {
     let mut view_mode = use_signal(|| ViewMode::default());
 
     // Initialize from localStorage on mount
+    // Skip initial run to avoid race condition with map initialization
+    let mut is_initialized = use_signal(|| false);
     use_effect(move || {
+        if !*is_initialized.read() {
+            is_initialized.set(true);
+            return;
+        }
+
         let script = build_get_initial_view_script();
         // Note: This script returns the value, but we can't easily capture it in Rust
         // Instead, we'll use a MutationObserver or sync approach

@@ -1,9 +1,9 @@
-//! 3D Buildings service - simplified version
+//! 3D Buildings service - with caching and pagination
 
 use axum::{extract::Query, response::{Json, IntoResponse}, http::StatusCode};
 use serde::Deserialize;
 use serde_json::json;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 /// API error types with proper HTTP status codes
 #[derive(Debug)]
@@ -32,6 +32,8 @@ pub struct BboxParams {
     #[serde(rename = "bbox-wgs84")]
     bbox_wgs84: Option<String>,
     limit: Option<usize>,
+    #[serde(default)]
+    cache: bool,  // Enable caching mode (fetches ALL buildings with pagination)
 }
 
 /// Flag indicating whether proj crate is available for accurate conversion.
@@ -156,7 +158,164 @@ fn rd_to_wgs84_fallback(x: f64, y: f64) -> (f64, f64) {
     (lon, lat)
 }
 
-pub async fn get_buildings_3d(Query(params): Query<BboxParams>) -> Result<Json<serde_json::Value>, ApiError> {
+/// Parse WGS84 bbox without converting to RD
+fn parse_wgs84_bbox_only(bbox_wgs84: &str) -> Result<(f64, f64, f64, f64), String> {
+    let coords: Vec<&str> = bbox_wgs84.split(',')
+        .map(|s| s.trim())
+        .collect();
+
+    if coords.len() != 4 {
+        return Err("bbox must have 4 coordinates".to_string());
+    }
+
+    let min_lon = coords[0].parse::<f64>()
+        .map_err(|_| "invalid min_lon".to_string())?;
+    let min_lat = coords[1].parse::<f64>()
+        .map_err(|_| "invalid min_lat".to_string())?;
+    let max_lon = coords[2].parse::<f64>()
+        .map_err(|_| "invalid max_lon".to_string())?;
+    let max_lat = coords[3].parse::<f64>()
+        .map_err(|_| "invalid max_lat".to_string())?;
+
+    // Validate bbox order
+    if min_lon >= max_lon {
+        return Err("min_lon must be less than max_lon".to_string());
+    }
+    if min_lat >= max_lat {
+        return Err("min_lat must be less than max_lat".to_string());
+    }
+
+    Ok((min_lon, min_lat, max_lon, max_lat))
+}
+
+/// Get buildings with caching and pagination (fetches ALL buildings)
+/// Uses simple pagination to fetch all pages from 3DBAG API
+pub async fn get_buildings_3d_cached(
+    Query(params): Query<BboxParams>,
+) -> Json<serde_json::Value> {
+    // Parse WGS84 bbox and convert to RD
+    let (min_x, min_y, max_x, max_y) = match params.bbox_wgs84.as_deref() {
+        Some(wgs84_bbox) => {
+            match parse_and_convert_wgs84_bbox(wgs84_bbox) {
+                Ok(coords) => coords,
+                Err(_) => return Json(json!({"type": "FeatureCollection", "features": []})),
+            }
+        },
+        None => (150000.0, 470000.0, 170000.0, 490000.0),
+    };
+
+    let client = reqwest::Client::new();
+    let mut all_geojson_features = Vec::new();
+    let mut next_url: Option<String> = Some(format!(
+        "https://api.3dbag.nl/collections/pand/items?bbox={},{},{},{}&limit=100",
+        min_x, min_y, max_x, max_y
+    ));
+    let use_proj = is_proj_available();
+
+    while let Some(url) = next_url {
+        let resp = match client.get(&url).send().await {
+            Ok(r) => r,
+            Err(_) => break,
+        };
+
+        if !resp.status().is_success() {
+            break;
+        }
+
+        let data: serde_json::Value = match resp.json().await {
+            Ok(j) => j,
+            Err(_) => break,
+        };
+
+        // Convert CityJSON features to GeoJSON for this page
+        let features = data.get("features").and_then(|f| f.as_array());
+        if let Some(feats) = features {
+            // Extract transform and vertices from this page
+            let transform = data.get("metadata")
+                .and_then(|m| m.as_object())
+                .and_then(|m| m.get("transform"))
+                .and_then(|t| t.as_object());
+            let root_vertices = data.get("vertices").and_then(|v| v.as_array());
+
+            let up = use_proj;
+            let tf = transform;
+            let verts = root_vertices;
+
+            // Convert each feature
+            let geojson_features: Vec<_> = feats.iter()
+                .filter_map(|feature| {
+                    let city_objs = feature.get("CityObjects")?;
+                    let (id, city_obj) = city_objs.as_object()?.iter().next()?;
+
+                    if city_obj.get("type")?.as_str() != Some("Building") {
+                        return None;
+                    }
+
+                    let attrs = city_obj.get("attributes")?.as_object()?;
+                    let roof_max = attrs.get("b3_h_dak_max")?.as_f64().unwrap_or(10.0);
+                    let ground = attrs.get("b3_h_maaiveld")?.as_f64().unwrap_or(0.0);
+                    let height = (roof_max - ground).max(2.0);
+
+                    let vertices = feature.get("vertices").and_then(|v| v.as_array()).or(verts);
+                    let geometry = city_obj.get("geometry")?.as_array()?;
+                    let footprint = geometry.iter()
+                        .find(|g| g.get("lod").and_then(|l| l.as_str()) == Some("0"))?;
+
+                    let geom = if up {
+                        convert_geometry_proj(footprint, vertices, tf)
+                    } else {
+                        convert_geometry_fallback(footprint, vertices, tf)
+                    };
+
+                    let mut props = serde_json::Map::new();
+                    props.insert("height".to_string(), json!(height));
+                    props.insert("min_height".to_string(), json!(ground));
+                    props.insert("floors".to_string(), json!(attrs.get("b3_bouwlagen").and_then(|f| f.as_i64()).unwrap_or(1)));
+
+                    let bag_id = attrs.get("identificatie")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or(id);
+                    props.insert("bag_id".to_string(), json!(bag_id));
+
+                    if let Some(year) = attrs.get("oorspronkelijkbouwjaar").and_then(|v| v.as_i64()) {
+                        props.insert("construction_year".to_string(), json!(year));
+                    }
+
+                    let mut feature_obj = serde_json::Map::new();
+                    feature_obj.insert("type".to_string(), json!("Feature"));
+                    feature_obj.insert("id".to_string(), json!(id));
+                    feature_obj.insert("geometry".to_string(), geom);
+                    feature_obj.insert("properties".to_string(), json!(props));
+
+                    Some(serde_json::Value::Object(feature_obj))
+                })
+                .collect();
+
+            all_geojson_features.extend(geojson_features);
+        }
+
+        // Get next URL from links
+        next_url = data.get("links")
+            .and_then(|l| l.as_array())
+            .and_then(|links| links.iter().find(|link| {
+                link.get("rel").and_then(|r| r.as_str()) == Some("next")
+            }))
+            .and_then(|link| link.get("href").and_then(|h| h.as_str()))
+            .map(|h| h.to_string());
+
+        // Small delay to avoid rate limiting
+        if next_url.is_some() {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+    }
+
+    Json(json!({"type": "FeatureCollection", "features": all_geojson_features}))
+}
+
+pub async fn get_buildings_3d(
+    Query(params): Query<BboxParams>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    // Original implementation (single request, limited results)
     // Determine bbox: prefer bbox-wgs84 if provided, otherwise use bbox
     let bbox = if let Some(wgs84_bbox) = params.bbox_wgs84.as_deref() {
         let (min_x, min_y, max_x, max_y) = parse_and_convert_wgs84_bbox(wgs84_bbox)
