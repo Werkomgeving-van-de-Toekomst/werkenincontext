@@ -16,6 +16,9 @@ pub mod search;
 pub mod templates;
 pub mod terrain;
 
+// Versioned API (RONL Business API Layer)
+pub mod v1;
+
 // Re-export document and template handlers for use in main.rs
 pub use documents::create_document as documents_create;
 pub use documents::get_status as documents_get_status;

@@ -50,6 +50,12 @@ pub mod architektur;
 pub mod compliance;
 pub mod provisa;
 
+// DMN/BPMN business rules integration
+#[cfg(not(target_arch = "wasm32"))]
+pub mod dmn;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod bpmn;
+
 // HTTP client and tools are only available for native builds
 #[cfg(not(target_arch = "wasm32"))]
 pub mod client;
@@ -64,6 +70,16 @@ pub use client::OpenRegelsClient;
 pub use model::{Regel, RegelDetail, RegelType, JuriconnectRef};
 #[cfg(not(target_arch = "wasm32"))]
 pub use tools::OpenRegelsTools;
+
+// DMN/BPMN re-exports
+#[cfg(not(target_arch = "wasm32"))]
+pub use dmn::{DmnEvaluator, DecisionContext, DecisionValue, DecisionResult, DmnError};
+#[cfg(not(target_arch = "wasm32"))]
+pub use bpmn::{
+    BpmnProcessEngine, ProcessDefinition, ProcessInstance,
+    ActivityType, GatewayType, EventType, ProcessInstanceState,
+    load_process_from_open_regels,
+};
 
 pub use architektur::{
     IouArchitecture, IouComponent, Technology, Standard,

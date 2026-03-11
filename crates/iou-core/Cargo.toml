@@ -10,11 +10,30 @@ serde_json.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 
 # Enum utilities
 strum = { version = "0.26", features = ["derive"] }
 
 # Validation
 validator = { version = "0.19", features = ["derive"] }
+
+# S3 storage (stub - full implementation pending rust-s3 2024 edition compatibility)
+# rust-s3 = "0.37"
+
+# Async runtime for S3
+tokio = { workspace = true, features = ["rt", "io-util"] }
+
+# HTTP types
+http = "1.2"
+
+# Async traits
+async-trait = "0.1"
+
+# HTTP client for DID resolution
+reqwest = { workspace = true }
+
+# PostgreSQL for audit logging
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json"] }
 
 [dev-dependencies]

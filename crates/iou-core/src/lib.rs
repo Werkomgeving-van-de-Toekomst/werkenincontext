@@ -22,6 +22,15 @@ pub mod workflows;
 pub mod document;
 pub mod storage;
 
+// SSI and VC support
+pub mod ssi;
+
+// Audit logging
+pub mod audit;
+
+// Multi-tenancy
+pub mod tenancy;
+
 // Re-exports voor gemakkelijk gebruik
 pub use domain::{DomainType, InformationDomain, Case, Project, PolicyTopic};
 pub use objects::{ObjectType, InformationObject};

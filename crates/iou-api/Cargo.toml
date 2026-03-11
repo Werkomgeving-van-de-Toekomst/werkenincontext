@@ -17,6 +17,7 @@ path = "src/main.rs"
 iou-core.workspace = true
 iou-ai = { path = "../iou-ai" }
 iou-orchestrator = { path = "../iou-orchestrator" }
+iou-regels = { path = "../iou-regels" }
 
 # Web framework
 axum = { workspace = true, features = ["ws"] }
