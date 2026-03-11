@@ -28,7 +28,7 @@ use iou_core::workflows::WorkflowStatus;
 // ============================================
 
 /// Request payload for document creation
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateDocumentRequest {
     pub domain_id: String,
     pub document_type: String,
@@ -56,7 +56,7 @@ pub struct DocumentStatusResponse {
 }
 
 /// Approval request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ApprovalRequest {
     pub approved: bool,
     pub comments: Option<String>,

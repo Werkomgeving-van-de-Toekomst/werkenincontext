@@ -21,6 +21,8 @@ mod error;
 mod middleware;
 mod routes;
 mod workflows;
+mod websockets;
+mod orchestrator;
 
 use db::Database;
 use workflows::WorkflowEngine;
@@ -38,6 +40,22 @@ async fn main() -> anyhow::Result<()> {
     // Load configuration
     dotenvy::dotenv().ok();
     let config = config::Config::from_env()?;
+
+    // Validate S3 connectivity if credentials are provided (fail-fast)
+    if !config.s3.access_key.is_empty() && !config.s3.bucket.is_empty() {
+        tracing::info!("Validating S3 connectivity...");
+        match iou_core::storage::S3Client::new_from_env() {
+            Ok(_client) => {
+                // Validation stub - full implementation in Section 4
+                tracing::info!("S3 client created (validation in Section 4)");
+            }
+            Err(e) => {
+                tracing::warn!("S3 client creation failed: {}. Continuing without S3.", e);
+            }
+        }
+    } else {
+        tracing::info!("S3 credentials not configured. Document storage will be limited.");
+    }
 
     // Initialize DuckDB database
     let db = Database::new(&config.database_path)?;

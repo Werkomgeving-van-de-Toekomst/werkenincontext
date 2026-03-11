@@ -8,9 +8,10 @@ description = "REST API server for IOU-Modern using Axum and DuckDB"
 # Internal crates
 iou-core.workspace = true
 iou-ai = { path = "../iou-ai" }
+iou-orchestrator = { path = "../iou-orchestrator" }
 
 # Web framework
-axum.workspace = true
+axum = { workspace = true, features = ["ws"] }
 tower.workspace = true
 tower-http.workspace = true
 
@@ -45,6 +46,13 @@ dotenvy = "0.15"
 # HTTP client for external APIs
 reqwest = { version = "0.12", features = ["json"] }
 proj = "0.31.0"
+
+# WebSocket support
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+
+# Concurrent collections
+dashmap = "6.1"
 
 [dev-dependencies]
 tokio-test = "0.4"

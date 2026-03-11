@@ -23,6 +23,12 @@ pub enum ApiError {
     #[error("Forbidden: {0}")]
     Forbidden(String),
 
+    #[error("Too many requests: {0}")]
+    TooManyRequests(String),
+
+    #[error("Payload too large: {0}")]
+    PayloadTooLarge(String),
+
     #[error("Database error: {0}")]
     Database(#[from] duckdb::Error),
 
@@ -37,6 +43,8 @@ impl IntoResponse for ApiError {
             ApiError::Validation(msg) => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR", msg.clone()),
             ApiError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", msg.clone()),
             ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, "FORBIDDEN", msg.clone()),
+            ApiError::TooManyRequests(msg) => (StatusCode::TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", msg.clone()),
+            ApiError::PayloadTooLarge(msg) => (StatusCode::PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE", msg.clone()),
             ApiError::Database(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "DATABASE_ERROR",

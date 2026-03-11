@@ -46,7 +46,7 @@ pub struct TemplateDto {
 }
 
 /// Create template request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTemplateRequest {
     pub name: String,
     pub domain_id: String,
@@ -64,7 +64,7 @@ pub struct CreateTemplateResponse {
 }
 
 /// Update template request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateTemplateRequest {
     pub name: Option<String>,
     pub content: Option<String>,
