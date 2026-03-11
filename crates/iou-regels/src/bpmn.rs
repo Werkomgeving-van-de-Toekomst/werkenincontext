@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn test_process_instance_creation() {
         let evaluator = DmnEvaluator::new();
-        let engine = BpmnProcessEngine::new(Arc::new(evaluator));
+        let mut engine = BpmnProcessEngine::new(Arc::new(evaluator));
 
         let definition = ProcessDefinition {
             id: "test-process".to_string(),

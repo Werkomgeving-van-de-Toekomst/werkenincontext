@@ -22,9 +22,9 @@ impl TenantId {
         if id.len() > 50 {
             return Err(TenantError::InvalidFormat("Tenant ID too long".into()));
         }
-        // Must be lowercase alphanumeric with hyphens
-        if !id.chars().all(|c| c.is_alphanumeric() || c == '-') {
-            return Err(TenantError::InvalidFormat("Invalid characters".into()));
+        // Must be lowercase alphanumeric with hyphens and apostrophes (for names like 's-hertogenbosch)
+        if !id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '\'') {
+            return Err(TenantError::InvalidFormat("Invalid characters (must be lowercase alphanumeric with hyphens/apostrophes)".into()));
         }
         Ok(())
     }
