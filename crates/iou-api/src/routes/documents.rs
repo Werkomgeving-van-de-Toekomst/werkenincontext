@@ -323,6 +323,26 @@ pub async fn download_document(
 }
 
 // ============================================
+// Helper Functions
+// ============================================
+
+/// Parse document type from string to DocumentType enum.
+fn parse_document_type(s: &str) -> Result<DocumentType, ApiError> {
+    match s.to_lowercase().as_str() {
+        "woo_besluit" => Ok(DocumentType::WooBesluit),
+        "woo_informatie" => Ok(DocumentType::WooInformatie),
+        "woo_besluit_beroep" => Ok(DocumentType::WooBesluitBeroep),
+        "woo_informatie_beroep" => Ok(DocumentType::WooInformatieBeroep),
+        "beleidsnotitie" => Ok(DocumentType::Beleidsnotitie),
+        "raadsvoorstel" => Ok(DocumentType::Raadsvoorstel),
+        "ambtsbericht" => Ok(DocumentType::Ambtsbericht),
+        "persbericht" => Ok(DocumentType::Persbericht),
+        "interne_memo" => Ok(DocumentType::InterneMemo),
+        _ => Ok(DocumentType::Custom(s.to_string())),
+    }
+}
+
+// ============================================
 // Tests
 // ============================================
 
