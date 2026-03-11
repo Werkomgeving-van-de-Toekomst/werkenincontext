@@ -28,7 +28,7 @@ impl ConnectionLimiter {
 
     /// Acquire a permit for a WebSocket connection to the given document
     ///
-    /// Returns an error if the maximum number of connections (10)
+    /// Returns an error immediately if the maximum number of connections (10)
     /// has been reached for this document.
     /// The permit is automatically released when dropped.
     pub async fn acquire(
@@ -40,10 +40,11 @@ impl ConnectionLimiter {
             .entry(document_id)
             .or_insert_with(|| Arc::new(Semaphore::new(Self::MAX_CONNECTIONS)));
 
+        // Use try_acquire_owned for immediate rejection when limit is reached
+        // This prevents hanging on connection attempts when the limit is full
         semaphore
             .clone()
-            .acquire_owned()
-            .await
+            .try_acquire_owned()
             .map_err(|_| ApiError::TooManyRequests(
                 "Maximum WebSocket connections (10) reached for this document".to_string(),
             ))

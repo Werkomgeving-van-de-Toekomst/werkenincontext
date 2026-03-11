@@ -4,6 +4,14 @@ version.workspace = true
 edition = "2024"
 description = "REST API server for IOU-Modern using Axum and DuckDB"
 
+[lib]
+name = "iou_api"
+path = "src/lib.rs"
+
+[[bin]]
+name = "iou-api"
+path = "src/main.rs"
+
 [dependencies]
 # Internal crates
 iou-core.workspace = true
@@ -54,9 +62,12 @@ proj = "0.31.0"
 # WebSocket support
 tokio-tungstenite = "0.24"
 futures-util = "0.3"
+bytes = "1.9"
 
 # Concurrent collections
 dashmap = "6.1"
 
 [dev-dependencies]
 tokio-test = "0.4"
+futures = "0.3"
+

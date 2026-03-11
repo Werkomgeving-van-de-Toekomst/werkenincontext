@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 
 use axum::{
-    extract::{Extension, State},
+    extract::Extension,
     routing::{delete, get, post, put},
     Router,
     middleware as axum_middleware,
@@ -30,6 +30,7 @@ use db::Database;
 use workflows::WorkflowEngine;
 use orchestrator::types::StatusMessage;
 use websockets::types::DocumentStatus;
+use websockets::documents::WebSocketState;
 use iou_core::storage::S3Client;
 
 #[tokio::main]
@@ -81,6 +82,11 @@ async fn main() -> anyhow::Result<()> {
     // Channel capacity of 100 prevents memory issues if consumers are slow
     let (orchestrator_status_tx, _orchestrator_status_rx) = broadcast::channel::<StatusMessage>(100);
     let (doc_status_tx, _doc_status_rx) = broadcast::channel::<DocumentStatus>(100);
+
+    // Create WebSocket state for document status broadcasts
+    let ws_state = Arc::new(WebSocketState {
+        status_tx: doc_status_tx.clone(),
+    });
 
     // Build API router
     let api = Router::new()
@@ -137,6 +143,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/documents/{id}/approve", post(routes::documents_approve))
         .route("/documents/{id}/audit", get(routes::documents_audit))
         .route("/documents/{id}/download", get(routes::documents_download))
+        // WebSocket endpoint for real-time document status updates
+        .route("/ws/documents/{id}", get(websockets::documents::ws_document_handler))
         // Template management endpoints
         .route("/templates", get(routes::list_templates))
         .route("/templates", post(routes::create_template))
@@ -170,7 +178,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(workflow_engine))
         .layer(Extension(orchestrator_status_tx))
         .layer(Extension(doc_status_tx))
-        .layer(Extension(s3_client));
+        .layer(Extension(s3_client))
+        .layer(Extension(ws_state));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
