@@ -15,13 +15,20 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use uuid::Uuid;
 
 use crate::db::Database;
 use crate::error::ApiError;
 use crate::middleware::auth::AuthContext;
+use crate::orchestrator::{WorkflowOrchestrator, types::StatusMessage};
+use crate::websockets::types::DocumentStatus;
 use iou_core::document::{DocumentMetadata, AuditEntry, DocumentFormat};
 use iou_core::workflows::WorkflowStatus;
+use iou_orchestrator::{
+    WorkflowContext,
+    context::{DocumentRequest, DocumentType},
+};
 
 // ============================================
 // Request/Response Types
@@ -100,6 +107,8 @@ pub struct DownloadParams {
 /// POST /api/documents/create
 pub async fn create_document(
     Extension(db): Extension<Arc<Database>>,
+    Extension(status_tx): Extension<broadcast::Sender<StatusMessage>>,
+    Extension(doc_status_tx): Extension<broadcast::Sender<DocumentStatus>>,
     Json(req): Json<CreateDocumentRequest>,
 ) -> Result<Json<CreateDocumentResponse>, ApiError> {
     // Validate template exists
@@ -114,7 +123,24 @@ pub async fn create_document(
     let document_id = Uuid::new_v4();
     let now = Utc::now();
 
-    // Create document record
+    // Parse document type
+    let document_type = parse_document_type(&req.document_type)?;
+
+    // Create document request for orchestrator
+    let document_request = DocumentRequest {
+        id: document_id,
+        domain_id: req.domain_id.clone(),
+        document_type: document_type.clone(),
+        context: req.context,
+        requested_by: Uuid::new_v4(), // TODO: Get from auth context
+        requested_at: now,
+        priority: Default::default(),
+    };
+
+    // Create workflow context
+    let workflow_context = WorkflowContext::new(document_id, document_request, "1.0.0".to_string());
+
+    // Create document record in database
     let document = DocumentMetadata {
         id: document_id,
         domain_id: req.domain_id.clone(),
@@ -130,19 +156,25 @@ pub async fn create_document(
 
     db.create_document_async(document).await?;
 
+    // Create and start workflow orchestrator
+    let orchestrator = WorkflowOrchestrator::new(db, status_tx, doc_status_tx);
+    orchestrator.start_workflow(workflow_context).await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to start workflow: {}", e)))?;
+
     tracing::info!(
         domain_id = %req.domain_id,
         document_type = %req.document_type,
         document_id = %document_id,
-        "Document creation requested"
+        "Document creation requested and workflow started"
     );
 
-    // TODO: Invoke pipeline executor asynchronously
+    // Calculate estimated completion time (8 minutes max)
+    let estimated_completion = now + chrono::Duration::minutes(8);
 
     Ok(Json(CreateDocumentResponse {
         document_id,
         state: "draft".to_string(),
-        estimated_completion: None,
+        estimated_completion: Some(estimated_completion),
     }))
 }
 
