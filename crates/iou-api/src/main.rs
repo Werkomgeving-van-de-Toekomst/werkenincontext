@@ -30,6 +30,7 @@ use db::Database;
 use workflows::WorkflowEngine;
 use orchestrator::types::StatusMessage;
 use websockets::types::DocumentStatus;
+use iou_core::storage::S3Client;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -45,21 +46,26 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let config = config::Config::from_env()?;
 
-    // Validate S3 connectivity if credentials are provided (fail-fast)
-    if !config.s3.access_key.is_empty() && !config.s3.bucket.is_empty() {
-        tracing::info!("Validating S3 connectivity...");
-        match iou_core::storage::S3Client::new_from_env() {
-            Ok(_client) => {
-                // Validation stub - full implementation in Section 4
-                tracing::info!("S3 client created (validation in Section 4)");
-            }
-            Err(e) => {
-                tracing::warn!("S3 client creation failed: {}. Continuing without S3.", e);
-            }
+    // Initialize S3 client for document storage
+    let s3_client: Arc<S3Client> = match S3Client::new_from_env() {
+        Ok(client) => {
+            tracing::info!("S3 client created. Bucket: {}", client.bucket_name());
+            Arc::new(client)
         }
-    } else {
-        tracing::info!("S3 credentials not configured. Document storage will be limited.");
-    }
+        Err(e) => {
+            tracing::warn!("S3 client creation failed: {}. Document storage will be limited.", e);
+            // Create a fallback client with default config
+            let fallback_config = iou_core::storage::S3Config {
+                access_key: "missing".to_string(),
+                secret_key: "missing".to_string(),
+                bucket: "missing".to_string(),
+                endpoint: None,
+                region: "us-east-1".to_string(),
+                path_style: true,
+            };
+            Arc::new(S3Client::with_config(fallback_config).unwrap())
+        }
+    };
 
     // Initialize DuckDB database
     let db = Database::new(&config.database_path)?;
@@ -163,7 +169,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(db_arc))
         .layer(Extension(workflow_engine))
         .layer(Extension(orchestrator_status_tx))
-        .layer(Extension(doc_status_tx));
+        .layer(Extension(doc_status_tx))
+        .layer(Extension(s3_client));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

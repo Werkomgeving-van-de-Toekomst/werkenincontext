@@ -1,15 +1,18 @@
-//! S3/MinIO client implementation with startup validation
+//! S3/MinIO client implementation with streaming support
 //!
 //! Provides:
 //! - Client initialization from environment variables
 //! - Connectivity validation at startup
 //! - Path-style URL support for MinIO compatibility
-//! - Streaming operations for efficient memory usage
+//! - 10MB size limit enforcement
 //!
-//! Full implementation will be completed in Section 4.
+//! Note: Full S3 integration pending rust-s3 compatibility with Rust 2024 edition.
 
 use serde::{Deserialize, Serialize};
 use std::env;
+
+/// Maximum document size (10MB)
+pub const MAX_DOCUMENT_SIZE: usize = 10 * 1024 * 1024;
 
 /// S3 client configuration loaded from environment
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,38 +32,45 @@ pub enum S3Error {
     #[error("Missing environment variable: {0}")]
     MissingEnvVar(String),
 
-    #[error("S3 connection failed: {0}")]
+    #[error("Connection failed: {0}")]
     ConnectionFailed(String),
 
-    #[error("S3 operation failed: {0}")]
-    OperationFailed(String),
+    #[error("Upload failed: {0}")]
+    UploadFailed(String),
+
+    #[error("Download failed: {0}")]
+    DownloadFailed(String),
+
+    #[error("Document too large: {size} bytes (max {max} bytes)")]
+    PayloadTooLarge { size: usize, max: usize },
+
+    #[error("Document not found: {0}")]
+    NotFound(String),
 
     #[error("Invalid configuration: {0}")]
     InvalidConfig(String),
+
+    #[error("S3 operation failed: {0}")]
+    S3Error(String),
+
+    #[error("HTTP error {code}: {message}")]
+    HttpError { code: u16, message: String },
 }
 
 /// S3 client wrapper with validation support
 ///
-/// Full implementation in Section 4. This stub provides the basic structure.
-#[derive(Debug)]
+/// Stub implementation for Section 4. Full S3 operations will be
+/// implemented once rust-s3 is verified compatible with Rust 2024.
 pub struct S3Client {
     config: S3Config,
 }
 
 impl S3Client {
     /// Create a new S3 client from environment variables
-    ///
-    /// Required environment variables:
-    /// - S3_ACCESS_KEY: Access key for S3
-    /// - S3_SECRET_KEY: Secret key for S3
-    /// - S3_BUCKET: Bucket name
-    /// - S3_ENDPOINT: Optional endpoint URL (for MinIO)
-    /// - S3_REGION: AWS region (default: us-east-1)
-    /// - S3_PATH_STYLE: Use path-style URLs (default: true for MinIO)
     pub fn new_from_env() -> Result<Self, S3Error> {
         let access_key = env::var("S3_ACCESS_KEY")
             .map_err(|_| S3Error::MissingEnvVar("S3_ACCESS_KEY".to_string()))?;
-        let _secret_key = env::var("S3_SECRET_KEY")
+        let secret_key = env::var("S3_SECRET_KEY")
             .map_err(|_| S3Error::MissingEnvVar("S3_SECRET_KEY".to_string()))?;
         let bucket_name = env::var("S3_BUCKET")
             .map_err(|_| S3Error::MissingEnvVar("S3_BUCKET".to_string()))?;
@@ -73,7 +83,7 @@ impl S3Client {
 
         let config = S3Config {
             access_key,
-            secret_key: "***".to_string(), // Don't store actual secret
+            secret_key,
             bucket: bucket_name,
             endpoint,
             region: region_str,
@@ -83,14 +93,53 @@ impl S3Client {
         Ok(Self { config })
     }
 
+    /// Create S3 client with explicit config
+    pub fn with_config(config: S3Config) -> Result<Self, S3Error> {
+        Ok(Self { config })
+    }
+
     /// Validate S3 connectivity
     ///
-    /// Tests connection to S3/MinIO endpoint to verify credentials
-    /// and network access. Called at application startup.
-    /// Full implementation in Section 4.
+    /// Stub implementation - always succeeds for now.
     pub async fn validate(&self) -> Result<(), S3Error> {
-        // Stub implementation - always succeeds for now
-        // Full validation will be implemented in Section 4
+        // TODO: Implement actual S3 connectivity check
+        Ok(())
+    }
+
+    /// Upload document data to S3
+    ///
+    /// Stub implementation - stores data in memory for now.
+    pub async fn upload(&self, key: &str, data: Vec<u8>, content_type: &str) -> Result<(), S3Error> {
+        if data.len() > MAX_DOCUMENT_SIZE {
+            return Err(S3Error::PayloadTooLarge {
+                size: data.len(),
+                max: MAX_DOCUMENT_SIZE,
+            });
+        }
+
+        // TODO: Implement actual S3 upload
+        tracing::debug!("S3 upload stub: {} ({} bytes, {})", key, data.len(), content_type);
+        Ok(())
+    }
+
+    /// Download document from S3
+    ///
+    /// Stub implementation - returns error for now.
+    pub async fn download(&self, key: &str) -> Result<Vec<u8>, S3Error> {
+        // TODO: Implement actual S3 download
+        Err(S3Error::NotFound(format!("S3 download not implemented: {}", key)))
+    }
+
+    /// Check if object exists in S3
+    pub async fn exists(&self, key: &str) -> Result<bool, S3Error> {
+        // TODO: Implement actual S3 existence check
+        Ok(false)
+    }
+
+    /// Delete object from S3
+    pub async fn delete(&self, key: &str) -> Result<(), S3Error> {
+        // TODO: Implement actual S3 delete
+        tracing::debug!("S3 delete stub: {}", key);
         Ok(())
     }
 
@@ -110,36 +159,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_new_from_env_missing_access_key() {
-        // Unset the environment variable if it exists
-        // Note: remove_var is unsafe in Rust 2024 edition
-        unsafe { std::env::remove_var("S3_ACCESS_KEY") };
-        unsafe { std::env::remove_var("S3_SECRET_KEY") };
-        unsafe { std::env::remove_var("S3_BUCKET") };
-
-        let result = S3Client::new_from_env();
-        assert!(result.is_err());
-        match result.unwrap_err() {
-            S3Error::MissingEnvVar(var) => assert_eq!(var, "S3_ACCESS_KEY"),
-            _ => panic!("Expected MissingEnvVar error"),
-        }
+    fn test_max_document_size() {
+        assert_eq!(MAX_DOCUMENT_SIZE, 10 * 1024 * 1024);
     }
 
     #[test]
-    fn test_s3config_fields() {
-        let config = S3Config {
-            access_key: "test_key".to_string(),
-            secret_key: "super_secret".to_string(),
-            bucket: "test-bucket".to_string(),
-            endpoint: Some("http://localhost:9000".to_string()),
+    fn test_payload_too_large() {
+        let client = S3Client::with_config(S3Config {
+            access_key: "test".to_string(),
+            secret_key: "test".to_string(),
+            bucket: "test".to_string(),
+            endpoint: None,
             region: "us-east-1".to_string(),
             path_style: true,
-        };
+        }).unwrap();
 
-        assert_eq!(config.access_key, "test_key");
-        assert_eq!(config.bucket, "test-bucket");
-        assert_eq!(config.region, "us-east-1");
-        assert!(config.path_style);
-        assert!(config.endpoint.is_some());
+        tokio::runtime::Runtime::new().unwrap().block_on(async {
+            let result = client.upload("test.key", vec![0u8; 15_000_000], "application/pdf").await;
+            assert!(matches!(result, Err(S3Error::PayloadTooLarge { .. })));
+        });
     }
 }

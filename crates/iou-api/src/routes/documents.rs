@@ -288,6 +288,7 @@ pub async fn get_audit_trail(
 /// GET /api/documents/{id}/download?format=odf|pdf|md
 pub async fn download_document(
     Extension(db): Extension<Arc<Database>>,
+    Extension(s3_client): Extension<Arc<iou_core::storage::S3Client>>,
     Path(id): Path<Uuid>,
     Query(params): Query<DownloadParams>,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -296,29 +297,40 @@ pub async fn download_document(
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("No document with ID {}", id)))?;
 
-    // Only published documents can be downloaded
-    if document.state != WorkflowStatus::Published {
+    // Only published/approved documents can be downloaded
+    if document.state != WorkflowStatus::Published && document.state != WorkflowStatus::Approved {
         return Err(ApiError::Validation(
-            "Document must be published before download".to_string(),
+            "Document must be approved before download".to_string(),
         ));
     }
 
-    let format = params.format.unwrap_or(DocumentFormat::Markdown);
+    // Generate storage key
+    let storage_key = if document.current_version_key.is_empty() {
+        format!("documents/{}.pdf", id)
+    } else {
+        document.current_version_key.clone()
+    };
 
-    // TODO: Retrieve from S3 storage based on format
-    // For now, return a placeholder message
-    let content = format!("Document content for {} in {:?} format", id, format);
-    let content_type: String = format.content_type().to_string();
+    // Download from S3
+    let data = s3_client.download(&storage_key).await?;
+
+    // Determine content type
+    let content_type = params.format
+        .unwrap_or(DocumentFormat::PDF)
+        .content_type()
+        .to_string();
 
     tracing::info!(
         document_id = %id,
-        format = ?format,
-        "Document downloaded"
+        storage_key = %storage_key,
+        size = data.len(),
+        "Document downloaded from S3"
     );
 
     Ok((
-        [(axum::http::header::CONTENT_TYPE, content_type)],
-        content,
+        [(axum::http::header::CONTENT_TYPE, content_type),
+         (axum::http::header::CONTENT_DISPOSITION, format!("attachment; filename=\"{}.pdf\"", id))],
+        data,
     ))
 }
 

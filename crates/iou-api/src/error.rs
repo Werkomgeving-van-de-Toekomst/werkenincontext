@@ -6,6 +6,7 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use iou_core::storage::S3Error;
 
 /// API error type
 #[derive(Debug, thiserror::Error)]
@@ -34,6 +35,23 @@ pub enum ApiError {
 
     #[error("Internal error: {0}")]
     Internal(#[from] anyhow::Error),
+}
+
+/// Convert S3Error to ApiError
+impl From<S3Error> for ApiError {
+    fn from(err: S3Error) -> Self {
+        match err {
+            S3Error::NotFound(msg) => ApiError::NotFound(msg),
+            S3Error::PayloadTooLarge { .. } => ApiError::PayloadTooLarge(err.to_string()),
+            S3Error::ConnectionFailed(msg) => ApiError::Internal(anyhow::anyhow!("S3 connection failed: {}", msg)),
+            S3Error::UploadFailed(msg) => ApiError::Internal(anyhow::anyhow!("Upload failed: {}", msg)),
+            S3Error::DownloadFailed(msg) => ApiError::Internal(anyhow::anyhow!("Download failed: {}", msg)),
+            S3Error::InvalidConfig(msg) => ApiError::Internal(anyhow::anyhow!("Invalid S3 config: {}", msg)),
+            S3Error::S3Error(msg) => ApiError::Internal(anyhow::anyhow!("S3 error: {}", msg)),
+            S3Error::HttpError { code, message } => ApiError::Internal(anyhow::anyhow!("S3 HTTP {}: {}", code, message)),
+            S3Error::MissingEnvVar(var) => ApiError::Internal(anyhow::anyhow!("Missing env var: {}", var)),
+        }
+    }
 }
 
 impl IntoResponse for ApiError {
