@@ -4,6 +4,7 @@
 //! gebouwd met Axum en DuckDB.
 
 use std::sync::Arc;
+use tokio::sync::broadcast;
 
 use axum::{
     extract::{Extension, State},
@@ -26,6 +27,8 @@ mod orchestrator;
 
 use db::Database;
 use workflows::WorkflowEngine;
+use orchestrator::types::StatusMessage;
+use websockets::types::DocumentStatus;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -66,6 +69,11 @@ async fn main() -> anyhow::Result<()> {
     // Initialize workflow engine
     let db_arc = Arc::new(db);
     let workflow_engine = Arc::new(WorkflowEngine::new(db_arc.clone()));
+
+    // Create broadcast channels for orchestrator status updates
+    // Channel capacity of 100 prevents memory issues if consumers are slow
+    let (orchestrator_status_tx, _orchestrator_status_rx) = broadcast::channel::<StatusMessage>(100);
+    let (doc_status_tx, _doc_status_rx) = broadcast::channel::<DocumentStatus>(100);
 
     // Build API router
     let api = Router::new()
@@ -151,7 +159,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(axum_middleware::from_fn(middleware::optional_auth_middleware))
         // Extensions
         .layer(Extension(db_arc))
-        .layer(Extension(workflow_engine));
+        .layer(Extension(workflow_engine))
+        .layer(Extension(orchestrator_status_tx))
+        .layer(Extension(doc_status_tx));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
