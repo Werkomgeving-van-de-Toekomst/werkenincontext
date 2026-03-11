@@ -24,6 +24,7 @@ mod routes;
 mod workflows;
 mod websockets;
 mod orchestrator;
+mod vc;
 
 use db::Database;
 use workflows::WorkflowEngine;
@@ -83,6 +84,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/refresh", post(routes::auth::refresh_token))
         .route("/auth/logout", post(routes::auth::logout))
+        .route("/auth/wallet", post(routes::auth::wallet_auth))
         // Context endpoints
         .route("/context/{id}", get(routes::context::get_context))
         .route("/domains", get(routes::context::list_domains))
