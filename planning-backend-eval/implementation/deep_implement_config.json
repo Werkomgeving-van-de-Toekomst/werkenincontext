@@ -1,19 +1,18 @@
 {
   "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
-  "sections_dir": "/Users/marc/Projecten/iou-modern/planning-api-extensions/sections",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/planning-backend-eval/sections",
   "target_dir": "/Users/marc/Projecten/iou-modern",
-  "state_dir": "/Users/marc/Projecten/iou-modern/planning-api-extensions/implementation",
+  "state_dir": "/Users/marc/Projecten/iou-modern/planning-backend-eval/implementation",
   "git_root": "/Users/marc/Projecten/iou-modern",
   "commit_style": "conventional",
   "test_command": "uv run pytest",
   "sections": [
-    "section-01-foundation",
-    "section-02-orchestrator",
-    "section-03-authentication",
-    "section-04-s3-storage",
-    "section-05-websocket",
-    "section-06-integration-testing",
-    "section-07-ronl-business-api"
+    "section-01-assessment",
+    "section-02-foundation",
+    "section-03-auth-realtime",
+    "section-04-cutover",
+    "section-05-stabilization",
+    "section-06-cleanup"
   ],
   "sections_state": {},
   "pre_commit": {
@@ -24,5 +23,5 @@
     "may_modify_files": false,
     "detected_formatters": []
   },
-  "created_at": "2026-03-11T17:02:12.578253+00:00"
+  "created_at": "2026-03-13T11:12:46.506583+00:00"
 }

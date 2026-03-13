@@ -10,6 +10,7 @@ section-03-authentication
 section-04-s3-storage
 section-05-websocket
 section-06-integration-testing
+section-07-ronl-business-api
 END_MANIFEST -->
 
 # Implementation Sections Index
@@ -18,12 +19,13 @@ END_MANIFEST -->
 
 | Section | Depends On | Blocks | Parallelizable |
 |---------|------------|--------|----------------|
-| section-01-foundation | - | section-02, section-04 | Yes |
-| section-02-orchestrator | 01 | section-05 | No |
-| section-03-authentication | - | section-06 | Yes |
+| section-01-foundation | - | section-02, section-04, section-07 | Yes |
+| section-02-orchestrator | 01 | section-05, section-07 | No |
+| section-03-authentication | - | section-06, section-07 | Yes |
 | section-04-s3-storage | 01 | section-06 | No |
 | section-05-websocket | 01, 02 | section-06 | No |
 | section-06-integration-testing | 02, 03, 04, 05 | - | No |
+| section-07-ronl-business-api | 01, 02, 03 | - | No |
 
 ## Execution Order
 
@@ -40,7 +42,10 @@ END_MANIFEST -->
 **Batch 4 (After 01, 02):**
 5. section-05-websocket (after foundation + orchestrator)
 
-**Batch 5 (Final - after 02, 03, 04, 05):**
+**Batch 5 (After 01, 02, 03):**
+7. section-07-ronl-business-api (after foundation, orchestrator, authentication)
+
+**Batch 6 (Final - after 02, 03, 04, 05):**
 6. section-06-integration-testing (depends on all previous sections)
 
 ## Section Summaries
@@ -98,6 +103,17 @@ Full integration and testing. Includes wiring all components in main.rs, end-to-
 - `crates/iou-api/tests/mocks/s3.rs` - Mock S3 client
 - `crates/iou-api/tests/mocks/orchestrator.rs` - Mock orchestrator
 - `crates/iou-api/tests/helpers/websocket.rs` - WebSocket test helper
+
+### section-07-ronl-business-api
+RONL Business API Layer with SSI & Business Rules. Implements Self-Sovereign Identity using EBSI/nl-wallet Verifiable Credentials, multi-tenant tenancy isolation, audit logging, and BPMN/DMN business rules integration via `iou-regels` crate.
+
+**Files:**
+- `crates/iou-core/src/ssi/mod.rs` - SSI/VC module
+- `crates/iou-core/src/tenancy/mod.rs` - Multi-tenant isolation
+- `crates/iou-core/src/audit/mod.rs` - Audit logging
+- `crates/iou-api/src/routes/v1/rules.rs` - Rules evaluation endpoints
+- `crates/iou-api/src/routes/v1/calculations.rs` - Calculation endpoints
+- `crates/iou-api/src/middleware/vc.rs` - VC validation middleware
 
 ## Key Architectural Decisions
 
