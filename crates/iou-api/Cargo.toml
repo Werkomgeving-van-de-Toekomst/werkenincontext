@@ -27,8 +27,14 @@ tower-http.workspace = true
 # Async runtime
 tokio.workspace = true
 
+# Async trait support
+async-trait = "0.1"
+
 # Database - DuckDB embedded
 duckdb.workspace = true
+
+# Database - PostgreSQL (for Supabase)
+sqlx.workspace = true
 
 # Serialization
 serde.workspace = true

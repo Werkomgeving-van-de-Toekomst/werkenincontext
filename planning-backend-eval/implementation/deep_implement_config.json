@@ -14,7 +14,12 @@
     "section-05-stabilization",
     "section-06-cleanup"
   ],
-  "sections_state": {},
+  "sections_state": {
+    "section-01-assessment": {
+      "status": "complete",
+      "commit_hash": "a17255b"
+    }
+  },
   "pre_commit": {
     "present": false,
     "type": "none",

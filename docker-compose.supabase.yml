@@ -1,0 +1,81 @@
+# Docker Compose for self-hosted Supabase
+# This file deploys Supabase alongside the existing DuckDB setup
+version: '3.8'
+
+services:
+  db:
+    image: supabase/postgres:15.1.0.147
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: iou_modern
+      POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  studio:
+    image: supabase/studio:20240129.90486e4
+    restart: unless-stopped
+    environment:
+      STUDIO_PG_RESET_URL: ${STUDIO_PG_RESET_URL:-http://localhost:3000/api/reset}
+      DEFAULT_ORGANIZATION_NAME: "IOU-Modern"
+      DEFAULT_PROJECT_NAME: "Migration"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  auth:
+    image: supabase/gotrue:v2.138.2
+    restart: unless-stopped
+    environment:
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-change-in-production}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/iou_modern
+      GOTRUE_SITE_URL: http://localhost:3000
+    ports:
+      - "9999:9999"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  realtime:
+    image: supabase/realtime:v2.25.73
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: iou_modern
+      SLOT_NAME: supabase_realtime
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  rest:
+    image: postgrest/postgrest:v12.0.1
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/iou_modern
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: postgres
+    ports:
+      - "3001:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

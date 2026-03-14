@@ -18,9 +18,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
 mod db;
+mod domain_dual_write;
+mod dual_write;
 mod error;
 mod middleware;
 mod routes;
+mod search_types;
+mod supabase;
 mod workflows;
 mod websockets;
 mod orchestrator;

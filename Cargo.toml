@@ -39,6 +39,9 @@ tokio = { version = "1.43", features = ["full"] }
 # Database - DuckDB (embedded analytical database)
 duckdb = { version = "1.1", features = ["bundled", "json", "parquet"] }
 
+# Database - PostgreSQL (for Supabase)
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json", "migrate"] }
+
 # Web framework
 axum = "0.8"
 tower = "0.5"

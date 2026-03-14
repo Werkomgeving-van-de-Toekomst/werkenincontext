@@ -399,9 +399,9 @@ impl Database {
     /// Advanced text search with filters
     pub fn search_text(
         &self,
-        params: &crate::routes::search::SearchParams,
+        params: &crate::search_types::SearchParams,
         query: &str,
-    ) -> anyhow::Result<(Vec<crate::routes::search::AdvancedSearchResult>, i64)> {
+    ) -> anyhow::Result<(Vec<crate::search_types::AdvancedSearchResult>, i64)> {
         let conn = self.conn.lock().unwrap();
 
         // Build dynamic SQL query based on filters
@@ -465,17 +465,17 @@ impl Database {
 
         // Add sorting and pagination
         match params.sort {
-            crate::routes::search::SortOrder::Relevance => {
+            crate::search_types::SortOrder::Relevance => {
                 // Simple relevance: title matches first, then date
                 sql.push_str(" ORDER BY CASE WHEN LOWER(io.title) LIKE ? THEN 0 ELSE 1 END, io.created_at DESC");
             }
-            crate::routes::search::SortOrder::DateDesc => {
+            crate::search_types::SortOrder::DateDesc => {
                 sql.push_str(" ORDER BY io.created_at DESC");
             }
-            crate::routes::search::SortOrder::DateAsc => {
+            crate::search_types::SortOrder::DateAsc => {
                 sql.push_str(" ORDER BY io.created_at ASC");
             }
-            crate::routes::search::SortOrder::TitleAsc => {
+            crate::search_types::SortOrder::TitleAsc => {
                 sql.push_str(" ORDER BY io.title ASC");
             }
         }
@@ -490,7 +490,7 @@ impl Database {
         let mut params_vec: Vec<&dyn duckdb::ToSql> = vec![&search_pattern];
 
         // Add title pattern for relevance sorting
-        if matches!(params.sort, crate::routes::search::SortOrder::Relevance) {
+        if matches!(params.sort, crate::search_types::SortOrder::Relevance) {
             params_vec.push(&search_pattern);
         }
 
@@ -511,7 +511,7 @@ impl Database {
                 0.5
             };
 
-            Ok(crate::routes::search::AdvancedSearchResult {
+            Ok(crate::search_types::AdvancedSearchResult {
                 id: Uuid::parse_str(&id).unwrap(),
                 object_type: row.get(1)?,
                 title,
@@ -540,11 +540,11 @@ impl Database {
     pub fn get_search_facets(
         &self,
         _query: &str,
-    ) -> anyhow::Result<crate::routes::search::SearchFacets> {
+    ) -> anyhow::Result<crate::search_types::SearchFacets> {
         let conn = self.conn.lock().unwrap();
 
         // Get domain types with counts
-        let domain_types: Vec<crate::routes::search::FacetCount> = {
+        let domain_types: Vec<crate::search_types::FacetCount> = {
             let mut stmt = conn.prepare(
                 r#"
                 SELECT domain_type, COUNT(*) as count
@@ -564,7 +564,7 @@ impl Database {
                     "expertise" => "Expertise",
                     _ => value.as_str(),
                 };
-                Ok(crate::routes::search::FacetCount {
+                Ok(crate::search_types::FacetCount {
                     value: value.clone(),
                     count: row.get(1)?,
                     label: label.to_string(),
@@ -578,7 +578,7 @@ impl Database {
         };
 
         // Get object types with counts
-        let object_types: Vec<crate::routes::search::FacetCount> = {
+        let object_types: Vec<crate::search_types::FacetCount> = {
             let mut stmt = conn.prepare(
                 r#"
                 SELECT object_type, COUNT(*) as count
@@ -599,7 +599,7 @@ impl Database {
                     "data" => "Data",
                     _ => value.as_str(),
                 };
-                Ok(crate::routes::search::FacetCount {
+                Ok(crate::search_types::FacetCount {
                     value: value.clone(),
                     count: row.get(1)?,
                     label: label.to_string(),
@@ -613,7 +613,7 @@ impl Database {
         };
 
         // Get classifications with counts
-        let classifications: Vec<crate::routes::search::FacetCount> = {
+        let classifications: Vec<crate::search_types::FacetCount> = {
             let mut stmt = conn.prepare(
                 r#"
                 SELECT classification, COUNT(*) as count
@@ -633,7 +633,7 @@ impl Database {
                     "geheim" => "Geheim",
                     _ => value.as_str(),
                 };
-                Ok(crate::routes::search::FacetCount {
+                Ok(crate::search_types::FacetCount {
                     value: value.clone(),
                     count: row.get(1)?,
                     label: label.to_string(),
@@ -647,7 +647,7 @@ impl Database {
         };
 
         // Compliance status distribution
-        let compliance_statuses: Vec<crate::routes::search::FacetCount> = {
+        let compliance_statuses: Vec<crate::search_types::FacetCount> = {
             let mut stmt = conn.prepare(
                 r#"
                 SELECT
@@ -670,7 +670,7 @@ impl Database {
                     "not_relevant" => "Niet Relevant",
                     _ => value.as_str(),
                 };
-                Ok(crate::routes::search::FacetCount {
+                Ok(crate::search_types::FacetCount {
                     value: value.clone(),
                     count: row.get(1)?,
                     label: label.to_string(),
@@ -683,7 +683,7 @@ impl Database {
             facets
         };
 
-        Ok(crate::routes::search::SearchFacets {
+        Ok(crate::search_types::SearchFacets {
             domain_types,
             object_types,
             classifications,
@@ -696,7 +696,7 @@ impl Database {
         &self,
         query: &str,
         limit: i32,
-    ) -> anyhow::Result<Vec<crate::routes::search::SuggestionResult>> {
+    ) -> anyhow::Result<Vec<crate::search_types::SuggestionResult>> {
         let conn = self.conn.lock().unwrap();
         let mut suggestions = Vec::new();
 
@@ -716,9 +716,9 @@ impl Database {
             )?;
 
             let rows = stmt.query_map(params![search_pattern, limit / 2], |row| {
-                Ok(crate::routes::search::SuggestionResult {
+                Ok(crate::search_types::SuggestionResult {
                     text: row.get(0)?,
-                    suggestion_type: crate::routes::search::SuggestionType::Query,
+                    suggestion_type: crate::search_types::SuggestionType::Query,
                     count: Some(row.get(1)?),
                 })
             })?;
@@ -740,9 +740,9 @@ impl Database {
             )?;
 
             let rows = stmt.query_map(params![search_pattern, limit / 4], |row| {
-                Ok(crate::routes::search::SuggestionResult {
+                Ok(crate::search_types::SuggestionResult {
                     text: row.get(0)?,
-                    suggestion_type: crate::routes::search::SuggestionType::Domain,
+                    suggestion_type: crate::search_types::SuggestionType::Domain,
                     count: None,
                 })
             })?;
@@ -760,7 +760,7 @@ impl Database {
         &self,
         id: Uuid,
         limit: i32,
-    ) -> anyhow::Result<Vec<crate::routes::search::AdvancedSearchResult>> {
+    ) -> anyhow::Result<Vec<crate::search_types::AdvancedSearchResult>> {
         let conn = self.conn.lock().unwrap();
 
         // First get the source document
@@ -815,7 +815,7 @@ impl Database {
                 params![id.to_string(), pattern, (limit / 3).max(1)],
                 |row| {
                     let created_at: String = row.get(8)?;
-                    Ok(crate::routes::search::AdvancedSearchResult {
+                    Ok(crate::search_types::AdvancedSearchResult {
                         id: Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
                         object_type: row.get(1)?,
                         title: row.get(2)?,
