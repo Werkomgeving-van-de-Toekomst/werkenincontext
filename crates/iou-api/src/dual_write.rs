@@ -165,17 +165,17 @@ mod tests {
     #[test]
     fn test_read_source_from_env_default() {
         // Clear the env var if set
-        let _ = std::env::set_var("READ_SOURCE", "");
+        let _ = unsafe { std::env::set_var("READ_SOURCE", "") };
         let source = ReadSource::from_env();
         assert_eq!(source, ReadSource::DuckDb);
     }
 
     #[test]
     fn test_read_source_from_env_supabase() {
-        std::env::set_var("READ_SOURCE", "supabase");
+        unsafe { std::env::set_var("READ_SOURCE", "supabase") };
         let source = ReadSource::from_env();
         assert_eq!(source, ReadSource::Supabase);
-        std::env::remove_var("READ_SOURCE");
+        unsafe { std::env::remove_var("READ_SOURCE") };
     }
 
     #[test]
