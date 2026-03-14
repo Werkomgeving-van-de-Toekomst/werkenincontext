@@ -4,21 +4,37 @@ version.workspace = true
 edition = "2024"
 description = "REST API server for IOU-Modern using Axum and DuckDB"
 
+[lib]
+name = "iou_api"
+path = "src/lib.rs"
+
+[[bin]]
+name = "iou-api"
+path = "src/main.rs"
+
 [dependencies]
 # Internal crates
 iou-core.workspace = true
 iou-ai = { path = "../iou-ai" }
+iou-orchestrator = { path = "../iou-orchestrator" }
+iou-regels = { path = "../iou-regels" }
 
 # Web framework
-axum.workspace = true
+axum = { workspace = true, features = ["ws"] }
 tower.workspace = true
 tower-http.workspace = true
 
 # Async runtime
 tokio.workspace = true
 
+# Async trait support
+async-trait = "0.1"
+
 # Database - DuckDB embedded
 duckdb.workspace = true
+
+# Database - PostgreSQL (for Supabase)
+sqlx.workspace = true
 
 # Serialization
 serde.workspace = true
@@ -35,6 +51,10 @@ anyhow.workspace = true
 # Authentication
 jsonwebtoken = "9.3"
 
+# Verifiable Credential support
+base64 = "0.22"
+md-5 = "0.10"
+
 # Logging
 tracing.workspace = true
 tracing-subscriber.workspace = true
@@ -46,5 +66,15 @@ dotenvy = "0.15"
 reqwest = { version = "0.12", features = ["json"] }
 proj = "0.31.0"
 
+# WebSocket support
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+bytes = "1.9"
+
+# Concurrent collections
+dashmap = "6.1"
+
 [dev-dependencies]
 tokio-test = "0.4"
+futures = "0.3"
+

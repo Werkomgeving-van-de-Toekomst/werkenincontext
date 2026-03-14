@@ -54,17 +54,18 @@ curl http://localhost:8000/api/documents/{document_id}/status
 curl http://localhost:8000/api/documents/{document_id}/audit
 ```
 
-## 4. Start de Frontend (Optioneel)
+## 4. Start de Frontend (Dioxus WASM)
 
 ```bash
 # Terminal 3: Frontend
-cargo run --bin iou-frontend
+dx serve --package iou-frontend --port 8080
 ```
 
 Ga naar:
-- `http://localhost:8000/documenten/maken` - Document maken
-- `http://localhost:8000/documenten/wachtrij` - Goedkeuring wachtrij
-- `http://localhost:8000/templates` - Templates beheren
+- `http://localhost:8080` - Hoofdpagina
+- `http://localhost:8080/documenten/maken` - Document maken
+- `http://localhost:8080/documenten/wachtrij` - Goedkeuring wachtrij
+- `http://localhost:8080/templates` - Templates beheren
 
 ## API Endpoints
 

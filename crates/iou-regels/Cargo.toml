@@ -32,5 +32,11 @@ tracing.workspace = true
 # Enum string serialization
 strum = { version = "0.26", features = ["derive"] }
 
+# XML parsing for DMN/BPMN
+quick-xml = { version = "0.37", features = ["serialize"] }
+
+# Async runtime
+async-trait = "0.1"
+
 [dev-dependencies]
 tokio = { version = "1.43", features = ["full", "macros"] }

@@ -1,0 +1,58 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/planning-3d-enhancements/sections",
+  "target_dir": "/Users/marc/Projecten/iou-modern",
+  "state_dir": "/Users/marc/Projecten/iou-modern/planning-3d-enhancements/implementation",
+  "git_root": "/Users/marc/Projecten/iou-modern",
+  "commit_style": "conventional",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-prerequisites",
+    "section-02-backend-coordinate",
+    "section-03-backend-wgs84",
+    "section-04-backend-properties",
+    "section-05-frontend-css",
+    "section-06-frontend-loading",
+    "section-07-frontend-coloring",
+    "section-08-frontend-popups"
+  ],
+  "sections_state": {
+    "section-02-backend-coordinate": {
+      "status": "complete",
+      "commit_hash": "1149d39"
+    },
+    "section-03-backend-wgs84": {
+      "status": "complete",
+      "commit_hash": "460c6f2"
+    },
+    "section-04-backend-properties": {
+      "status": "complete",
+      "commit_hash": "30ed781"
+    },
+    "section-05-frontend-css": {
+      "status": "complete",
+      "commit_hash": "dda8cdf"
+    },
+    "section-06-frontend-loading": {
+      "status": "complete",
+      "commit_hash": "8403867"
+    },
+    "section-07-frontend-coloring": {
+      "status": "complete",
+      "commit_hash": "fdb3353"
+    },
+    "section-08-frontend-popups": {
+      "status": "complete",
+      "commit_hash": "c5e976a"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-07T16:30:51.403950+00:00"
+}

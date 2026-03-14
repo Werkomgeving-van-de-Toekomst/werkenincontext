@@ -1,0 +1,9 @@
+{
+  "tiles": ["/assets/terrain/{z}/{x}/{y}.png"],
+  "minzoom": 10,
+  "maxzoom": 14,
+  "attribution": "AHN - Actueel Hoogtebestand Nederland (PDOK)",
+  "name": "ahn-terrain-flevoland",
+  "format": "png",
+  "tilejson": "2.0.0"
+}

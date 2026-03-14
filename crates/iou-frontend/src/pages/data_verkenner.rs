@@ -210,7 +210,7 @@ fn build_buildings_fetch_script() -> String {
 
             try {
                 const response = await fetch(
-                    `http://localhost:8000/api/buildings-3d?bbox-wgs84=${bbox.join(',')}&limit=${BUILDINGS_FETCH_LIMIT}`,
+                    `http://localhost:8000/api/buildings-3d-cached?bbox-wgs84=${bbox.join(',')}`,
                     { signal: abortController.signal }
                 );
 

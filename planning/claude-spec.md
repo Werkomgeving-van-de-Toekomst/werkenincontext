@@ -1,304 +1,240 @@
-# Specification: Document Creation Agents for IOU-Modern
+# Agent-Orchestrated Document Creation - Complete Specification
 
-## Executive Summary
-
-This specification defines an AI-powered document creation system for the IOU-Modern platform - a Dutch government information system built with Rust, WebAssembly, and DuckDB. The system uses multi-agent orchestration to generate compliant government documents with configurable human approval workflows.
-
----
-
-## 1. Project Context
-
-### 1.1 IOU-Modern Architecture
-
-IOU-Modern is an **Informatie Ondersteunde Werkomgeving** for Dutch government organizations:
-
-**Technology Stack:**
-- **Backend**: Axum REST API with async/await
-- **Database**: DuckDB (embedded analytical database)
-- **Frontend**: Dioxus 0.7 (WebAssembly)
-- **AI/ML**: Custom Rust implementations for NER, semantic search, and compliance
-
-**Project Structure:**
-```
-iou-modern/
-├── crates/
-│   ├── iou-core/       # Shared domain models
-│   ├── iou-api/        # REST API (Axum + DuckDB)
-│   ├── iou-ai/         # AI services (NER, GraphRAG)
-│   ├── iou-regels/     # Open Regels integration
-│   └── iou-frontend/   # Dioxus WASM app
-├── migrations/         # DuckDB schema
-└── data/              # DuckDB database file
-```
-
-### 1.2 Existing Integration Points
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **Compliance AI** | `iou-ai/src/compliance.rs` | Woo validation, refusal grounds |
-| **Workflow API** | `iou-api/src/routes/workflows.rs` | State management |
-| **PROVISA Manager** | `iou-frontend/src/pages/provisa_manager.rs` | Document versioning |
-| **Knowledge Graph** | `GraphRAG endpoints` | Context-aware generation |
-| **Compliance Dashboard** | `iou-frontend/src/pages/compliance_dashboard.rs` | Monitoring UI |
+## Version: 1.0
+## Date: 2026-03-10
 
 ---
 
-## 2. Functional Requirements
+## 1. Executive Summary
 
-### 2.1 Agent Pipeline
-
-The system implements a **Sequential Pipeline with Maker-Checker loops**:
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Research Agent │ -> │ Content Agent   │ -> │ Compliance Agent│
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                     │
-                                                     v
-                                              ┌─────────────────┐
-                                              │  Review Agent  │ <──┐
-                                              └─────────────────┘    │
-                                                     │               │
-                                                     v               │
-                                              ┌─────────────────┐    │
-                                              │ Approval Check  │────┘
-                                              └─────────────────┘
-                                                     │
-                                                     v
-                                              ┌─────────────────┐
-                                              │ Final Document  │
-                                              └─────────────────┘
-```
-
-#### 2.1.1 Research/Context Agent
-- Analyzes document request context
-- Queries knowledge graph for relevant domain information
-- Determines document structure and required sections
-- Identifies applicable PROVISA guidelines
-
-#### 2.1.2 Content Generation Agent
-- Populates templates with domain-specific content
-- Uses knowledge graph for context-aware generation
-- Generates Markdown that will be converted to ODF/PDF
-- Handles variable substitution and conditional sections
-
-#### 2.1.3 Compliance Validator Agent
-- Validates against Woo (Wet open overheid) rules
-- Checks PII detection and redaction requirements
-- Validates refusal grounds (Woo articles 5.1 and 5.2)
-- Ensures accessibility (WCAG guidelines)
-- Assigns confidence scores (0.0-1.0)
-
-#### 2.1.4 Review/Refinement Agent
-- Final quality check before human approval
-- Checks for consistency, completeness, and clarity
-- May iterate with Content Agent if issues found
-- Generates audit trail of all decisions
-
-### 2.2 Human Approval Workflow
-
-**Domain-Specific Trust Levels:**
-- Each information domain has configurable trust: low/medium/high
-- Low trust: Always requires human approval
-- Medium trust: Requires approval if compliance score < 0.8
-- High trust: Auto-approval for documents with confidence > 0.95
-
-**Approval States:**
-- `Drafting` - Agents working on document
-- `PendingApproval` - Awaiting human review
-- `Approved` - Approved for publication/processing
-- `Rejected` - Returned for revision
-- `Published` - Final document delivered
-
-### 2.3 Template System
-
-**Format:** Markdown-based templates
-
-**Rationale:**
-- Version control friendly
-- Simple authoring for non-technical users
-- Converted to ODF (ISO/IEC 26300) for final delivery
-- Supports conditional sections and variable substitution
-
-**Template Example:**
-```markdown
-# {{document_type}}
-
-**Ref:** {{reference_number}}
-**Date:** {{generated_date}}
-**Domain:** {{domain}}
-
-## {{section_1_title}}
-
-{{section_1_content}}
-
-{% if requires_publication_notice %}
-## Publicatieplicht
-
-Dit document wordt gepubliceerd conform...
-{% endif %}
-```
-
-### 2.4 Storage Architecture
-
-**Primary Storage:** S3-compatible object storage
-- Documents stored as binary files (ODF/PDF)
-- Metadata indexed in DuckDB
-
-**Versioning:** Current + one previous version
-- Previous version retained for rollback capability
-- Not full history (simplifies storage)
-
-**DuckDB Schema:**
-```sql
-CREATE TABLE documents (
-    id UUID PRIMARY KEY,
-    domain_id VARCHAR,
-    document_type VARCHAR,
-    current_version_id VARCHAR,  -- Pointer to S3
-    previous_version_id VARCHAR, -- Pointer to S3
-    approval_state VARCHAR,
-    trust_level VARCHAR,
-    compliance_score FLOAT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
-);
-```
-
-### 2.5 Error Handling
-
-**Fail Fast Philosophy:**
-- Any error stops the pipeline immediately
-- User notified with specific error details
-- No graceful degradation or silent retries
-- User can manually fix and retry
+Volledige herontwerp van de document creatie flow in IOU-Modern, georkestreerd door AI agents met menselijke tussenkomst na elke agent. De implementatie is volledig Rust-native met behulp van Tokio voor async runtime en smlang voor state machine definitie.
 
 ---
 
-## 3. Non-Functional Requirements
+## 2. Current State Analysis
 
-### 3.1 MVP Priorities
+### 2.1 Existing Architecture
 
-1. **Compliance Validation**
-   - Correct Woo rule implementation
-   - PII detection before publication
-   - Refusal grounds accuracy
+De huidige implementatie in `crates/iou-ai/src/agents/` bevat vier agents:
 
-2. **Smart Content Generation**
-   - Knowledge graph integration
-   - Domain-specific content
-   - Context-aware templating
+| Agent | Verantwoordelijkheid | Status |
+|-------|---------------------|--------|
+| Research | GraphRAG queries, structuur extractie | ✅ Geïmplementeerd |
+| Content | Markdown template verwerking, AI generatie | ✅ Geïmplementeerd |
+| Compliance | Woo/GDPR validatie, PII detectie | ✅ Geïmplementeerd |
+| Review | Kwaliteitscontrole, goedkeuring logic | ✅ Geïmplementeerd |
 
-3. **Observability/Debugging**
-   - Full audit trails for all agent decisions
-   - Logging of pipeline states
-   - Debug UI for inspection
+### 2.2 Current Pipeline
 
-### 3.2 Deferred to Post-MVP
+`crates/iou-ai/src/agents/pipeline.rs` implementeert een sequentiële pipeline:
+```
+User Request → Research → Content → Compliance → Review → Document
+```
 
-- Performance optimization (batch processing)
-- High concurrency scenarios
-- Advanced caching strategies
-- Multi-language support (beyond Dutch)
+### 2.3 What Works Well
 
-### 3.3 Security Requirements
+- ✅ Solide error handling met `ErrorSeverity` (Transient/Permanent)
+- ✅ Modulaire agent design met schone interfaces
+- ✅ Configuratie flexibiliteit (`PipelineConfig`)
+- ✅ Goede test coverage voor core logic
+- ✅ Checkpoint structuur (maar opslag is TODO)
 
-- HTTPS mandatory (Wet digitale overheid)
-- HSTS required
-- PII redaction before publication
-- Audit logging for all document access
+### 2.4 Critical Gaps
 
-### 3.4 Accessibility
-
-- WCAG 2.1 AA compliance
-- Generated documents must be accessible
-- ODF format ensures long-term accessibility
+- ❌ Geen menselijke tussenkomst tussen agents
+- ❀ Synchrone pipeline flow (geen pause/resume)
+- ❀ Geen persistenie van workflow state
+- ❀ Geen API integratie
+- ❀ Beperkte event handling voor UI
 
 ---
 
-## 4. API Design (Draft)
+## 3. Requirements
 
-### 4.1 Document Creation Endpoints
+### 3.1 Functional Requirements
+
+#### FR1: Agent Orchestration
+- Document creatie moet uitvoerbaar zijn via state machine
+- Ondersteuning voor parallelle agent executie waar mogelijk
+- Agents moeten autonoom beslissingen kunnen nemen
+- State machine moet gedefinieerd worden met smlang DSL
+
+#### FR2: Human-in-the-Loop Checkpoints
+- Goedkeuringspunt NA elke agent
+- Mogelijkheid voor menselijke correctie tijdens generatie
+- Audit trail van alle menselijke interventies
+- UI moet per-agent resultaten tonen
+
+#### FR3: State Management
+- In-memory state voor 1-10 workflows
+- Persistente checkpoints in DuckDB voor recovery
+- Version tracking van document iteraties
+- Resume capability na crash
+
+#### FR4: Error Handling
+- Auto-retry met exponential backoff voor transient errors
+- Permanent failure na max retries
+- Configureerbare timeouts per document type
+- Optionele alert naar mens bij permanent failure
+
+#### FR5: Integration
+- API endpoints voor document aanvraag, status, goedkeuring
+- Event-driven architecture voor UI integration
+- Browser-native event sourcing (cqrs-es pattern)
+
+### 3.2 Non-Functional Requirements
+
+#### NFR1: Scale
+- 1-10 gelijktijdige document workflows
+- Geen distributed locking nodig
+- Single-worker model is voldoende
+
+#### NFR2: Performance
+- Agent timeouts configureerbaar (standaard 5 min)
+- Parallel executie waar mogelijk
+- UI progress updates voor langlopende taken
+
+#### NFR3: Technology Stack
+- **Async Runtime**: Tokio
+- **State Machine**: smlang DSL
+- **Event Pattern**: cqrs-es style event sourcing
+- **Storage**: DuckDB (existing) + in-memory state
+- **Channels**: tokio::sync (mpsc, oneshot)
+
+---
+
+## 4. Architecture Design
+
+### 4.1 State Machine Definition
 
 ```
-POST /api/documents/create
-- Input: document_type, domain_id, context
-- Output: document_id, initial_status
-
-GET /api/documents/{id}/status
-- Output: current_state, agent_stage, errors
-
-POST /api/documents/{id}/approve
-- Input: approval decision, comments
-- Output: new_state
-
-GET /api/documents/{id}/audit
-- Output: full decision trail
+┌─────────────┐
+│   CREATED   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐    human_approval     ┌──────────────┐
+│  RESEARCHING │◄──────────────────────│ AWAITING_INPUT│
+└──────┬──────┘                      └───────┬──────┘
+       │                                     │
+       │ completed                           │ input_received
+       ▼                                     ▼
+┌─────────────┐    human_approval     ┌──────────────┐
+│  GENERATING │◄──────────────────────│ AWAITING_INPUT│
+└──────┬──────┘                      └───────┬──────┘
+       │                                     │
+       │ completed                           │ input_received
+       ▼                                     ▼
+┌─────────────┐    human_approval     ┌──────────────┐
+│ COMPLIANCE   │◄──────────────────────│ AWAITING_INPUT│
+└──────┬──────┘                      └───────┬──────┘
+       │                                     │
+       │ completed                           │ input_received
+       ▼                                     ▼
+┌─────────────┐    human_approval     ┌──────────────┐
+│ REVIEWING   │◄──────────────────────│ AWAITING_INPUT│
+└──────┬──────┘                      └───────┬──────┘
+       │                                     │
+       │ approved                           │
+       ▼                                     │
+┌─────────────┐◄─────────────────────────────┘
+│ COMPLETED   │
+└─────────────┘
 ```
 
-### 4.2 Template Management
+### 4.2 Parallel Execution Paths
 
+Sommine agent combinaties kunnen parallel lopen:
+- `Compliance` kan starten tijdens `Content` (voorlopige check)
+- `Research` voor volgende document kan starten tijdens `Content` van huidige
+
+### 4.3 Event Types
+
+```rust
+pub enum WorkflowEvent {
+    // Workflow lifecycle
+    WorkflowCreated { id: Uuid, document_type: String },
+    WorkflowStarted { id: Uuid },
+    WorkflowCompleted { id: Uuid },
+    
+    // Agent execution
+    AgentStarted { id: Uuid, agent: AgentType },
+    AgentCompleted { id: Uuid, agent: AgentType, result: AgentResult },
+    AgentFailed { id: Uuid, agent: AgentType, error: AgentError },
+    
+    // Human interaction
+    ApprovalRequested { id: Uuid, agent: AgentType },
+    ApprovalReceived { id: Uuid, agent: AgentType, decision: ApprovalDecision },
+    ContentModified { id: Uuid, agent: AgentType, modifications: Vec<Modification> },
+    
+    // System events
+    RetryScheduled { id: Uuid, agent: AgentType, attempt: u32 },
+    TimeoutOccurred { id: Uuid, agent: AgentType },
+}
 ```
-GET /api/templates
-- List available templates by domain
 
-POST /api/templates
-- Create/update template (Markdown)
+### 4.4 Data Structures
 
-GET /api/templates/{id}/preview
-- Render template with sample data
+```rust
+pub struct WorkflowState {
+    pub id: Uuid,
+    pub document_request: DocumentRequest,
+    pub current_agent: Option<AgentType>,
+    pub status: WorkflowStatus,
+    pub agent_results: HashMap<AgentType, AgentResult>,
+    pub pending_approvals: Vec<ApprovalRequest>,
+    pub audit_log: Vec<AuditEntry>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+pub struct AgentResult {
+    pub agent: AgentType,
+    pub success: bool,
+    pub data: serde_json::Value,
+    pub execution_time_ms: u64,
+    pub can_proceed: bool,  // Human approved this step
+    pub human_modifications: Vec<HumanModification>,
+}
 ```
 
 ---
 
-## 5. Integration with Existing Components
+## 5. API Endpoints
 
-### 5.1 Compliance AI Integration
+### 5.1 Workflow Management
 
-Reuse existing compliance checking:
-- Rule-based patterns from `iou-ai/src/compliance.rs`
-- Woo relevance assessment
-- Disclosure class determination
-- Refusal grounds enumeration
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/workflows` | Start nieuwe workflow |
+| GET | `/api/workflows/:id` | Haal workflow status op |
+| GET | `/api/workflows` | Lijst alle workflows |
+| DELETE | `/api/workflows/:id` | Annuleer workflow |
 
-### 5.2 PROVISA Integration
+### 5.2 Human Interaction
 
-- Use PROVISA version comparison for document versions
-- Hotspot management for document sections
-- AI-powered classification
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/workflows/:id/pending` | Haal openstaande goedkeuringen |
+| POST | `/api/workflows/:id/approve` | Keur agent resultaat goed |
+| POST | `/api/workflows/:id/modify` | Wijzig agent resultaat |
+| POST | `/api/workflows/:id/reject` | Weiger agent resultaat |
 
-### 5.3 Knowledge Graph Integration
+### 5.3 Events
 
-- Query GraphRAG for domain context
-- Use semantic search for template matching
-- Retrieve related documents for context
-
----
-
-## 6. Testing Strategy
-
-Given existing codebase patterns:
-- Standard Rust `#[test]` attributes
-- Mock data for development
-- JSON Schema validation tests
-- Compliance rule tests (following `compliance.rs` pattern)
-
-### 6.1 Test Categories
-
-1. **Unit Tests**: Individual agent logic
-2. **Integration Tests**: Pipeline orchestration
-3. **Compliance Tests**: Woo rule validation
-4. **Template Tests**: Rendering and validation
-5. **End-to-End Tests**: Full document creation flow
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/workflows/:id/events` | Haal event log op |
+| GET | `/api/workflows/:id/stream` | SSE stream voor live updates |
 
 ---
 
-## 7. Success Criteria
+## 6. Success Criteria
 
-1. All 4 agent types implemented and functional
-2. Domain-specific trust levels configurable
-3. Markdown templates convert to valid ODF
-4. Compliance validation catches all Woo violations
-5. Full audit trail for every generated document
-6. Fail-fast error handling works correctly
-7. Integration with existing IOU-Modern components verified
+- [ ] Document creatie is volledig georkestreerd door agents
+- [ ] Menselijke goedkeuring is verplicht na elke agent
+- [ ] Alle stappen zijn traceerbaar via audit trail
+- [ ] Implementatie past binnen bestaande Rust architecture
+- [ ] Workflow kan resume na crash
+- [ ] Agents kunnen parallel lopen waar mogelijk
+- [ ] Timeout is configureerbaar per document type

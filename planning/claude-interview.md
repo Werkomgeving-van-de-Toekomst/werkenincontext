@@ -1,89 +1,112 @@
-# Interview Transcript - Document Creation Agents
+# Interview Transcript: Agent Orchestration with Human-in-the-Loop
 
-## Overview
-Interview conducted for implementing AI-powered document creation agents in the IOU-Modern project (Dutch government information system).
-
----
-
-## Q1: Which specific agent types should be implemented?
-
-**User Answer:** All four agent types selected:
-- Research/Context Agent
-- Content Generation Agent
-- Compliance Validator Agent
-- Review/Refinement Agent
-
-**Notes:** Full pipeline implementation from research through review.
+## Date: 2026-03-10
 
 ---
 
-## Q2: How should human approval be handled in the document creation workflow?
+## Q1: Voorkeursarchitectuur voor agent orchestratie?
 
-**User Answer:** Configurable trust levels
+**Answer:** Rust-native (aanbevolen)
 
-**Notes:** Not a binary always/never approval system. Need configurable trust that can adapt to different risk scenarios.
+**Rationale:** User prefers full Rust implementation using Tokio + smlang/cqrs-es patterns over LangGraph integration. This avoids Python bridge complexity and keeps everything in a single codebase.
 
----
-
-## Q3: What format should document templates use for initial implementation?
-
-**User Answer:** Markdown-based
-
-**Notes:** Templates will be in Markdown, then converted to ODF/PDF for final output. This allows version control of templates and simpler authoring.
+**Implications:**
+- Use Tokio for async runtime
+- Use smlang for state machine DSL
+- Implement cqrs-es pattern for event sourcing
+- Native integration with existing IOU-Modern codebase
 
 ---
 
-## Q4: How should the agent system handle failures during document generation?
+## Q2: Hoe moet menselijke tussenkomst werken?
 
-**User Answer:** Fail fast with user notification
+**Answer:** Per agent checkpoint
 
-**Notes:** No graceful degradation or automatic retries. Stop immediately and surface the error to the user for manual intervention.
+**Rationale:** Users want to approve/review each agent's output before proceeding to the next agent, not just a single approval at the end.
 
----
-
-## Q5: How should generated documents be stored?
-
-**User Answer:** Object storage (S3-compatible)
-
-**Notes:** Documents stored in S3-compatible object storage, with metadata tracked in DuckDB. This separates large file storage from queryable metadata.
+**Implications:**
+- Implement breakpoints after each agent
+- UI must show agent-specific results
+- Human can modify/annotate agent output
+- Workflow state must persist across human interaction
 
 ---
 
-## Q6: Should the agent system maintain document version history?
+## Q3: Hoeveel document creatie workflows verwacht je tegelijk?
 
-**User Answer:** Current + one previous
+**Answer:** 1-10 documenten
 
-**Notes:** Keep only the current version and one previous version. Not full history, but sufficient for rollback capability.
+**Rationale:** Small scale, enterprise team usage (not mass public usage).
 
----
-
-## Q7: How should configurable trust levels be determined?
-
-**User Answer:** Domain-specific
-
-**Notes:** Trust levels are configured per information domain, allowing different approval requirements for different government domains.
+**Implications:**
+- Simple in-memory state management sufficient
+- No distributed locking needed
+- Simple queue system (if any)
+- Can use single-worker model
 
 ---
 
-## Q8: What are the highest priorities for the MVP?
+## Q4: Moeten agents parallel kunnen werken?
 
-**User Answer:**
-1. Compliance validation
-2. Smart content generation
-3. Observability/Debugging
+**Answer:** Ja waar mogelijk
 
-**Notes:** Performance/scalability can be deferred. Focus on getting compliance right, intelligent content using knowledge graph, and full audit trails.
+**Rationale:** Some agents can run in parallel (e.g., compliance check during content generation).
+
+**Implications:**
+- Need to identify agent dependencies
+- Implement parallel execution paths in state machine
+- Use Tokio tasks for concurrent agent execution
+- Channel-based communication between parallel agents
 
 ---
 
-## Summary of Decisions
+## Q5: Waar moet workflow state worden opgeslagen?
 
-| Aspect | Decision |
-|--------|----------|
-| **Agent Pipeline** | 4 agents: Research → Content → Compliance → Review |
-| **Approval** | Domain-specific configurable trust levels |
-| **Templates** | Markdown-based (converted to ODF/PDF) |
-| **Error Handling** | Fail fast with user notification |
-| **Storage** | S3-compatible + DuckDB metadata |
-| **Versioning** | Current + one previous |
-| **MVP Focus** | Compliance, Smart Content, Observability |
+**Answer:** In-memory primary
+
+**Rationale:** For 1-10 concurrent workflows, in-memory state is sufficient with periodic persistence to DuckDB for recovery.
+
+**Implications:**
+- Use in-memory state machine with periodic checkpoints
+- Persist to DuckDB for crash recovery
+- Simpler architecture than full event sourcing
+
+---
+
+## Q6: Wat moet er gebeuren als een agent faalt?
+
+**Answer:** Auto retry
+
+**Rationale:** Use existing retry configuration (max_retries in PipelineConfig) before escalating.
+
+**Implications:**
+- Preserve existing ErrorSeverity classification
+- Implement exponential backoff for transient errors
+- Fail permanently after max retries
+- Optional: alert human after permanent failure
+
+---
+
+## Q7: Hoe omgaan met langlopende agent taken?
+
+**Answer:** Configureerbaar
+
+**Rationale:** Different document types may need different timeouts (simple letter vs complex legal document).
+
+**Implications:**
+- Add per-document-type timeout configuration
+- Support agent-specific timeouts
+- Implement Tokio timeout handling
+- UI should show progress for long-running tasks
+
+---
+
+## Summary of Key Requirements
+
+1. **Rust-native orchestration** using Tokio + smlang
+2. **Per-agent human checkpoints** with review/edit capability
+3. **Small scale** (1-10 concurrent workflows)
+4. **Parallel agent execution** where possible
+5. **In-memory state** with DuckDB persistence for recovery
+6. **Auto-retry** with existing error classification
+7. **Configurable timeouts** per document type

@@ -1,302 +1,174 @@
-# Research Findings - Document Creation Agents
+# Research Report: Agent Orchestration with Human-in-the-Loop
 
-## Overview
+## Date: 2026-03-10
 
-This document combines codebase analysis with external research on AI agent orchestration, document template systems, and Open Overheid guidelines.
+## 1. Codebase Analysis - Existing IOU-Modern Agents
 
----
+### Current Architecture
 
-## 1. Codebase Analysis: IOU-Modern
+The agent system in `crates/iou-ai/src/agents/` uses a **pipeline-based architecture** with four specialized agents:
 
-### 1.1 Project Architecture
+1. **Research Agent** - Queries GraphRAG, extracts structure patterns
+2. **Content Agent** - Generates document content using Markdown templates
+3. **Compliance Agent** - Validates against Dutch regulations (Woo), detects PII
+4. **Review Agent** - Quality assurance and approval logic
 
-IOU-Modern is a Rust/WebAssembly **Informatie Ondersteunde Werkomgeving** for Dutch government organizations.
+### What Works Well
 
-**Technology Stack:**
-- **Backend**: Axum REST API with async/await
-- **Database**: DuckDB (embedded analytical database)
-- **Frontend**: Dioxus 0.7 (WebAssembly)
-- **AI/ML**: Custom Rust implementations for NER, semantic search, and compliance
+- **Solid error handling** with severity classification (Transient vs Permanent)
+- **Modular agent design** with clean interfaces
+- **Configuration flexibility** with sensible defaults
+- **Good test coverage** for core logic
+- **Pipeline checkpoints** structure (though storage is TODO)
 
-**Project Structure:**
-```
-iou-modern/
-├── crates/
-│   ├── iou-core/       # Shared domain models
-│   ├── iou-api/        # REST API (Axum + DuckDB)
-│   ├── iou-ai/         # AI services (NER, GraphRAG)
-│   ├── iou-regels/     # Open Regels integration
-│   └── iou-frontend/   # Dioxus WASM app
-├── migrations/         # DuckDB schema
-└── data/              # DuckDB database file
-```
+### Critical Limitations for Orchestration
 
-### 1.2 PROVISA Management Features
+1. **No human-in-the-middle support** - Only approval/rejection at the very end
+2. **Synchronous pipeline flow** - Cannot pause/resume between agents
+3. **No persistence** - Pipeline results are in-memory only
+4. **No API integration** - Agents aren't called from the API layer
+5. **Limited event handling** - No event-driven architecture for UI integration
 
-**Location**: `/crates/iou-frontend/src/pages/provisa_manager.rs`
-
-**Current Implementation:**
-- Supports three PROVISA versions: 2020, 2014, and 2005
-- Faceted search with filters (domain, version, status)
-- Hotspot management capabilities
-- Version comparison features (shows differences between versions)
-- AI-powered classification suggestions
-- Retention period calculator
-
-**Key Patterns Used:**
-- Mock data for development (consistent across project)
-- Selectable record detail view
-- Expandable version comparison panel
-- Responsive grid layout
-
-### 1.3 Woo (Wet open overheid) Document Integration
-
-**Locations:**
-- Core models: `/crates/iou-core/src/compliance.rs`
-- AI compliance: `/crates/iou-ai/src/compliance.rs`
-- API routes: `/crates/iou-api/src/routes/compliance.rs`
-- Frontend: `/crates/iou-frontend/src/pages/compliance_dashboard.rs`
-
-**Current Implementation:**
-- **Rule-based compliance checking** using regex patterns
-- **Automatic Woo relevance assessment** (document type, classification, content keywords)
-- **Disclosure class determination**:
-  - Openbaar (fully public)
-  - GedeeltelijkOpenbaar (partially public with redactions)
-  - NietOpenbaar (not public with refusal grounds)
-  - NogNietBeoordeeld (not yet assessed)
-- **Confidence scoring** (0.0-1.0)
-- **Refusal grounds enumeration** (Woo articles 5.1 and 5.2)
-
-### 1.4 Compliance Dashboard
-
-**Location**: `/crates/iou-frontend/src/pages/compliance_dashboard.rs`
-
-**Features:**
-- Real-time compliance monitoring
-- Overall compliance score (circular progress indicator)
-- Domain-level breakdown with bar charts
-- Trend analysis (week/month/quarter/year)
-- Risk alerts with severity levels
-- Recommended actions
-- Predictive risk analysis
-
-### 1.5 Key Backend Endpoints
-
-```
-/health - Health check
-/context/{id} - Full context with related domains
-/domains - CRUD operations
-/objects - Information object management
-/search - Full-text and semantic search
-/compliance/* - Compliance monitoring and alerts
-/apps/recommended - Context-aware app recommendations
-/graphrag/* - Knowledge graph operations
-/workflows/* - Workflow management
-```
-
-### 1.6 State Management Pattern
+### Code Patterns to Preserve
 
 ```rust
-pub struct AppState {
-    pub user: Option<UserInfo>,
-    pub current_domain: Option<InformationDomain>,
-    pub search_query: String,
-    pub is_loading: bool,
+// Error classification pattern - excellent
+pub enum ErrorSeverity {
+    Transient,  // Retry with exponential backoff
+    Permanent,  // Fail immediately
+}
+
+// Modular configuration
+pub struct PipelineConfig {
+    pub max_iterations: usize,
+    pub max_retries: u32,
+    pub enable_checkpoints: bool,
+}
+
+// Rich context passing between agents
+pub struct ResearchContext {
+    pub mandatory_sections: Vec<String>,
+    pub suggested_variables: Vec<TemplateVariableSuggestion>,
 }
 ```
 
-### 1.7 Testing Setup
+### Required Changes for Human-in-the-Loop
 
-- **Unit Tests**: Standard Rust `#[test]` attributes
-- **No formal testing framework**: Only standard Rust testing
-- **Mock data**: Extensive use for development/demo
-- **Limited integration tests**
-
----
-
-## 2. AI Agent Orchestration Patterns (2025)
-
-### 2.1 Multi-Agent Coordination Patterns
-
-Based on Microsoft Azure's official AI Agent design patterns (2026):
-
-**Sequential Orchestration (Pipeline Pattern)**
-- Agents process tasks in a predefined linear sequence
-- Best for: Multi-stage processes with clear dependencies
-- **Document creation example**: Template Selection → Content Customization → Compliance Review → Risk Assessment
-- When to avoid: Early stage failures that propagate
-
-**Concurrent Orchestration (Fan-out/Fan-in)**
-- Multiple agents work simultaneously on the same input
-- Best for: Independent analysis from multiple perspectives
-- Aggregation strategies: Classification voting, weighted merging, LLM synthesis
-
-**Group Chat Coordination**
-- Agents participate in a shared dialogue managed by a chat manager
-- Best for: Consensus building, collaborative brainstorming
-
-**Maker-Checker Pattern**
-- One agent creates, another validates
-- Iterative refinement until approval
-
-**Handoff Coordination**
-- Dynamic task delegation based on capability assessment
-- Best for: Multi-domain problems
-
-### 2.2 Framework Comparison
-
-| Framework | Best For | Production Ready |
-|-----------|----------|------------------|
-| **LangGraph** | Complex workflows, production environments | Yes (industry standard) |
-| **AutoGen** | Quick prototypes, code execution | Warning: weak observability |
-| **CrewAI** | Multi-agent collaboration, role-based teams | Growing adoption |
-
-**LangGraph** (Recommended for Production):
-- State graph-driven architecture
-- 50+ step task completion with <15% degradation
-- Native checkpoint support for fault recovery
-- Best for: Financial automation, compliance systems
-
-### 2.3 Document Workflow Patterns
-
-1. **Sequential Pipeline** for document creation:
-   - Research → Structure → Content → Validation → Review
-
-2. **Maker-Checker** for quality assurance:
-   - Generator creates, Reviewer validates, iterate until approval
-
-3. **Concurrent Analysis** for document review:
-   - Parallel agents check: legal compliance, style, technical accuracy, accessibility
-
-4. **Context Engineering** (2025 best practice):
-   - Select Context: Load only relevant knowledge/tools
-   - Compress Context: Summarize tool results, filter irrelevant info
-
-### 2.4 Sources
-
-- [Microsoft Azure AI Agent Design Patterns](https://learn.microsoft.com/zh-cn/azure/architecture/ai-ml/guide/ai-agent-design-patterns)
-- [IBM watsonx Orchestrate](https://www.ibm.com/docs/zh/watsonx/watson-orchestrate/base?topic=agents-designing-high-performance)
+1. Add intermediate states: `AwaitingHumanInput`, `HumanReviewInProgress`
+2. Support partial document updates and section-level reviews
+3. Implement workflow state persistence
+4. Add event-driven architecture for UI integration
+5. Implement proper storage for pipeline checkpoints
 
 ---
 
-## 3. Document Template Systems
+## 2. LangGraph Architecture
 
-### 3.1 Template Engine Options
+### Core Concepts
 
-| Engine | Language | Best For |
-|--------|----------|----------|
-| **Jinja2** | Python | Complex Python projects (Flask) |
-| **Handlebars** | JavaScript | Frontend rendering, Node.js |
-| **Tera** | Rust | Rust web applications |
+LangGraph is a **low-level orchestration framework** for building stateful agents:
 
-**For Rust integration**: Tera is the natural choice, already used in many Rust web frameworks.
+- **StateGraph** - Graph-based execution where nodes process state
+- **State** - TypedDict that flows through the graph
+- **Conditional edges** - Dynamic routing based on state
+- **Checkpointing** - State persistence for durable execution
 
-### 3.2 Validation Approaches
+### Human-in-the-Loop Support
 
-**JSON Schema Validation** (Industry Standard):
-- Schema-based structural validation
-- Type checking at template boundaries
-- Business rule validation with custom validators
+1. **State Inspection** - Inspect agent state at any point
+2. **State Modification** - Humans can modify state before resuming
+3. **Checkpointing** - Pause/resume patterns with persistent state
 
-**Multi-stage Validation**:
-1. Structural validation (schema)
-2. Business logic validation (rules)
-3. Content quality validation (AI/ML)
+### Integration Requirements
 
-### 3.3 Dynamic Document Generation
+- Python service layer for LangGraph execution
+- Communication bridge to Rust API (gRPC or HTTP)
+- LangSmith for debugging and observability
 
-**Core Components**:
-1. Document Template with placeholder tags
-2. Template Tags defining dynamic content regions
-3. Input Data (JSON) driving content generation
-4. Generation API replacing tags with actual values
-
-### 3.4 Sources
-
-- [Adobe Document Generation API](https://developer.adobe.com/document-services/docs/overview/document-generation-api/)
-- [JSON Schema Validation Best Practices](https://www.mongodb.com/zh-cn/docs/v7.0/reference/operator/query/jsonSchema/)
+**Source:** [LangGraph GitHub](https://github.com/langchain-ai/langgraph)
 
 ---
 
-## 4. Open Overheid Guidelines
+## 3. Rust Async Orchestration
 
-### 4.1 Wet open overheid (Woo) - Key Principles
+### Tokio Runtime
 
-- **Right to access**: Every citizen has right to access government information
-- **Transparency**: Ensures openness of government, including universities
-- **Proactive publication**: Information should be proactively published
+The standard async runtime in Rust:
 
-**Recent Case** (Utrecht Province, September 2025):
-- Personal data accidentally disclosed in Woo response
-- Demonstrates critical need for automated PII detection and redaction
+- `tokio::task` - Task spawning with `spawn` and `JoinHandle`
+- `tokio::sync` - Channels: `mpsc`, `oneshot`, `watch`, `broadcast`
+- `tokio::time` - Timeouts and intervals
 
-### 4.2 Wet digitale overheid Requirements
+### Actor Model with Actix
 
-**Security Standards**:
-- **HTTPS mandatory** (since July 1, 2023)
-- **HSTS required** for HTTPS-only connections
-- TLS and Web Application guidelines from NCSC
+Built on Tokio, provides:
+- Actor-based orchestration
+- Message-based communication
+- Supervision for fault tolerance
+- Typed messages (no `Any` type)
 
-**Accessibility**:
-- Digital accessibility requirements legally binding
-- European directive on accessibility implemented
+### State Machine Libraries
 
-### 4.3 Open Document Standards
+1. **smlang** - DSL for state machines with async support
+2. **rustfsm** - Lightweight finite state transducers
+3. **cqrs-es** - Event sourcing with CQRS pattern
 
-**ODF (OpenDocument Format) - ISO/IEC 26300**:
-- International standard since 2006
-- Netherlands mandate: Open standards required for public sector data exchange
-- Requirements: Long-term accessibility, interoperability, vendor independence
+### Observability
 
-### 4.4 Sources
-
-- [Wet digitale overheid - Digitale Overheid](https://www.digitaleoverheid.nl/overzicht-van-alle-onderwerpen/wetgeving/wet-digitale-overheid/)
-- [ODF Adoption Analysis](https://blog.documentfoundation.org/blog/2025/06/14/odf-analysis-of-adoption/)
-- [Utrecht Woo Data Breach](https://new.qq.com/rain/a/20251001A006MQ00)
+- **tracing** crate - Structured logging for async systems
+- **loom** - Deterministic testing of concurrent programs
 
 ---
 
-## 5. Key Insights for Implementation
+## 4. Human-in-the-Loop Patterns
 
-### 5.1 Integration Points
+### Breakpoint Patterns
 
-The new agent system should integrate with:
-- **Compliance AI** (`/crates/iou-ai/src/compliance.rs`) - For Woo validation
-- **Workflow API** (`/workflows/*`) - For state management
-- **PROVISA Manager** - For document versioning and comparison
-- **Knowledge Graph** - For context-aware document generation
+1. **Checkpoint-Based Pausing** - Serialize state at specific points
+2. **Interrupt Handling** - Agents emit events when human input needed
 
-### 5.2 Technical Recommendations
+### Resume Patterns
 
-1. **Use LangGraph patterns** adapted for Rust async/await
-2. **Implement Tera templates** for Rust compatibility
-3. **Add automated PII detection** before document publication
-4. **Use ODF formats** for long-term preservation
-5. **Follow WCAG guidelines** for accessibility
+1. **State Mutation** - Human modifies agent state directly
+2. **Event Injection** - Human input converted to event in stream
 
-### 5.3 Architecture Pattern
+### Audit Trail Requirements
 
-Recommended: **Sequential Pipeline with Maker-Checker loops**
+- State snapshots before/after intervention
+- Decision logging with timestamps and user identity
+- Reasoning capture for decisions
+- Lineage tracking of decision impact
 
-```
-Research Agent → Structure Agent → Content Agent
-                                        ↓
-                              Validation Agent ←─────┐
-                                        ↓            │
-                              Review Agent ─────────┘
-                                        ↓
-                              (Human Approval Check)
-                                        ↓
-                                  Final Document
-```
+### UI Patterns
+
+1. **Approval Queues** - Pending decisions with priority ordering
+2. **State Diff Visualization** - Show proposed changes
+3. **Breakpoint Dashboard** - Real-time view of paused agents
 
 ---
 
-## 6. Testing Strategy
+## Recommendations
 
-Given the existing codebase patterns:
-- Use standard Rust `#[test]` attributes
-- Create mock data for development
-- Implement JSON Schema validation tests
-- Add compliance rule tests (following existing pattern in `compliance.rs`)
+### Architecture Decision: Rust-Native vs LangGraph
+
+| Factor | LangGraph | Rust-Native |
+|--------|-----------|-------------|
+| Integration | Requires Python bridge | Native Rust integration |
+| Dependencies | Python ecosystem | Rust ecosystem |
+| Complexity | Higher (multi-language) | Lower (single language) |
+| Maintenance | Two codebases | Single codebase |
+| Features | Rich built-in HITL | Build custom HITL |
+
+**Recommendation:** Rust-native implementation using:
+- **Tokio** for async runtime
+- **Actix** or custom channels for agent communication
+- **smlang** for state machine definition
+- **cqrs-es** pattern for event sourcing and audit trail
+
+### Key Implementation Priorities
+
+1. Implement state machine for document workflow
+2. Add persistent checkpoint system
+3. Create event-driven architecture for UI integration
+4. Build approval queue system
+5. Implement comprehensive audit logging

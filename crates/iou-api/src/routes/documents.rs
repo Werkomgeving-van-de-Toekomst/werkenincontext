@@ -15,20 +15,27 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use uuid::Uuid;
 
 use crate::db::Database;
 use crate::error::ApiError;
 use crate::middleware::auth::AuthContext;
+use crate::orchestrator::{WorkflowOrchestrator, types::StatusMessage};
+use crate::websockets::types::DocumentStatus;
 use iou_core::document::{DocumentMetadata, AuditEntry, DocumentFormat};
 use iou_core::workflows::WorkflowStatus;
+use iou_orchestrator::{
+    WorkflowContext,
+    context::{DocumentRequest, DocumentType},
+};
 
 // ============================================
 // Request/Response Types
 // ============================================
 
 /// Request payload for document creation
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateDocumentRequest {
     pub domain_id: String,
     pub document_type: String,
@@ -56,7 +63,7 @@ pub struct DocumentStatusResponse {
 }
 
 /// Approval request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ApprovalRequest {
     pub approved: bool,
     pub comments: Option<String>,
@@ -100,6 +107,8 @@ pub struct DownloadParams {
 /// POST /api/documents/create
 pub async fn create_document(
     Extension(db): Extension<Arc<Database>>,
+    Extension(status_tx): Extension<broadcast::Sender<StatusMessage>>,
+    Extension(doc_status_tx): Extension<broadcast::Sender<DocumentStatus>>,
     Json(req): Json<CreateDocumentRequest>,
 ) -> Result<Json<CreateDocumentResponse>, ApiError> {
     // Validate template exists
@@ -114,7 +123,24 @@ pub async fn create_document(
     let document_id = Uuid::new_v4();
     let now = Utc::now();
 
-    // Create document record
+    // Parse document type
+    let document_type = parse_document_type(&req.document_type)?;
+
+    // Create document request for orchestrator
+    let document_request = DocumentRequest {
+        id: document_id,
+        domain_id: req.domain_id.clone(),
+        document_type: document_type.clone(),
+        context: req.context,
+        requested_by: Uuid::new_v4(), // TODO: Get from auth context
+        requested_at: now,
+        priority: Default::default(),
+    };
+
+    // Create workflow context
+    let workflow_context = WorkflowContext::new(document_id, document_request, "1.0.0".to_string());
+
+    // Create document record in database
     let document = DocumentMetadata {
         id: document_id,
         domain_id: req.domain_id.clone(),
@@ -130,19 +156,25 @@ pub async fn create_document(
 
     db.create_document_async(document).await?;
 
+    // Create and start workflow orchestrator
+    let orchestrator = WorkflowOrchestrator::new(db, status_tx, doc_status_tx);
+    orchestrator.start_workflow(workflow_context).await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to start workflow: {}", e)))?;
+
     tracing::info!(
         domain_id = %req.domain_id,
         document_type = %req.document_type,
         document_id = %document_id,
-        "Document creation requested"
+        "Document creation requested and workflow started"
     );
 
-    // TODO: Invoke pipeline executor asynchronously
+    // Calculate estimated completion time (8 minutes max)
+    let estimated_completion = now + chrono::Duration::minutes(8);
 
     Ok(Json(CreateDocumentResponse {
         document_id,
         state: "draft".to_string(),
-        estimated_completion: None,
+        estimated_completion: Some(estimated_completion),
     }))
 }
 
@@ -256,6 +288,7 @@ pub async fn get_audit_trail(
 /// GET /api/documents/{id}/download?format=odf|pdf|md
 pub async fn download_document(
     Extension(db): Extension<Arc<Database>>,
+    Extension(s3_client): Extension<Arc<iou_core::storage::S3Client>>,
     Path(id): Path<Uuid>,
     Query(params): Query<DownloadParams>,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -264,30 +297,61 @@ pub async fn download_document(
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("No document with ID {}", id)))?;
 
-    // Only published documents can be downloaded
-    if document.state != WorkflowStatus::Published {
+    // Only published/approved documents can be downloaded
+    if document.state != WorkflowStatus::Published && document.state != WorkflowStatus::Approved {
         return Err(ApiError::Validation(
-            "Document must be published before download".to_string(),
+            "Document must be approved before download".to_string(),
         ));
     }
 
-    let format = params.format.unwrap_or(DocumentFormat::Markdown);
+    // Generate storage key
+    let storage_key = if document.current_version_key.is_empty() {
+        format!("documents/{}.pdf", id)
+    } else {
+        document.current_version_key.clone()
+    };
 
-    // TODO: Retrieve from S3 storage based on format
-    // For now, return a placeholder message
-    let content = format!("Document content for {} in {:?} format", id, format);
-    let content_type: String = format.content_type().to_string();
+    // Download from S3
+    let data = s3_client.download(&storage_key).await?;
+
+    // Determine content type
+    let content_type = params.format
+        .unwrap_or(DocumentFormat::PDF)
+        .content_type()
+        .to_string();
 
     tracing::info!(
         document_id = %id,
-        format = ?format,
-        "Document downloaded"
+        storage_key = %storage_key,
+        size = data.len(),
+        "Document downloaded from S3"
     );
 
     Ok((
-        [(axum::http::header::CONTENT_TYPE, content_type)],
-        content,
+        [(axum::http::header::CONTENT_TYPE, content_type),
+         (axum::http::header::CONTENT_DISPOSITION, format!("attachment; filename=\"{}.pdf\"", id))],
+        data,
     ))
+}
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/// Parse document type from string to DocumentType enum.
+fn parse_document_type(s: &str) -> Result<DocumentType, ApiError> {
+    match s.to_lowercase().as_str() {
+        "woo_besluit" => Ok(DocumentType::WooBesluit),
+        "woo_informatie" => Ok(DocumentType::WooInformatie),
+        "woo_besluit_beroep" => Ok(DocumentType::WooBesluitBeroep),
+        "woo_informatie_beroep" => Ok(DocumentType::WooInformatieBeroep),
+        "beleidsnotitie" => Ok(DocumentType::Beleidsnotitie),
+        "raadsvoorstel" => Ok(DocumentType::Raadsvoorstel),
+        "ambtsbericht" => Ok(DocumentType::Ambtsbericht),
+        "persbericht" => Ok(DocumentType::Persbericht),
+        "interne_memo" => Ok(DocumentType::InterneMemo),
+        _ => Ok(DocumentType::Custom(s.to_string())),
+    }
 }
 
 // ============================================
