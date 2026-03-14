@@ -4,7 +4,7 @@
   "target_dir": "/Users/marc/Projecten/iou-modern",
   "state_dir": "/Users/marc/Projecten/iou-modern/planning-api-extensions/implementation",
   "git_root": "/Users/marc/Projecten/iou-modern",
-  "commit_style": "conventional",
+  "commit_style": "simple",
   "test_command": "uv run pytest",
   "sections": [
     "section-01-foundation",
@@ -24,5 +24,5 @@
     "may_modify_files": false,
     "detected_formatters": []
   },
-  "created_at": "2026-03-11T17:02:12.578253+00:00"
+  "created_at": "2026-03-14T19:06:31.922975+00:00"
 }

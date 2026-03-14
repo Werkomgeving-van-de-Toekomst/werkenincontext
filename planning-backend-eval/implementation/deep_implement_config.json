@@ -18,6 +18,26 @@
     "section-01-assessment": {
       "status": "complete",
       "commit_hash": "a17255b"
+    },
+    "section-02-foundation": {
+      "status": "complete",
+      "commit_hash": "522485a"
+    },
+    "section-03-auth-realtime": {
+      "status": "complete",
+      "commit_hash": "c2972ae"
+    },
+    "section-04-cutover": {
+      "status": "complete",
+      "commit_hash": "ed67c90"
+    },
+    "section-05-stabilization": {
+      "status": "complete",
+      "commit_hash": "b1739bb2c90cd65d92126e540907d28fe0fa0f39"
+    },
+    "section-06-cleanup": {
+      "status": "complete",
+      "commit_hash": "ad141061dd2e73a66a69b9a9514e0341d7e6d1a0"
     }
   },
   "pre_commit": {
