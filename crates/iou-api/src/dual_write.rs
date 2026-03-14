@@ -34,6 +34,34 @@ impl ReadSource {
     }
 }
 
+/// Write mode selection
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteMode {
+    /// Write to both Supabase and DuckDB (migration mode)
+    DualWrite,
+
+    /// Write to Supabase only (ETL syncs to DuckDB)
+    SupabaseOnly,
+}
+
+impl WriteMode {
+    /// Get current write mode from environment
+    pub fn from_env() -> Self {
+        match std::env::var("WRITE_MODE").as_deref() {
+            Ok("supabase_only") => WriteMode::SupabaseOnly,
+            _ => WriteMode::DualWrite,  // Default to dual-write for safety
+        }
+    }
+
+    /// Get the name of this write mode
+    pub fn name(&self) -> &'static str {
+        match self {
+            WriteMode::DualWrite => "dual_write",
+            WriteMode::SupabaseOnly => "supabase_only",
+        }
+    }
+}
+
 /// Result of a dual-write operation
 #[derive(Debug)]
 pub enum DualWriteResult<T> {

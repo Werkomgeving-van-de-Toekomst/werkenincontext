@@ -6,6 +6,7 @@ pub mod auth;
 pub mod db;
 pub mod domain_dual_write;
 pub mod dual_write;
+pub mod etl;
 pub mod error;
 pub mod middleware;
 pub mod migration;
@@ -16,7 +17,8 @@ pub mod websockets;
 
 // Re-export commonly used types
 pub use db::Database;
-pub use dual_write::{DualWrite, DualWriteResult, ReadSource};
+pub use dual_write::{DualWrite, DualWriteResult, ReadSource, WriteMode};
+pub use etl::{EtlPipeline, EtlConfig, EtlSchedule, EtlMetrics};
 pub use middleware::{AuthContext, Role};
 pub use migration::{UserMigrator, MigrationReport};
 pub use realtime::{RealtimeClient, PresenceTracker};
