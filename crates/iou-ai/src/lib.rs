@@ -30,6 +30,7 @@ pub mod conversion;
 
 pub mod agents;
 pub mod llm;
+pub mod stakeholder;
 
 pub use ner::DutchNerExtractor;
 pub use graphrag::KnowledgeGraph;
