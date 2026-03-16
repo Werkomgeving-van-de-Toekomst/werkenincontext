@@ -21,6 +21,9 @@ pub mod mention;
 pub mod normalization;
 pub mod error;
 
+// Baseline extraction (section-02)
+pub mod baseline;
+
 // Feasibility spike exports
 pub use rijksoverheid_api_probe::{probe_rijksoverheid_api, ApiProbeResult};
 pub use fallback_dict::get_fallback_canonical_name;
@@ -34,3 +37,6 @@ pub use result::{ExtractionResult, ExtractionStats, VerificationStatus};
 pub use mention::{MentionRelationship, MentionType, TextPosition, ExtractionMethod};
 pub use normalization::{DutchNameNormalizer, NameComparison};
 pub use error::{ExtractionError, NormalizationError, DeduplicationError};
+
+// Public API exports (section-02)
+pub use baseline::{BaselineExtractor, BaselineError, RelationshipMatch};
