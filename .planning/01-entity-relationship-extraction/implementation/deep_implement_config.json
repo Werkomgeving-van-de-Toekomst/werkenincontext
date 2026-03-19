@@ -43,6 +43,10 @@
     "section-05-normalization-deduplication": {
       "status": "complete",
       "commit_hash": "f1762ef"
+    },
+    "section-06-main-extractor": {
+      "status": "complete",
+      "commit_hash": ""
     }
   },
   "pre_commit": {

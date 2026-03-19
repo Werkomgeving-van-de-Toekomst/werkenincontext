@@ -34,6 +34,9 @@ pub mod llm_extractor;
 pub mod normalizer;
 pub mod deduplicator;
 
+// Main Extractor (section-06)
+pub mod main_extractor;
+
 // Feasibility spike exports
 pub use rijksoverheid_api_probe::{probe_rijksoverheid_api, ApiProbeResult};
 pub use fallback_dict::get_fallback_canonical_name;
@@ -64,3 +67,6 @@ pub use llm_extractor::{
 // Public API exports (section-05)
 pub use normalizer::{EntityNormalizer, CacheStats};
 pub use deduplicator::{EntityDeduplicator, jaro_winkler};
+
+// Public API exports (section-06)
+pub use main_extractor::MainExtractor;
