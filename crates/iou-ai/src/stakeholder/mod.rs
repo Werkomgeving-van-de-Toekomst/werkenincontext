@@ -24,6 +24,9 @@ pub mod error;
 // Baseline extraction (section-02)
 pub mod baseline;
 
+// Rijksoverheid API client (section-03)
+pub mod rijksoverheid;
+
 // Feasibility spike exports
 pub use rijksoverheid_api_probe::{probe_rijksoverheid_api, ApiProbeResult};
 pub use fallback_dict::get_fallback_canonical_name;
@@ -40,3 +43,6 @@ pub use error::{ExtractionError, NormalizationError, DeduplicationError};
 
 // Public API exports (section-02)
 pub use baseline::{BaselineExtractor, BaselineError, RelationshipMatch};
+
+// Public API exports (section-03)
+pub use rijksoverheid::{RijksoverheidClient, OrgInfo};
