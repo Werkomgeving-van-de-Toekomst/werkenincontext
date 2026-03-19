@@ -30,6 +30,10 @@ pub mod rijksoverheid;
 // LLM extractor (section-04)
 pub mod llm_extractor;
 
+// Normalization & Deduplication (section-05)
+pub mod normalizer;
+pub mod deduplicator;
+
 // Feasibility spike exports
 pub use rijksoverheid_api_probe::{probe_rijksoverheid_api, ApiProbeResult};
 pub use fallback_dict::get_fallback_canonical_name;
@@ -56,3 +60,7 @@ pub use llm_extractor::{
     ExtractionContext, TextSegment, FocusReason,
     LlmExtractionError, should_extract_with_llm,
 };
+
+// Public API exports (section-05)
+pub use normalizer::{EntityNormalizer, CacheStats};
+pub use deduplicator::{EntityDeduplicator, jaro_winkler};

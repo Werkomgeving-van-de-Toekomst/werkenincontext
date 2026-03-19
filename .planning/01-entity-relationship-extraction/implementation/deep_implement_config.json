@@ -38,6 +38,10 @@
     },
     "section-04-llm-extractor": {
       "status": "complete",
+      "commit_hash": "3d8b295"
+    },
+    "section-05-normalization-deduplication": {
+      "status": "complete",
       "commit_hash": ""
     }
   },
