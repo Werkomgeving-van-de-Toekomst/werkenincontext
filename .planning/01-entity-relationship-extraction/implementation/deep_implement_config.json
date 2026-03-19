@@ -42,7 +42,7 @@
     },
     "section-05-normalization-deduplication": {
       "status": "complete",
-      "commit_hash": ""
+      "commit_hash": "f1762ef"
     }
   },
   "pre_commit": {
