@@ -34,6 +34,10 @@
     },
     "section-03-rijksoverheid-api": {
       "status": "complete",
+      "commit_hash": "b2a8340"
+    },
+    "section-04-llm-extractor": {
+      "status": "complete",
       "commit_hash": ""
     }
   },

@@ -27,6 +27,9 @@ pub mod baseline;
 // Rijksoverheid API client (section-03)
 pub mod rijksoverheid;
 
+// LLM extractor (section-04)
+pub mod llm_extractor;
+
 // Feasibility spike exports
 pub use rijksoverheid_api_probe::{probe_rijksoverheid_api, ApiProbeResult};
 pub use fallback_dict::get_fallback_canonical_name;
@@ -46,3 +49,10 @@ pub use baseline::{BaselineExtractor, BaselineError, RelationshipMatch};
 
 // Public API exports (section-03)
 pub use rijksoverheid::{RijksoverheidClient, OrgInfo};
+
+// Public API exports (section-04)
+pub use llm_extractor::{
+    ClaudeExtractor, ClaudeExtractorConfig, CostTracker,
+    ExtractionContext, TextSegment, FocusReason,
+    LlmExtractionError, should_extract_with_llm,
+};
