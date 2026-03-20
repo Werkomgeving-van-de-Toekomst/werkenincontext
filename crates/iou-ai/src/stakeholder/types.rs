@@ -131,6 +131,12 @@ impl From<Entity> for PersonStakeholder {
     }
 }
 
+impl From<PersonStakeholder> for Entity {
+    fn from(stakeholder: PersonStakeholder) -> Self {
+        stakeholder.entity
+    }
+}
+
 /// Convenience wrapper for organization entities
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrganizationStakeholder {
@@ -226,6 +232,12 @@ impl From<Entity> for OrganizationStakeholder {
     fn from(entity: Entity) -> Self {
         assert_eq!(entity.entity_type, EntityType::Organization);
         Self { entity }
+    }
+}
+
+impl From<OrganizationStakeholder> for Entity {
+    fn from(stakeholder: OrganizationStakeholder) -> Self {
+        stakeholder.entity
     }
 }
 

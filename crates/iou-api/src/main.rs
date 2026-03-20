@@ -36,6 +36,7 @@ use orchestrator::types::StatusMessage;
 use websockets::types::DocumentStatus;
 use websockets::documents::WebSocketState;
 use iou_core::storage::S3Client;
+use iou_ai::graphrag::KnowledgeGraph;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -81,6 +82,9 @@ async fn main() -> anyhow::Result<()> {
     // Initialize workflow engine
     let db_arc = Arc::new(db);
     let workflow_engine = Arc::new(WorkflowEngine::new(db_arc.clone()));
+
+    // Initialize knowledge graph for stakeholder queries
+    let knowledge_graph = Arc::new(KnowledgeGraph::new());
 
     // Create broadcast channels for orchestrator status updates
     // Channel capacity of 100 prevents memory issues if consumers are slow
@@ -155,6 +159,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/templates/{id}", get(routes::get_template))
         .route("/templates/{id}", put(routes::update_template))
         .route("/templates/{id}", delete(routes::delete_template))
+        // Stakeholder endpoints
+        .route("/stakeholders/:id", get(routes::get_stakeholder))
+        .route("/stakeholders/:id/documents", get(routes::get_stakeholder_documents))
+        .route("/documents/:id/stakeholders", get(routes::get_document_stakeholders))
+        .route("/stakeholders/search", get(routes::search_stakeholders))
         // 3D Buildings proxy
         .route("/buildings-3d", get(routes::buildings_3d::get_buildings_3d))
         .route("/buildings-3d-cached", get(routes::buildings_3d::get_buildings_3d_cached))
@@ -180,6 +189,7 @@ async fn main() -> anyhow::Result<()> {
         // Extensions
         .layer(Extension(db_arc))
         .layer(Extension(workflow_engine))
+        .layer(Extension(knowledge_graph))
         .layer(Extension(orchestrator_status_tx))
         .layer(Extension(doc_status_tx))
         .layer(Extension(s3_client))

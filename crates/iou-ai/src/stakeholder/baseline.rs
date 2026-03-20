@@ -275,6 +275,7 @@ impl BaselineExtractor {
             entity_id: entity.id,
             document_id,
             confidence,
+            created_at: Some(chrono::Utc::now()),
         };
 
         Ok(Some((entity, mention)))
@@ -320,6 +321,7 @@ impl BaselineExtractor {
             entity_id: entity.id,
             document_id,
             confidence,
+            created_at: Some(chrono::Utc::now()),
         };
 
         Ok(Some((entity, mention)))

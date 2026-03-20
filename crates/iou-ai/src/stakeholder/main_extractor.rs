@@ -437,6 +437,7 @@ fn create_mention(entity_id: &Uuid, document_id: Uuid, confidence: f32) -> Menti
         entity_id: *entity_id,
         document_id,
         confidence,
+        created_at: Some(chrono::Utc::now()),
     }
 }
 

@@ -23,6 +23,7 @@ use crate::agents::{
     AgentError,
 };
 use crate::graphrag::KnowledgeGraph;
+use crate::stakeholder::{StakeholderExtractor, ExtractionOptions};
 use crate::templates::TemplateEngine;
 use chrono::{DateTime, Utc};
 use iou_core::document::{DocumentRequest, DomainConfig, Template};
@@ -53,6 +54,12 @@ pub struct PipelineConfig {
 
     /// Enable checkpoint/restart capability
     pub enable_checkpoints: bool,
+
+    /// Enable stakeholder extraction after Content Agent
+    pub enable_stakeholder_extraction: bool,
+
+    /// Stakeholder extraction options
+    pub stakeholder_options: ExtractionOptions,
 }
 
 impl Default for PipelineConfig {
@@ -64,6 +71,8 @@ impl Default for PipelineConfig {
             max_backoff: Duration::from_secs(16),
             backoff_multiplier: 2.0,
             enable_checkpoints: true,
+            enable_stakeholder_extraction: false,
+            stakeholder_options: ExtractionOptions::default(),
         }
     }
 }
@@ -143,6 +152,22 @@ impl AgentPipeline {
             template_engine,
             domain_config,
             config,
+            stakeholder_extractor: None,
+        }
+    }
+
+    /// Set the stakeholder extractor for the pipeline
+    /// Note: This returns an AgentPipelineWithConfig since the extractor is config-specific
+    pub fn with_stakeholder_extractor(
+        self,
+        extractor: Arc<dyn StakeholderExtractor>,
+    ) -> AgentPipelineWithConfig {
+        AgentPipelineWithConfig {
+            kg_client: self.kg_client,
+            template_engine: self.template_engine,
+            domain_config: self.domain_config,
+            config: PipelineConfig::default(),
+            stakeholder_extractor: Some(extractor),
         }
     }
 
@@ -158,6 +183,7 @@ impl AgentPipeline {
             template_engine: self.template_engine.clone(),
             domain_config: self.domain_config.clone(),
             config,
+            stakeholder_extractor: None,
         };
         pipeline_with_config.execute_document_pipeline(request, template).await
     }
@@ -176,6 +202,9 @@ pub struct AgentPipelineWithConfig {
 
     /// Pipeline configuration
     pub config: PipelineConfig,
+
+    /// Stakeholder extractor (optional)
+    pub stakeholder_extractor: Option<Arc<dyn StakeholderExtractor>>,
 }
 
 impl AgentPipelineWithConfig {
@@ -249,6 +278,68 @@ impl AgentPipelineWithConfig {
             ).await?;
 
             agent_results.push(content_result);
+
+            // Execute Stakeholder Extraction (after Content Agent, before Compliance)
+            if self.config.enable_stakeholder_extraction {
+                if let Some(extractor) = &self.stakeholder_extractor {
+                    let extraction_start = std::time::Instant::now();
+
+                    match extractor.extract(&generated_document, &self.config.stakeholder_options).await {
+                        Ok(extraction_result) => {
+                            let extraction_time = extraction_start.elapsed();
+
+                            // Log extraction stats
+                            tracing::info!(
+                                "Stakeholder extraction complete for document {}: {} persons, {} organizations, {} mentions ({}ms)",
+                                request.id,
+                                extraction_result.persons.len(),
+                                extraction_result.organizations.len(),
+                                extraction_result.mentions.len(),
+                                extraction_time.as_millis()
+                            );
+
+                            // Track in agent results for audit trail
+                            agent_results.push(AgentExecutionResult {
+                                agent_name: "StakeholderExtraction".to_string(),
+                                success: true,
+                                started_at: Utc::now(),
+                                completed_at: Utc::now(),
+                                execution_time_ms: extraction_time.as_millis() as u64,
+                                retry_count: 0,
+                                data: serde_json::json!({
+                                    "persons_extracted": extraction_result.persons.len(),
+                                    "organizations_extracted": extraction_result.organizations.len(),
+                                    "mentions_created": extraction_result.mentions.len(),
+                                    "stats": extraction_result.stats,
+                                }),
+                                errors: vec![],
+                            });
+
+                            // Note: Entities and relationships can be added to KnowledgeGraph
+                            // separately via the KnowledgeGraph extension methods when needed
+                        }
+                        Err(e) => {
+                            // Non-blocking: log error and continue
+                            tracing::warn!(
+                                "Stakeholder extraction failed for document {}: {}, continuing pipeline",
+                                request.id,
+                                e
+                            );
+
+                            agent_results.push(AgentExecutionResult {
+                                agent_name: "StakeholderExtraction".to_string(),
+                                success: false,
+                                started_at: Utc::now(),
+                                completed_at: Utc::now(),
+                                execution_time_ms: 0,
+                                retry_count: 0,
+                                data: serde_json::Value::Null,
+                                errors: vec![e.to_string()],
+                            });
+                        }
+                    }
+                }
+            }
 
             // Execute Compliance Agent
             let (compliance_result, compliance_exec_result) = self.execute_agent_with_retry(
@@ -604,6 +695,7 @@ mod tests {
             template_engine: engine,
             domain_config,
             config,
+            stakeholder_extractor: None,
         }
     }
 
@@ -666,6 +758,7 @@ mod tests {
             template_engine: engine,
             domain_config,
             config,
+            stakeholder_extractor: None,
         };
 
         let request = create_test_request();
@@ -696,6 +789,7 @@ mod tests {
             template_engine: engine,
             domain_config,
             config,
+            stakeholder_extractor: None,
         };
 
         let request = create_test_request();
@@ -724,6 +818,7 @@ mod tests {
             template_engine: pipeline.template_engine.clone(),
             domain_config: Arc::new(domain_config),
             config: PipelineConfig::default(),
+            stakeholder_extractor: None,
         };
 
         let compliance = ComplianceResult {
@@ -757,6 +852,7 @@ mod tests {
             template_engine: Arc::new(TemplateEngine::new().unwrap()),
             domain_config: Arc::new(domain_config),
             config: PipelineConfig::default(),
+            stakeholder_extractor: None,
         };
 
         let compliance = ComplianceResult {

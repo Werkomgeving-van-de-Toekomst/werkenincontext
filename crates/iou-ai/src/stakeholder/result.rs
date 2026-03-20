@@ -2,9 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
 
 use super::types::PersonStakeholder;
 use super::types::OrganizationStakeholder;
+use iou_core::graphrag::{Relationship, RelationshipType};
 
 /// Wrapper for MentionRelationship to avoid circular dependency
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,6 +15,23 @@ pub struct MentionRelationshipWrapper {
     pub entity_id: Uuid,
     pub document_id: Uuid,
     pub confidence: f32,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+impl From<MentionRelationshipWrapper> for Relationship {
+    fn from(wrapper: MentionRelationshipWrapper) -> Self {
+        Relationship {
+            id: wrapper.id,
+            source_entity_id: wrapper.entity_id,
+            target_entity_id: wrapper.document_id,
+            relationship_type: RelationshipType::RefersTo,
+            weight: 1.0,
+            confidence: wrapper.confidence,
+            context: None,
+            source_domain_id: None,
+            created_at: wrapper.created_at.unwrap_or_else(Utc::now),
+        }
+    }
 }
 
 /// Result of the stakeholder extraction process

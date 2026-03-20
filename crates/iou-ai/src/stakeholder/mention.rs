@@ -6,6 +6,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use iou_core::graphrag::{Relationship, RelationshipType};
 
 /// A mention of an entity within a document
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -206,5 +207,21 @@ mod tests {
     #[test]
     fn test_mention_type_default() {
         assert_eq!(MentionType::default(), MentionType::Referenced);
+    }
+}
+
+impl From<MentionRelationship> for Relationship {
+    fn from(mention: MentionRelationship) -> Self {
+        Relationship {
+            id: mention.id,
+            source_entity_id: mention.entity_id,
+            target_entity_id: mention.document_id,
+            relationship_type: RelationshipType::RefersTo,
+            weight: 1.0,
+            confidence: mention.confidence,
+            context: mention.context,
+            source_domain_id: None,
+            created_at: mention.created_at,
+        }
     }
 }

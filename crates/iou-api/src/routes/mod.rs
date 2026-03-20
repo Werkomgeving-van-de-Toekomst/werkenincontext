@@ -13,6 +13,7 @@ pub mod graphrag;
 pub mod health;
 pub mod objects;
 pub mod search;
+pub mod stakeholder;
 pub mod templates;
 pub mod terrain;
 
@@ -30,3 +31,11 @@ pub use templates::create_template;
 pub use templates::get_template;
 pub use templates::update_template;
 pub use templates::delete_template;
+
+// Re-export stakeholder handlers
+pub use stakeholder::{
+    get_stakeholder,
+    get_stakeholder_documents,
+    get_document_stakeholders,
+    search_stakeholders,
+};

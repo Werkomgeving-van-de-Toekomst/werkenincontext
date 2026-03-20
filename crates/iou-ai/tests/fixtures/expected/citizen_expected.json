@@ -1,0 +1,25 @@
+{
+  "persons": [
+    {
+      "name": "A. de Jong",
+      "role": "Burgemeester",
+      "pii_classification": "Official",
+      "confidence": 0.85
+    },
+    {
+      "name": "A. de Jong",
+      "pii_classification": "Citizen",
+      "email": "a.dejong@example.com",
+      "phone": "020-1234567",
+      "confidence": 0.7
+    }
+  ],
+  "organizations": [
+    {
+      "name": "Directie Publieke Zaak",
+      "org_type": "Agency",
+      "confidence": 0.85
+    }
+  ],
+  "total_entities": 3
+}

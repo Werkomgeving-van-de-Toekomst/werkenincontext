@@ -1,0 +1,41 @@
+{
+  "persons": [
+    {
+      "name": "Jan de Vries",
+      "title": "dr.",
+      "role": "senior beleidsmedewerker",
+      "confidence": 0.9
+    },
+    {
+      "name": "Marie Jansen",
+      "role": "Hoofddirecteur",
+      "department": "Directie Financiële Markten",
+      "confidence": 0.9
+    }
+  ],
+  "organizations": [
+    {
+      "name": "Ministerie van Financiën",
+      "short_name": "MinFin",
+      "org_type": "Ministry",
+      "confidence": 0.95
+    },
+    {
+      "name": "Ministerie van Binnenlandse Zaken en Koninkrijksrelaties",
+      "short_name": "BZK",
+      "org_type": "Ministry",
+      "confidence": 0.95
+    },
+    {
+      "name": "Directie Algemene Politiekening",
+      "org_type": "Agency",
+      "confidence": 0.85
+    },
+    {
+      "name": "Directie Financiële Markten",
+      "org_type": "Agency",
+      "confidence": 0.85
+    }
+  ],
+  "total_entities": 6
+}
