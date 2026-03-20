@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DocumentPipeline"
+  targetNamespace="http://iou-modern.local/schema/bpmn"
+  exporter="IOU-Modern"
+  exporterVersion="1.0">
+  <bpmn:message id="Message_DocumentApproved" name="document_approved">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=documentId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="DocumentPipeline" name="Document pipeline" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Doc" name="Start">
+      <bpmn:outgoing>Flow_to_RunPipeline</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_RunPipeline" name="Run Rust agent pipeline">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="iou-run-pipeline" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_RunPipeline</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_DeepAgent</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_DeepAgent" name="Deep agent (LangChain)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="iou-deep-agent" retries="2" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_DeepAgent</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_Gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Approval" name="Human approval?" default="Flow_SkipWait">
+      <bpmn:incoming>Flow_to_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_WaitApproval</bpmn:outgoing>
+      <bpmn:outgoing>Flow_SkipWait</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="Event_WaitApproval" name="Wait document approval">
+      <bpmn:incoming>Flow_WaitApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_End</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEvent_Approved" messageRef="Message_DocumentApproved" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndEvent_Done" name="Done">
+      <bpmn:incoming>Flow_SkipWait</bpmn:incoming>
+      <bpmn:incoming>Flow_to_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_to_RunPipeline" sourceRef="StartEvent_Doc" targetRef="Task_RunPipeline" />
+    <bpmn:sequenceFlow id="Flow_to_DeepAgent" sourceRef="Task_RunPipeline" targetRef="Task_DeepAgent" />
+    <bpmn:sequenceFlow id="Flow_to_Gateway" sourceRef="Task_DeepAgent" targetRef="Gateway_Approval" />
+    <bpmn:sequenceFlow id="Flow_WaitApproval" name="needs approval" sourceRef="Gateway_Approval" targetRef="Event_WaitApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=requiresHumanApproval = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_SkipWait" name="no approval" sourceRef="Gateway_Approval" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_to_End" sourceRef="Event_WaitApproval" targetRef="EndEvent_Done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="DocumentPipeline">
+      <bpmndi:BPMNShape id="Shape_Start" bpmnElement="StartEvent_Doc">
+        <dc:Bounds x="152" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_RunPipeline" bpmnElement="Task_RunPipeline">
+        <dc:Bounds x="240" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Deep" bpmnElement="Task_DeepAgent">
+        <dc:Bounds x="390" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gw" bpmnElement="Gateway_Approval" isMarkerVisible="true">
+        <dc:Bounds x="545" y="225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Wait" bpmnElement="Event_WaitApproval">
+        <dc:Bounds x="650" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End" bpmnElement="EndEvent_Done">
+        <dc:Bounds x="752" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_1" bpmnElement="Flow_to_RunPipeline">
+        <di:waypoint x="188" y="250" />
+        <di:waypoint x="240" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_2" bpmnElement="Flow_to_DeepAgent">
+        <di:waypoint x="340" y="250" />
+        <di:waypoint x="390" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_3" bpmnElement="Flow_to_Gateway">
+        <di:waypoint x="490" y="250" />
+        <di:waypoint x="545" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_4" bpmnElement="Flow_WaitApproval">
+        <di:waypoint x="595" y="250" />
+        <di:waypoint x="650" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_5" bpmnElement="Flow_SkipWait">
+        <di:waypoint x="570" y="225" />
+        <di:waypoint x="770" y="100" />
+        <di:waypoint x="770" y="232" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_6" bpmnElement="Flow_to_End">
+        <di:waypoint x="686" y="250" />
+        <di:waypoint x="752" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

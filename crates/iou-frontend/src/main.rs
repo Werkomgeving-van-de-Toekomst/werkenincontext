@@ -68,6 +68,8 @@ pub enum Route {
     ConceptWerkwijze,
     #[route("/concept/meerjarenplan")]
     ConceptMeerjarenplanConclusies,
+    #[route("/concept/document-pipeline")]
+    ConceptDocumentPipeline,
     #[route("/zuidholland")]
     ZuidHolland,
     #[route("/zuidholland/mobiliteitsverkenner")]

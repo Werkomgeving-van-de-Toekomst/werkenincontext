@@ -68,6 +68,13 @@ pub fn ConceptDashboard() -> Element {
                                         description: "Systeemcomponenten & integraties".to_string(),
                                     }
                                 }
+                                Link { to: Route::ConceptDocumentPipeline,
+                                    AppCard {
+                                        name: "Documentverwerking".to_string(),
+                                        description: "Werken in context, Camunda 8 & Deep Agents".to_string(),
+                                        badge: "Proces".to_string(),
+                                    }
+                                }
                                 Link { to: Route::ConceptWerkwijze,
                                     AppCard {
                                         name: "Werkwijze".to_string(),

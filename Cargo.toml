@@ -8,6 +8,7 @@ members = [
     "crates/iou-frontend",
     "crates/iou-storage",
     "crates/iou-orchestrator",
+    "crates/iou-camunda-worker",
 ]
 
 [workspace.package]

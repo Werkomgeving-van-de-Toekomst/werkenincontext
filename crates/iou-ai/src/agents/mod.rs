@@ -9,8 +9,10 @@ pub mod content;
 pub mod compliance;
 pub mod review;
 pub mod error;
+pub mod checkpoint_store;
 pub mod pipeline;
 
+pub use checkpoint_store::PipelineCheckpointStore;
 pub use error::{PipelineError, ErrorSeverity};
 pub use pipeline::{
     AgentPipeline, AgentPipelineWithConfig, PipelineConfig,

@@ -124,6 +124,10 @@ pub struct AgentPipeline {
 
     /// Domain configuration
     pub domain_config: Arc<DomainConfig>,
+
+    /// Execution settings used by [`Self::execute_document_pipeline`] and
+    /// [`Self::with_stakeholder_extractor`]
+    pub config: PipelineConfig,
 }
 
 impl AgentPipeline {
@@ -705,6 +709,26 @@ mod tests {
         assert_eq!(config.max_iterations, 3);
         assert_eq!(config.max_retries, 3);
         assert!(config.enable_checkpoints);
+    }
+
+    #[test]
+    fn with_stakeholder_extractor_preserves_pipeline_config() {
+        let kg = Arc::new(KnowledgeGraph::new());
+        let engine = Arc::new(TemplateEngine::new().unwrap());
+        let domain_config = Arc::new(create_test_domain_config());
+        let custom = PipelineConfig {
+            max_iterations: 7,
+            max_retries: 9,
+            ..Default::default()
+        };
+
+        let pipeline = AgentPipeline::new(kg, engine, domain_config).with_pipeline_config(custom);
+
+        let with_ext: AgentPipelineWithConfig = pipeline
+            .with_stakeholder_extractor(Arc::new(NoopStakeholderExtractor));
+
+        assert_eq!(with_ext.config.max_iterations, 7);
+        assert_eq!(with_ext.config.max_retries, 9);
     }
 
     #[test]

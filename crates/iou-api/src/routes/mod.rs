@@ -16,6 +16,7 @@ pub mod search;
 pub mod stakeholder;
 pub mod templates;
 pub mod terrain;
+pub mod camunda_internal;
 
 // Versioned API (RONL Business API Layer)
 pub mod v1;
@@ -39,3 +40,5 @@ pub use stakeholder::{
     get_document_stakeholders,
     search_stakeholders,
 };
+
+pub use camunda_internal::{deep_agent_bridge, run_pipeline_job};

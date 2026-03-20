@@ -1,0 +1,7 @@
+# Optioneel: echte LangChain Deep Agents. Bouw image met:
+#   pip install -r requirements.txt -r requirements-deepagents.txt
+# en implementeer `app/deepagents_runner.py` (zie README).
+
+# deepagents
+# langgraph
+# langchain-core

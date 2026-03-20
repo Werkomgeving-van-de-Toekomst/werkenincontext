@@ -19,6 +19,7 @@ use tokio::sync::broadcast;
 use uuid::Uuid;
 
 use crate::db::Database;
+use crate::document_workflow::{DocumentWorkflowDriver, DocumentWorkflowRuntime};
 use crate::error::ApiError;
 use crate::middleware::auth::AuthContext;
 use crate::orchestrator::{WorkflowOrchestrator, types::StatusMessage};
@@ -109,10 +110,11 @@ pub async fn create_document(
     Extension(db): Extension<Arc<Database>>,
     Extension(status_tx): Extension<broadcast::Sender<StatusMessage>>,
     Extension(doc_status_tx): Extension<broadcast::Sender<DocumentStatus>>,
+    Extension(workflow_rt): Extension<Arc<DocumentWorkflowRuntime>>,
     Json(req): Json<CreateDocumentRequest>,
 ) -> Result<Json<CreateDocumentResponse>, ApiError> {
     // Validate template exists
-    let _template = db
+    let template = db
         .get_active_template_async(req.domain_id.clone(), req.document_type.clone())
         .await?
         .ok_or_else(|| ApiError::Validation(format!(
@@ -122,23 +124,12 @@ pub async fn create_document(
 
     let document_id = Uuid::new_v4();
     let now = Utc::now();
+    let requested_by = Uuid::new_v4(); // TODO: auth context
+    let context_json =
+        serde_json::to_value(&req.context).map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
 
     // Parse document type
     let document_type = parse_document_type(&req.document_type)?;
-
-    // Create document request for orchestrator
-    let document_request = DocumentRequest {
-        id: document_id,
-        domain_id: req.domain_id.clone(),
-        document_type: document_type.clone(),
-        context: req.context,
-        requested_by: Uuid::new_v4(), // TODO: Get from auth context
-        requested_at: now,
-        priority: Default::default(),
-    };
-
-    // Create workflow context
-    let workflow_context = WorkflowContext::new(document_id, document_request, "1.0.0".to_string());
 
     // Create document record in database
     let document = DocumentMetadata {
@@ -156,17 +147,99 @@ pub async fn create_document(
 
     db.create_document_async(document).await?;
 
-    // Create and start workflow orchestrator
-    let orchestrator = WorkflowOrchestrator::new(db, status_tx, doc_status_tx);
-    orchestrator.start_workflow(workflow_context).await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to start workflow: {}", e)))?;
+    match workflow_rt.driver {
+        DocumentWorkflowDriver::Camunda => {
+            let gw = workflow_rt
+                .camunda
+                .as_ref()
+                .ok_or_else(|| ApiError::Internal(anyhow::anyhow!(
+                    "IOU_DOCUMENT_WORKFLOW=camunda maar Zeebe-gateway niet geïnitialiseerd"
+                )))?;
 
-    tracing::info!(
-        domain_id = %req.domain_id,
-        document_type = %req.document_type,
-        document_id = %document_id,
-        "Document creation requested and workflow started"
-    );
+            db.upsert_document_pipeline_input_async(
+                document_id,
+                req.domain_id.clone(),
+                req.document_type.clone(),
+                context_json,
+                requested_by,
+                "1.0.0".to_string(),
+            )
+            .await?;
+
+            let run_deep = std::env::var("CAMUNDA_RUN_DEEP_AGENT")
+                .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                .unwrap_or(true);
+
+            let wf_ver = "1.0.0";
+            let (pi, pd) = gw
+                .start_document_pipeline(
+                    document_id,
+                    &req.domain_id,
+                    &req.document_type,
+                    &template.id,
+                    requested_by,
+                    wf_ver,
+                    run_deep,
+                )
+                .await
+                .map_err(|e| ApiError::Internal(anyhow::anyhow!("Zeebe start mislukt: {}", e)))?;
+
+            db.update_document_camunda_keys_async(document_id, pi, pd)
+                .await?;
+
+            let ts = Utc::now().timestamp();
+            let _ = status_tx.send(StatusMessage::Started {
+                document_id,
+                agent: "camunda".to_string(),
+                timestamp: ts,
+            });
+            let _ = doc_status_tx.send(
+                StatusMessage::Started {
+                    document_id,
+                    agent: "camunda".to_string(),
+                    timestamp: ts,
+                }
+                .to_document_status(),
+            );
+
+            tracing::info!(
+                domain_id = %req.domain_id,
+                document_type = %req.document_type,
+                document_id = %document_id,
+                process_instance_key = pi,
+                "Document aangemaakt — Camunda-proces gestart (geen Rust-orchestrator)"
+            );
+        }
+        DocumentWorkflowDriver::Rust => {
+            let document_request = DocumentRequest {
+                id: document_id,
+                domain_id: req.domain_id.clone(),
+                document_type: document_type.clone(),
+                context: req.context,
+                requested_by,
+                requested_at: now,
+                priority: Default::default(),
+            };
+
+            let workflow_context =
+                WorkflowContext::new(document_id, document_request, "1.0.0".to_string());
+
+            let orchestrator = WorkflowOrchestrator::new(db, status_tx, doc_status_tx);
+            orchestrator
+                .start_workflow(workflow_context)
+                .await
+                .map_err(|e| {
+                    ApiError::Internal(anyhow::anyhow!("Failed to start workflow: {}", e))
+                })?;
+
+            tracing::info!(
+                domain_id = %req.domain_id,
+                document_type = %req.document_type,
+                document_id = %document_id,
+                "Document creation requested and Rust workflow started"
+            );
+        }
+    }
 
     // Calculate estimated completion time (8 minutes max)
     let estimated_completion = now + chrono::Duration::minutes(8);
@@ -209,6 +282,7 @@ pub async fn get_status(
 /// POST /api/documents/{id}/approve
 pub async fn approve_document(
     Extension(db): Extension<Arc<Database>>,
+    Extension(workflow_rt): Extension<Arc<DocumentWorkflowRuntime>>,
     Path(id): Path<Uuid>,
     Json(req): Json<ApprovalRequest>,
 ) -> Result<Json<ApprovalResponse>, ApiError> {
@@ -239,13 +313,24 @@ pub async fn approve_document(
 
     db.update_document_async(document).await?;
 
+    if req.approved && workflow_rt.driver == DocumentWorkflowDriver::Camunda {
+        if let Some(gw) = workflow_rt.camunda.as_ref() {
+            if db.get_document_camunda_keys_async(id).await?.is_some() {
+                gw.publish_document_approved(id, true)
+                    .await
+                    .map_err(|e| {
+                        ApiError::Internal(anyhow::anyhow!("Zeebe document_approved: {}", e))
+                    })?;
+                tracing::info!(document_id = %id, "Zeebe-bericht document_approved gepubliceerd");
+            }
+        }
+    }
+
     tracing::info!(
         document_id = %id,
         approved = %req.approved,
         "Document approval processed"
     );
-
-    // TODO: If approved, trigger final processing (storage, publication)
 
     Ok(Json(ApprovalResponse {
         document_id: id,

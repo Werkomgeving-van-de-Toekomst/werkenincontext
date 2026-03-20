@@ -16,6 +16,17 @@ use uuid::Uuid;
 
 use iou_core::domain::{DomainStatus, DomainType, InformationDomain};
 use iou_core::objects::{InformationObject, ObjectType};
+use iou_ai::PipelineCheckpoint;
+
+/// Persisted fields to rebuild a document generation request for Camunda workers.
+#[derive(Debug, Clone)]
+pub struct DocumentPipelineInputRow {
+    pub domain_id: String,
+    pub document_type: String,
+    pub context: std::collections::HashMap<String, String>,
+    pub requested_by: Uuid,
+    pub workflow_version: String,
+}
 
 /// Convert DateTime to string for DuckDB storage
 fn datetime_to_string(dt: &DateTime<Utc>) -> String {
@@ -98,6 +109,19 @@ impl Database {
                     let err_str = e.to_string();
                     if !err_str.contains("already exists") && !err_str.contains("table") {
                         tracing::warn!("Document schema statement failed: {}", err_str);
+                    }
+                }
+            }
+        }
+
+        let camunda_schema = include_str!("../../../migrations/003_camunda_integration.sql");
+        for statement in camunda_schema.split(';') {
+            let stmt = statement.trim();
+            if !stmt.is_empty() && !stmt.starts_with("--") {
+                if let Err(e) = conn.execute(stmt, []) {
+                    let err_str = e.to_string();
+                    if !err_str.contains("already exists") && !err_str.contains("table") {
+                        tracing::warn!("Camunda schema statement failed: {}", err_str);
                     }
                 }
             }
@@ -1338,6 +1362,223 @@ impl Database {
     }
 
     // ============================================
+    // CAMUNDA / PIPELINE PERSISTENCE
+    // ============================================
+
+    /// Persist creation context for Zeebe workers to replay the agent pipeline.
+    pub fn upsert_document_pipeline_input(
+        &self,
+        document_id: Uuid,
+        domain_id: &str,
+        document_type: &str,
+        context: &serde_json::Value,
+        requested_by: Uuid,
+        workflow_version: &str,
+    ) -> anyhow::Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            r#"
+            INSERT INTO document_pipeline_inputs
+                (document_id, domain_id, document_type, context_json, requested_by, workflow_version, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            "#,
+            params![
+                document_id.to_string(),
+                domain_id,
+                document_type,
+                context.to_string(),
+                requested_by.to_string(),
+                workflow_version,
+                datetime_to_string(&Utc::now()),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Zeebe-proces gekoppeld aan dit document (voor goedkeuringsberichten).
+    pub fn get_document_camunda_keys(
+        &self,
+        document_id: Uuid,
+    ) -> anyhow::Result<Option<(i64, i64)>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT camunda_process_instance_key, camunda_process_definition_key
+            FROM document_pipeline_inputs
+            WHERE document_id = ? AND camunda_process_instance_key IS NOT NULL
+            "#,
+        )?;
+        let row = stmt.query_row([document_id.to_string()], |row| {
+            let pi: i64 = row.get(0)?;
+            let pd: i64 = row.get(1)?;
+            Ok((pi, pd))
+        });
+        match row {
+            Ok(keys) => Ok(Some(keys)),
+            Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn update_document_camunda_keys(
+        &self,
+        document_id: Uuid,
+        process_instance_key: i64,
+        process_definition_key: i64,
+    ) -> anyhow::Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            r#"
+            UPDATE document_pipeline_inputs
+            SET camunda_process_instance_key = ?, camunda_process_definition_key = ?
+            WHERE document_id = ?
+            "#,
+            params![
+                process_instance_key,
+                process_definition_key,
+                document_id.to_string(),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Row needed to rebuild [`iou_core::document::DocumentRequest`].
+    pub fn get_document_pipeline_input(
+        &self,
+        document_id: Uuid,
+    ) -> anyhow::Result<Option<DocumentPipelineInputRow>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT domain_id, document_type, context_json, requested_by, workflow_version
+            FROM document_pipeline_inputs
+            WHERE document_id = ?
+            "#,
+        )?;
+        let row = stmt.query_row([document_id.to_string()], |row| {
+            let ctx_str: String = row.get(2)?;
+            let ctx: serde_json::Value = serde_json::from_str(&ctx_str).unwrap_or(serde_json::json!({}));
+            let mut context = std::collections::HashMap::new();
+            if let serde_json::Value::Object(map) = ctx {
+                for (k, v) in map {
+                    if let Some(s) = v.as_str() {
+                        context.insert(k, s.to_string());
+                    } else {
+                        context.insert(k, v.to_string());
+                    }
+                }
+            }
+            Ok(DocumentPipelineInputRow {
+                domain_id: row.get(0)?,
+                document_type: row.get(1)?,
+                context,
+                requested_by: Uuid::parse_str(&row.get::<_, String>(3)?).unwrap_or_else(|_| Uuid::nil()),
+                workflow_version: row.get(4)?,
+            })
+        });
+        match row {
+            Ok(r) => Ok(Some(r)),
+            Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Returns `true` if this job was newly recorded (idempotent completion).
+    pub fn try_record_camunda_job_completion(
+        &self,
+        zeebe_job_key: i64,
+        document_id: Uuid,
+        job_type: &str,
+        result_json: &serde_json::Value,
+    ) -> anyhow::Result<bool> {
+        let conn = self.conn.lock().unwrap();
+        let exists: bool = conn.query_row(
+            "SELECT COUNT(*) > 0 FROM camunda_job_completions WHERE zeebe_job_key = ?",
+            [zeebe_job_key],
+            |r| r.get(0),
+        )?;
+        if exists {
+            return Ok(false);
+        }
+        conn.execute(
+            r#"
+            INSERT INTO camunda_job_completions (zeebe_job_key, document_id, job_type, completed_at, result_json)
+            VALUES (?, ?, ?, ?, ?)
+            "#,
+            params![
+                zeebe_job_key,
+                document_id.to_string(),
+                job_type,
+                datetime_to_string(&Utc::now()),
+                result_json.to_string(),
+            ],
+        )?;
+        Ok(true)
+    }
+
+    pub fn get_camunda_job_result_json(
+        &self,
+        zeebe_job_key: i64,
+    ) -> anyhow::Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT result_json FROM camunda_job_completions WHERE zeebe_job_key = ?",
+        )?;
+        let row = stmt.query_row([zeebe_job_key], |row| {
+            let s: String = row.get(0)?;
+            Ok(serde_json::from_str::<serde_json::Value>(&s).unwrap_or_default())
+        });
+        match row {
+            Ok(v) => Ok(Some(v)),
+            Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn save_pipeline_checkpoint_row(
+        &self,
+        document_id: Uuid,
+        checkpoint: &PipelineCheckpoint,
+    ) -> anyhow::Result<()> {
+        let conn = self.conn.lock().unwrap();
+        let json = serde_json::to_string(checkpoint)?;
+        conn.execute(
+            r#"
+            INSERT INTO pipeline_checkpoints (document_id, saved_at, checkpoint_json)
+            VALUES (?, ?, ?)
+            "#,
+            params![
+                document_id.to_string(),
+                datetime_to_string(&checkpoint.saved_at),
+                json,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn load_latest_pipeline_checkpoint_row(
+        &self,
+        document_id: Uuid,
+    ) -> anyhow::Result<Option<PipelineCheckpoint>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT checkpoint_json FROM pipeline_checkpoints
+            WHERE document_id = ?
+            ORDER BY saved_at DESC
+            LIMIT 1
+            "#,
+        )?;
+        let json_str: Result<String, duckdb::Error> =
+            stmt.query_row([document_id.to_string()], |row| row.get(0));
+        match json_str {
+            Ok(s) => Ok(Some(serde_json::from_str(&s)?)),
+            Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    // ============================================
     // ASYNC WRAPPERS (for compatibility with async route handlers)
     // ============================================
 
@@ -1409,6 +1650,50 @@ impl Database {
         let db = self.clone();
         tokio::task::spawn_blocking(move || db.add_audit_entry(&entry))
             .await?
+    }
+
+    pub async fn upsert_document_pipeline_input_async(
+        &self,
+        document_id: Uuid,
+        domain_id: String,
+        document_type: String,
+        context: serde_json::Value,
+        requested_by: Uuid,
+        workflow_version: String,
+    ) -> anyhow::Result<()> {
+        let db = self.clone();
+        tokio::task::spawn_blocking(move || {
+            db.upsert_document_pipeline_input(
+                document_id,
+                &domain_id,
+                &document_type,
+                &context,
+                requested_by,
+                &workflow_version,
+            )
+        })
+        .await?
+    }
+
+    pub async fn update_document_camunda_keys_async(
+        &self,
+        document_id: Uuid,
+        process_instance_key: i64,
+        process_definition_key: i64,
+    ) -> anyhow::Result<()> {
+        let db = self.clone();
+        tokio::task::spawn_blocking(move || {
+            db.update_document_camunda_keys(document_id, process_instance_key, process_definition_key)
+        })
+        .await?
+    }
+
+    pub async fn get_document_camunda_keys_async(
+        &self,
+        document_id: Uuid,
+    ) -> anyhow::Result<Option<(i64, i64)>> {
+        let db = self.clone();
+        tokio::task::spawn_blocking(move || db.get_document_camunda_keys(document_id)).await?
     }
 }
 

@@ -6,7 +6,7 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde_json::Value;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
@@ -141,7 +141,7 @@ impl OutboxProcessor {
     }
 
     /// Process a single outbox event
-    async fn process_single_event(&self, event: &sqlx::types::PgRow) -> Result<(), anyhow::Error> {
+    async fn process_single_event(&self, event: &sqlx::postgres::PgRow) -> Result<(), anyhow::Error> {
         let id: Uuid = event.get("id");
         let aggregate_type: String = event.get("aggregate_type");
         let aggregate_id: Uuid = event.get("aggregate_id");

@@ -16,8 +16,10 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod camunda;
 mod config;
 mod db;
+mod document_workflow;
 mod domain_dual_write;
 mod dual_write;
 mod error;
@@ -30,7 +32,9 @@ mod websockets;
 mod orchestrator;
 mod vc;
 
+use camunda::CamundaGateway;
 use db::Database;
+use document_workflow::{DocumentWorkflowDriver, DocumentWorkflowRuntime};
 use workflows::WorkflowEngine;
 use orchestrator::types::StatusMessage;
 use websockets::types::DocumentStatus;
@@ -94,6 +98,34 @@ async fn main() -> anyhow::Result<()> {
     // Create WebSocket state for document status broadcasts
     let ws_state = Arc::new(WebSocketState {
         status_tx: doc_status_tx.clone(),
+    });
+
+    let document_driver = DocumentWorkflowDriver::from_env();
+    let camunda_gateway: Option<Arc<CamundaGateway>> = if document_driver == DocumentWorkflowDriver::Camunda {
+        tracing::info!(
+            "IOU_DOCUMENT_WORKFLOW=camunda — documenten alleen via Zeebe (workers in Docker)"
+        );
+        Some(Arc::new(
+            CamundaGateway::from_env()
+                .await
+                .map_err(|e| anyhow::anyhow!("Camunda-gateway: {}", e))?,
+        ))
+    } else {
+        tracing::info!("IOU_DOCUMENT_WORKFLOW=rust — interne WorkflowOrchestrator voor documenten");
+        None
+    };
+
+    if document_driver == DocumentWorkflowDriver::Camunda
+        && std::env::var("CAMUNDA_WORKER_TOKEN").unwrap_or_default().is_empty()
+    {
+        tracing::warn!(
+            "CAMUNDA_WORKER_TOKEN is leeg — POST /api/internal/camunda/* wordt geweigerd"
+        );
+    }
+
+    let document_workflow_rt = Arc::new(DocumentWorkflowRuntime {
+        driver: document_driver,
+        camunda: camunda_gateway,
     });
 
     // Build API router
@@ -167,6 +199,15 @@ async fn main() -> anyhow::Result<()> {
         // 3D Buildings proxy
         .route("/buildings-3d", get(routes::buildings_3d::get_buildings_3d))
         .route("/buildings-3d-cached", get(routes::buildings_3d::get_buildings_3d_cached))
+        // Camunda job workers → interne API (token: X-Camunda-Worker-Token)
+        .route(
+            "/internal/camunda/run-pipeline",
+            post(routes::run_pipeline_job),
+        )
+        .route(
+            "/internal/camunda/deep-agent",
+            post(routes::deep_agent_bridge),
+        )
         .without_v07_checks();
 
     // Combine API with static file serving
@@ -193,7 +234,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(orchestrator_status_tx))
         .layer(Extension(doc_status_tx))
         .layer(Extension(s3_client))
-        .layer(Extension(ws_state));
+        .layer(Extension(ws_state))
+        .layer(Extension(document_workflow_rt));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
