@@ -31,6 +31,7 @@ mod workflows;
 mod websockets;
 mod orchestrator;
 mod vc;
+mod id;
 
 use camunda::CamundaGateway;
 use db::Database;
@@ -137,6 +138,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/refresh", post(routes::auth::refresh_token))
         .route("/auth/logout", post(routes::auth::logout))
         .route("/auth/wallet", post(routes::auth::wallet_auth))
+        // NL Wallet / wallet_web — sessie via verification_server
+        .route(
+            "/id/nl-wallet/sessions",
+            post(routes::id::nl_wallet_create_session),
+        )
         // Context endpoints
         .route("/context/{id}", get(routes::context::get_context))
         .route("/domains", get(routes::context::list_domains))
@@ -196,6 +202,31 @@ async fn main() -> anyhow::Result<()> {
         .route("/stakeholders/:id/documents", get(routes::get_stakeholder_documents))
         .route("/documents/:id/stakeholders", get(routes::get_document_stakeholders))
         .route("/stakeholders/search", get(routes::search_stakeholders))
+        // Data Subject Rights (AVG/GDPR Articles 15, 16, 17)
+        .route("/subject-access-request", post(routes::v1::create_sar))
+        .route("/subject-access-request/:id", get(routes::v1::get_sar))
+        .route("/my-data-requests", get(routes::v1::list_my_dsar))
+        .route("/data-rectification", post(routes::v1::create_rectification))
+        .route("/data-rectification/:id", get(routes::v1::get_rectification))
+        .route("/data-rectification/:id/approve", put(routes::v1::approve_rectification))
+        .route("/data-erasure", post(routes::v1::create_erasure))
+        .route("/data-erasure/:id", get(routes::v1::get_erasure))
+        .route("/data-erasure/:id/approve", put(routes::v1::approve_erasure))
+        .route("/admin/dsar/pending", get(routes::v1::list_pending_dsar))
+        // Woo Publication (Wet open overheid)
+        .route("/documents/:id/request-woo-publication", post(routes::v1::request_woo_publication))
+        .route("/woo-publications", get(routes::v1::list_woo_publications))
+        .route("/woo-publications/:id", get(routes::v1::get_woo_publication))
+        .route("/woo-publications/:id/approve", post(routes::v1::approve_woo_publication))
+        .route("/woo-publications/:id/publish", post(routes::v1::publish_woo_publication))
+        .route("/woo-publications/:id/withdraw", post(routes::v1::withdraw_woo_publication))
+        .route("/woo-publications/:id/consultation-complete", post(routes::v1::mark_consultation_complete))
+        .route("/woo-requests", post(routes::v1::create_woo_request))
+        .route("/woo-requests", get(routes::v1::list_woo_requests))
+        .route("/woo-requests/:id", get(routes::v1::get_woo_request))
+        .route("/woo/statistics", get(routes::v1::get_woo_statistics))
+        .route("/woo/upcoming-deadlines", get(routes::v1::get_woo_deadlines))
+        .route("/woo/published-documents", get(routes::v1::get_published_woo_documents))
         // 3D Buildings proxy
         .route("/buildings-3d", get(routes::buildings_3d::get_buildings_3d))
         .route("/buildings-3d-cached", get(routes::buildings_3d::get_buildings_3d_cached))
