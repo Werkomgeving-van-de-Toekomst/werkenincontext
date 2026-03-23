@@ -31,7 +31,7 @@ pub struct CalculationResponse {
 pub async fn start_calculation(
     Extension(tenant): Extension<TenantContext>,
     Extension(audit): Extension<iou_core::audit::SharedAuditLogger>,
-    Extension(evaluator): State<Arc<DmnEvaluator>>,
+    State(evaluator): State<Arc<DmnEvaluator>>,
     Json(req): Json<CalculationRequest>,
 ) -> Result<Json<CalculationResponse>, crate::error::ApiError> {
     let calculation_id = Uuid::new_v4();
@@ -41,15 +41,16 @@ pub async fn start_calculation(
         tenant.tenant_id.as_str().to_string(),
         tenant.holder_did.clone(),
         AuditAction::CalculationStarted,
-        "calculation",
+        "calculation".to_string(),
         calculation_id.to_string(),
     )
     .with_context(serde_json::json!({
         "calculation_type": req.calculation_type,
         "inputs": req.inputs,
     }));
-    iou_core::audit::log_shared(&audit, &audit_entry).await
-        .map_err(|e| crate::error::ApiError::Internal(format!("Audit failed: {}", e)))?;
+    iou_core::audit::log_shared(&audit, &audit_entry)
+        .await
+        .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Audit failed: {}", e)))?;
 
     // For synchronous calculation, evaluate immediately
     // For async, would return a status URL to poll
@@ -87,7 +88,7 @@ pub async fn start_calculation(
                 tenant.tenant_id.as_str().to_string(),
                 tenant.holder_did.clone(),
                 AuditAction::CalculationCompleted,
-                "calculation",
+                "calculation".to_string(),
                 calculation_id.to_string(),
             );
             let _ = iou_core::audit::log_shared(&audit, &audit_entry).await;
@@ -111,12 +112,15 @@ pub async fn start_calculation(
                 tenant.tenant_id.as_str().to_string(),
                 tenant.holder_did.clone(),
                 AuditAction::Custom("calculation_failed".to_string()),
-                "calculation",
+                "calculation".to_string(),
                 calculation_id.to_string(),
             )
             .with_outcome(iou_core::audit::models::AuditOutcome::Failed);
             let _ = iou_core::audit::log_shared(&audit, &audit_entry).await;
-            return Err(crate::error::ApiError::Internal(format!("Calculation failed: {}", e)));
+            return Err(crate::error::ApiError::Internal(anyhow::anyhow!(
+                "Calculation failed: {}",
+                e
+            )));
         }
     };
 

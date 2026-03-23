@@ -3,7 +3,7 @@
 //! Tests to verify that PostgreSQL schema matches DuckDB structure
 //! for the hybrid architecture.
 
-use uuid::Uuid;
+use sqlx::Row;
 
 #[tokio::test]
 #[ignore] // Requires running Supabase instance
@@ -24,7 +24,7 @@ async fn test_information_domains_schema_matches() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "information_domains table should exist");
 
     // Verify columns
@@ -37,7 +37,7 @@ async fn test_information_domains_schema_matches() {
     .await
     .unwrap()
     .into_iter()
-    .map(|row| row.get("column_name"))
+    .map(|row| row.try_get::<String, _>("column_name").expect("column_name"))
     .collect();
 
     assert!(columns.contains(&"id".to_string()), "Missing column: id");
@@ -67,7 +67,7 @@ async fn test_information_objects_schema_matches() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "information_objects table should exist");
 
     // Verify key columns
@@ -80,7 +80,7 @@ async fn test_information_objects_schema_matches() {
     .await
     .unwrap()
     .into_iter()
-    .map(|row| row.get("column_name"))
+    .map(|row| row.try_get::<String, _>("column_name").expect("column_name"))
     .collect();
 
     assert!(columns.contains(&"id".to_string()));
@@ -109,7 +109,7 @@ async fn test_documents_schema_matches() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "documents table should exist");
 
     println!("PostgreSQL documents schema verified");
@@ -133,7 +133,7 @@ async fn test_view_exists_searchable_objects() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "v_searchable_objects view should exist");
 
     println!("PostgreSQL view v_searchable_objects verified");
@@ -157,7 +157,7 @@ async fn test_view_exists_compliance_overview() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "v_compliance_overview view should exist");
 
     println!("PostgreSQL view v_compliance_overview verified");
@@ -181,7 +181,7 @@ async fn test_extensions_enabled() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "uuid-ossp extension should be enabled");
 
     // Check pgcrypto extension
@@ -192,7 +192,7 @@ async fn test_extensions_enabled() {
     .await
     .expect("Query failed");
 
-    let exists: bool = result.get("exists");
+    let exists: bool = result.try_get("exists").expect("exists");
     assert!(exists, "pgcrypto extension should be enabled");
 
     println!("PostgreSQL extensions verified");

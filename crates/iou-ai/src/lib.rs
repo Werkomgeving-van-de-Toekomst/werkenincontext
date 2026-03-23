@@ -47,8 +47,11 @@ pub use agents::{
     ComplianceResult, ComplianceConfig, execute_compliance_agent,
     ReviewDecision, ReviewAction, ReviewConfig, execute_review_agent,
     QualityIssue, QualityIssueCategory,
-    PipelineError, ErrorSeverity, AgentPipeline, PipelineConfig,
+    PipelineError, ErrorSeverity, AgentPipeline, AgentPipelineWithConfig, PipelineConfig,
     AgentExecutionResult, PipelineCheckpoint, PipelineResult,
     PipelineCheckpointStore,
 };
-pub use llm::{LlmConfig, LlmBackend, LlmError, ChatMessage, MistralProvider, MockProvider, create_provider, create_provider_from_env};
+pub use llm::{
+    ChatMessage, LlmBackend, LlmConfig, LlmError, MistralProvider, MockProvider, create_provider,
+    create_provider_from_env, create_slm_provider_from_env,
+};

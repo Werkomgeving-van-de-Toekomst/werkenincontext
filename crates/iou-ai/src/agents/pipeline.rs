@@ -141,7 +141,15 @@ impl AgentPipeline {
             kg_client,
             template_engine,
             domain_config,
+            config: PipelineConfig::default(),
         }
+    }
+
+    /// Override pipeline execution configuration (retained when calling
+    /// [`Self::with_stakeholder_extractor`])
+    pub fn with_pipeline_config(mut self, config: PipelineConfig) -> Self {
+        self.config = config;
+        self
     }
 
     /// Create a new agent pipeline with custom configuration
@@ -170,23 +178,22 @@ impl AgentPipeline {
             kg_client: self.kg_client,
             template_engine: self.template_engine,
             domain_config: self.domain_config,
-            config: PipelineConfig::default(),
+            config: self.config,
             stakeholder_extractor: Some(extractor),
         }
     }
 
-    /// Execute the complete document creation pipeline with default config
+    /// Execute the complete document creation pipeline using [`Self::config`]
     pub async fn execute_document_pipeline(
         &self,
         request: &DocumentRequest,
         template: &Template,
     ) -> Result<PipelineResult, PipelineError> {
-        let config = PipelineConfig::default();
         let pipeline_with_config = AgentPipelineWithConfig {
             kg_client: self.kg_client.clone(),
             template_engine: self.template_engine.clone(),
             domain_config: self.domain_config.clone(),
-            config,
+            config: self.config.clone(),
             stakeholder_extractor: None,
         };
         pipeline_with_config.execute_document_pipeline(request, template).await
@@ -640,7 +647,47 @@ struct AgentExecutionOutput<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::agents::content::GeneratedDocument;
+    use crate::stakeholder::{
+        DeduplicationError, ExtractionError, ExtractionResult, ExtractionStats,
+        NormalizationError,
+    };
+    use async_trait::async_trait;
+    use iou_core::graphrag::Entity;
     use std::collections::HashMap;
+
+    struct NoopStakeholderExtractor;
+
+    #[async_trait]
+    impl StakeholderExtractor for NoopStakeholderExtractor {
+        async fn extract(
+            &self,
+            _document: &GeneratedDocument,
+            _options: &ExtractionOptions,
+        ) -> Result<ExtractionResult, ExtractionError> {
+            Ok(ExtractionResult {
+                persons: vec![],
+                organizations: vec![],
+                mentions: vec![],
+                stats: ExtractionStats::new(),
+                processing_time_ms: 0,
+            })
+        }
+
+        async fn normalize_entities(
+            &self,
+            entities: Vec<Entity>,
+        ) -> Result<Vec<Entity>, NormalizationError> {
+            Ok(entities)
+        }
+
+        async fn deduplicate_entities(
+            &self,
+            entities: Vec<Entity>,
+        ) -> Result<Vec<Entity>, DeduplicationError> {
+            Ok(entities)
+        }
+    }
 
     fn create_test_request() -> DocumentRequest {
         let mut context = HashMap::new();

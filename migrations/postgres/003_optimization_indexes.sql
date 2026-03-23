@@ -42,13 +42,12 @@ ON information_objects USING gin(to_tsvector('dutch', coalesce(title, '') || ' '
 CREATE INDEX IF NOT EXISTS idx_audit_trail_document_timestamp
 ON audit_trail(document_id, timestamp DESC);
 
--- Partial index for active Woo publications
--- Optimizes queries for public documents that should be visible
+-- Partial index for Woo-relevant objects met publicatiedatum (zonder CURRENT_TIMESTAMP:
+-- Postgres vereist IMMUTABLE predicaten; tijdsfilter hoort in de query zelf)
 CREATE INDEX IF NOT EXISTS idx_information_objects_woo_public
 ON information_objects(woo_publication_date)
 WHERE is_woo_relevant = true
-  AND woo_publication_date IS NOT NULL
-  AND woo_publication_date <= CURRENT_TIMESTAMP;
+  AND woo_publication_date IS NOT NULL;
 
 -- Index for information objects by domain with classification filter
 -- Optimizes queries that filter by domain and classification
@@ -66,11 +65,10 @@ WHERE state NOT IN ('archived', 'rejected');
 CREATE INDEX IF NOT EXISTS idx_information_domains_type_status
 ON information_domains(domain_type, status, organization_id);
 
--- Index for recent objects across all domains
--- Optimizes dashboard "recent activity" queries
+-- Recente objecten: geen NOW() in partial index (niet IMMUTABLE).
+-- B-tree op created_at volstaat voor ORDER BY created_at DESC / range filters.
 CREATE INDEX IF NOT EXISTS idx_information_objects_recent
-ON information_objects(created_at DESC)
-WHERE created_at > NOW() - INTERVAL '30 days';
+ON information_objects(created_at DESC);
 
 -- Index for Woo published documents
 CREATE INDEX IF NOT EXISTS idx_documents_woo_published

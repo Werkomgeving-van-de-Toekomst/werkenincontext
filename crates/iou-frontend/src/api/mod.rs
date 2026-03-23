@@ -9,7 +9,7 @@ use iou_core::domain::InformationDomain;
 
 pub mod documents;
 
-const API_BASE: &str = "http://localhost:8000";
+pub(crate) const API_BASE: &str = "http://localhost:8000";
 
 /// Fetch context for a domain
 pub async fn fetch_context(domain_id: &str) -> Result<ContextResponse, String> {

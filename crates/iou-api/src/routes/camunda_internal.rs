@@ -7,7 +7,6 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use uuid::Uuid;
 
-use crate::camunda::DuckdbPipelineCheckpointStore;
 use crate::db::{Database, DocumentPipelineInputRow};
 use crate::error::ApiError;
 use crate::orchestrator::types::StatusMessage;
@@ -102,7 +101,7 @@ pub async fn run_pipeline_job(
     })
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-    .map_err(ApiError::Internal)?;
+    .map_err(ApiError::from)?;
 
     if let Some(v) = cached {
         return Ok(Json(v));
@@ -114,7 +113,7 @@ pub async fn run_pipeline_job(
     })
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-    .map_err(ApiError::Internal)?;
+    .map_err(ApiError::from)?;
 
     let row = row.ok_or_else(|| {
         ApiError::NotFound(format!("document_pipeline_inputs ontbreekt voor {document_id}"))
@@ -128,7 +127,7 @@ pub async fn run_pipeline_job(
     })
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-    .map_err(ApiError::Internal)?;
+    .map_err(ApiError::from)?;
 
     let template = template.ok_or_else(|| {
         ApiError::Validation(format!(
@@ -157,7 +156,6 @@ pub async fn run_pipeline_job(
         auto_approval_threshold: 0.95,
     });
 
-    let checkpoint_store = Arc::new(DuckdbPipelineCheckpointStore(db.clone()));
     let mut pipeline_config = PipelineConfig::default();
     pipeline_config.enable_checkpoints = true;
 
@@ -167,7 +165,6 @@ pub async fn run_pipeline_job(
         domain_config,
         config: pipeline_config,
         stakeholder_extractor: None,
-        checkpoint_store: Some(checkpoint_store),
     };
 
     let ts = chrono::Utc::now().timestamp();
@@ -210,7 +207,7 @@ pub async fn run_pipeline_job(
         document_id: document_id.to_string(),
     };
 
-    let out_value = serde_json::to_value(&out).map_err(ApiError::Internal)?;
+    let out_value = serde_json::to_value(&out).map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
 
     let inserted = tokio::task::spawn_blocking({
         let db = db.clone();
@@ -226,13 +223,13 @@ pub async fn run_pipeline_job(
     })
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-    .map_err(ApiError::Internal)?;
+    .map_err(ApiError::from)?;
 
     if !inserted {
         let v = tokio::task::spawn_blocking(move || db.get_camunda_job_result_json(job_key))
             .await
             .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-            .map_err(ApiError::Internal)?
+            .map_err(ApiError::from)?
             .unwrap_or(out_value);
         return Ok(Json(v));
     }
@@ -274,7 +271,7 @@ async fn finalize_after_pipeline(
     let key = format!("documents/{}/v1.pipeline.json", document_id);
     s3.upload(
         &key,
-        serde_json::to_vec(&summary).map_err(ApiError::Internal)?,
+        serde_json::to_vec(&summary).map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?,
         "application/json",
     )
     .await?;
@@ -317,7 +314,7 @@ async fn finalize_after_pipeline(
                 "execution_time_ms": r.execution_time_ms,
             }),
             timestamp: r.completed_at,
-            execution_time_ms: Some(r.execution_time_ms as i32),
+            execution_time_ms: Some(r.execution_time_ms),
         };
         db.add_audit_entry_async(entry).await?;
     }
@@ -343,7 +340,7 @@ pub async fn deep_agent_bridge(
         })
         .await
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-        .map_err(ApiError::Internal)?;
+        .map_err(ApiError::from)?;
         if let Some(v) = cached {
             return Ok(Json(v));
         }
@@ -355,7 +352,7 @@ pub async fn deep_agent_bridge(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(300))
         .build()
-        .map_err(ApiError::Internal)?;
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
 
     let token = std::env::var("CAMUNDA_WORKER_TOKEN").unwrap_or_default();
     let url = format!("{}/internal/run", base.trim_end_matches('/'));
@@ -371,7 +368,7 @@ pub async fn deep_agent_bridge(
         .json(&py_body)
         .send()
         .await
-        .map_err(ApiError::Internal)?;
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
 
     if !resp.status().is_success() {
         let txt = resp.text().await.unwrap_or_default();
@@ -381,7 +378,10 @@ pub async fn deep_agent_bridge(
         )));
     }
 
-    let v: serde_json::Value = resp.json().await.map_err(ApiError::Internal)?;
+    let v: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
 
     if let Some(job_key) = zeebe_job_key {
         let inserted = tokio::task::spawn_blocking({
@@ -398,12 +398,12 @@ pub async fn deep_agent_bridge(
         })
         .await
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-        .map_err(ApiError::Internal)?;
+        .map_err(ApiError::from)?;
         if !inserted {
             let v = tokio::task::spawn_blocking(move || db.get_camunda_job_result_json(job_key))
                 .await
                 .map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?
-                .map_err(ApiError::Internal)?
+                .map_err(ApiError::from)?
                 .unwrap_or(v);
             return Ok(Json(v));
         }

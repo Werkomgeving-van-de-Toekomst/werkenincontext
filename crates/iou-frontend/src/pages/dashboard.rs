@@ -124,6 +124,13 @@ pub fn Dashboard() -> Element {
                                     description: "Monitor Woo/AVG compliance".to_string(),
                                 }
                             }
+                            Link { to: Route::NlWalletE2e,
+                                AppCard {
+                                    name: "NL Wallet (test)".to_string(),
+                                    description: "Sessie-start tegen MinBZK verification_server".to_string(),
+                                    badge: "E2E".to_string(),
+                                }
+                            }
                             AppCard {
                                 name: "Tijdlijn Weergave".to_string(),
                                 description: "Bekijk activiteiten tijdlijn".to_string(),

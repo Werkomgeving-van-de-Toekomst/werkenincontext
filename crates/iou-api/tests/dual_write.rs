@@ -140,19 +140,25 @@ async fn test_dual_update() {
     println!("Dual-update test passed");
 }
 
-#[tokio::test]
+#[test]
 fn test_read_source_from_env_default() {
-    // Clear env var
-    std::env::remove_var("READ_SOURCE");
+    // Clear env var (Rust 2024: process-wide env mutation is `unsafe`)
+    unsafe {
+        std::env::remove_var("READ_SOURCE");
+    }
 
     let source = iou_api::ReadSource::from_env();
     assert_eq!(source, iou_api::ReadSource::DuckDb);
 }
 
-#[tokio::test]
+#[test]
 fn test_read_source_from_env_supabase() {
-    std::env::set_var("READ_SOURCE", "supabase");
+    unsafe {
+        std::env::set_var("READ_SOURCE", "supabase");
+    }
     let source = iou_api::ReadSource::from_env();
     assert_eq!(source, iou_api::ReadSource::Supabase);
-    std::env::remove_var("READ_SOURCE");
+    unsafe {
+        std::env::remove_var("READ_SOURCE");
+    }
 }

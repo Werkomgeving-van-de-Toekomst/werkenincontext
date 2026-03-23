@@ -47,7 +47,19 @@ pub struct LlmConfig {
 
     /// Temperature (0.0 - 1.0)
     pub temperature: f32,
+
+    /// When false (e.g. local SLM / Ollama), requests omit `Authorization` if no key is set.
+    #[serde(default = "default_requires_api_key")]
+    pub requires_api_key: bool,
 }
+
+fn default_requires_api_key() -> bool {
+    true
+}
+
+/// Standaard Ollama-tag: ~3B, sterk meertalig (o.a. NL/EN), geschikt voor samenvatting/structurering en lichte agent-stappen.
+/// Zie `docs/architecture/ollama-models.md` voor alternatieven.
+const DEFAULT_SLM_OLLAMA_MODEL: &str = "qwen2.5:3b";
 
 impl LlmConfig {
     /// Create config from environment variables
@@ -66,19 +78,56 @@ impl LlmConfig {
             base_url: Some(base_url),
             max_tokens: 4096,
             temperature: 0.7,
+            requires_api_key: true,
         })
     }
 
-    /// Check if API key is available
-    pub fn has_api_key(&self) -> bool {
-        self.api_key.is_some() || std::env::var("LLM_API_KEY").is_ok()
+    /// SLM / OpenAI-compatible local server (Ollama, vLLM, etc.) via `SLM_*` env vars.
+    ///
+    /// - `SLM_BASE_URL` — default `http://127.0.0.1:11434` (Ollama exposes `/v1/chat/completions` under this root in recent versions; set full host including path prefix if your server differs)
+    /// - `SLM_MODEL` — default `qwen2.5:3b` (licht, meertalig); Mistral-voorbeelden: `ministral-3:3b`, `mistral` — zie `docs/architecture/ollama-models.md`
+    /// - `SLM_API_KEY` — optional (some gateways require a bearer token)
+    pub fn from_slm_env() -> Result<Self> {
+        let model = std::env::var("SLM_MODEL")
+            .unwrap_or_else(|_| DEFAULT_SLM_OLLAMA_MODEL.to_string());
+        let api_key = std::env::var("SLM_API_KEY").ok().filter(|s| !s.is_empty());
+        let base_url = std::env::var("SLM_BASE_URL")
+            .unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
+
+        Ok(Self {
+            api_key,
+            model,
+            base_url: Some(base_url),
+            max_tokens: 4096,
+            temperature: 0.7,
+            requires_api_key: false,
+        })
     }
 
-    /// Get the API key (from config or environment)
+    /// Check if API key is set on this config (after `from_env` / `from_slm_env`).
+    pub fn has_api_key(&self) -> bool {
+        self.api_key.as_ref().is_some_and(|s| !s.is_empty())
+    }
+
+    /// Ready for outbound chat/completions (cloud: needs key; SLM: needs base URL only).
+    pub fn is_inference_ready(&self) -> bool {
+        let base_ok = self
+            .base_url
+            .as_ref()
+            .map(|s| !s.trim().is_empty())
+            .unwrap_or(false);
+        if self.requires_api_key {
+            base_ok && self.has_api_key()
+        } else {
+            base_ok
+        }
+    }
+
+    /// Required bearer token when `requires_api_key` is true; for SLM optional (omit header if absent).
     pub fn get_api_key(&self) -> Result<String> {
         self.api_key
             .clone()
-            .or_else(|| std::env::var("LLM_API_KEY").ok())
+            .filter(|s| !s.is_empty())
             .ok_or(LlmError::NoApiKey)
     }
 }
@@ -118,17 +167,28 @@ impl MistralProvider {
     }
 }
 
+fn chat_completions_url(base_url: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    format!("{base}/v1/chat/completions")
+}
+
 #[async_trait]
 impl LlmBackend for MistralProvider {
     async fn generate(&self, prompt: &str) -> Result<String> {
-        let api_key = self.config.get_api_key()?;
-        let base_url = self.config.base_url.as_ref()
+        if self.config.requires_api_key {
+            self.config.get_api_key()?;
+        }
+        let base_url = self
+            .config
+            .base_url
+            .as_ref()
             .map(|s| s.as_str())
             .unwrap_or("https://api.mistral.ai");
 
-        let response = self.client
-            .post(format!("{}/v1/chat/completions", base_url))
-            .header("Authorization", format!("Bearer {}", api_key))
+        let url = chat_completions_url(base_url);
+        let mut req = self
+            .client
+            .post(url)
             .json(&json!({
                 "model": self.config.model,
                 "max_tokens": self.config.max_tokens,
@@ -137,9 +197,12 @@ impl LlmBackend for MistralProvider {
                     "role": "user",
                     "content": prompt
                 }]
-            }))
-            .send()
-            .await?;
+            }));
+        if let Some(key) = self.config.api_key.as_ref().filter(|s| !s.is_empty()) {
+            req = req.header("Authorization", format!("Bearer {}", key));
+        }
+
+        let response = req.send().await?;
 
         if response.status().is_success() {
             let json: serde_json::Value = response.json().await?;
@@ -155,22 +218,28 @@ impl LlmBackend for MistralProvider {
     }
 
     async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
-        let api_key = self.config.get_api_key()?;
-        let base_url = self.config.base_url.as_ref()
+        if self.config.requires_api_key {
+            self.config.get_api_key()?;
+        }
+        let base_url = self
+            .config
+            .base_url
+            .as_ref()
             .map(|s| s.as_str())
             .unwrap_or("https://api.mistral.ai");
 
-        let response = self.client
-            .post(format!("{}/v1/chat/completions", base_url))
-            .header("Authorization", format!("Bearer {}", api_key))
-            .json(&json!({
-                "model": self.config.model,
-                "max_tokens": self.config.max_tokens,
-                "temperature": self.config.temperature,
-                "messages": messages
-            }))
-            .send()
-            .await?;
+        let url = chat_completions_url(base_url);
+        let mut req = self.client.post(url).json(&json!({
+            "model": self.config.model,
+            "max_tokens": self.config.max_tokens,
+            "temperature": self.config.temperature,
+            "messages": messages
+        }));
+        if let Some(key) = self.config.api_key.as_ref().filter(|s| !s.is_empty()) {
+            req = req.header("Authorization", format!("Bearer {}", key));
+        }
+
+        let response = req.send().await?;
 
         if response.status().is_success() {
             let json: serde_json::Value = response.json().await?;
@@ -186,7 +255,7 @@ impl LlmBackend for MistralProvider {
     }
 
     fn is_configured(&self) -> bool {
-        self.config.has_api_key()
+        self.config.is_inference_ready()
     }
 }
 
@@ -211,12 +280,18 @@ impl LlmBackend for MockProvider {
 }
 
 /// Create Mistral provider from config
-pub fn create_provider(config: &LlmConfig) -> Result<Box<dyn LlmBackend>> {
+pub fn create_provider(config: &LlmConfig) -> Result<Box<dyn LlmBackend + Send + Sync>> {
     Ok(Box::new(MistralProvider::new(config.clone())?))
 }
 
 /// Create Mistral provider from environment
-pub fn create_provider_from_env() -> Result<Box<dyn LlmBackend>> {
+pub fn create_provider_from_env() -> Result<Box<dyn LlmBackend + Send + Sync>> {
     let config = LlmConfig::from_env()?;
+    create_provider(&config)
+}
+
+/// OpenAI-compatible chat provider using `SLM_*` environment (local SLM).
+pub fn create_slm_provider_from_env() -> Result<Box<dyn LlmBackend + Send + Sync>> {
+    let config = LlmConfig::from_slm_env()?;
     create_provider(&config)
 }

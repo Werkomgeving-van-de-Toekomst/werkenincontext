@@ -285,7 +285,7 @@ CREATE POLICY domain_manager_full ON information_domains
 CREATE INDEX IF NOT EXISTS idx_documents_org ON documents(organization_id);
 CREATE INDEX IF NOT EXISTS idx_documents_woo ON documents(woo_published) WHERE woo_published = true;
 CREATE INDEX IF NOT EXISTS idx_documents_classification ON documents(classification);
-CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(created_by);
+CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_id);
 
 CREATE INDEX IF NOT EXISTS idx_objects_created_by ON information_objects(created_by);
 CREATE INDEX IF NOT EXISTS idx_objects_classification ON information_objects(classification);

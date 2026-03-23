@@ -34,6 +34,8 @@ IOU-Modern uses a hybrid database architecture optimized for both transactional 
 
 **Location:** Local file database (populated via ETL)
 
+**GraphRAG in SQL:** entiteiten en relaties als relationele tabellen met indexen; Postgres voor integriteit (FK), DuckDB voor aggregaties. Zie [graph_sql_postgres_duckdb.md](./graph_sql_postgres_duckdb.md).
+
 **Key Features:**
 - Columnar storage for fast aggregations
 - In-memory processing for sub-second analytics

@@ -64,8 +64,7 @@ pub async fn wallet_auth(
     Extension(db): Extension<Arc<Database>>,
     Json(req): Json<WalletAuthRequest>,
 ) -> Result<Json<WalletAuthResponse>, ApiError> {
-    // Load VC config from environment
-    let config = VcConfig::default();
+    let config = VcConfig::from_env();
 
     // Verify the VP and extract user context
     let verifier = VpVerifier::new(config.clone());

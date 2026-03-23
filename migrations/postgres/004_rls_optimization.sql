@@ -29,7 +29,7 @@ BEGIN
         )
     );
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL_SAFE;
+$$ LANGUAGE plpgsql STABLE PARALLEL SAFE;
 
 -- Function to batch-check organization membership
 -- This will be populated when user_organizations table is available
@@ -48,7 +48,7 @@ BEGIN
     FROM information_domains
     WHERE owner_user_id = user_id;
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL_SECURITY_DEFINER;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- Optimized RLS policy for documents using the helper function
 DROP POLICY IF EXISTS org_isolation_select ON documents;
@@ -107,7 +107,7 @@ BEGIN
         ELSE false
     END;
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL_SECURITY_DEFINER;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- Helper function to get user's current clearance level
 CREATE OR REPLACE FUNCTION get_user_clearance(user_id UUID)
@@ -117,7 +117,7 @@ BEGIN
     -- When user_profiles table exists, query actual clearance
     RETURN 'intern';
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL_SECURITY_DEFINER;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- Optimized classification filtering for information_objects
 DROP POLICY IF EXISTS classification_filter ON information_objects;

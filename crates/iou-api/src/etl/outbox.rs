@@ -7,7 +7,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 use sqlx::{PgPool, Row};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 use uuid::Uuid;
 
 /// An event in the change outbox
@@ -78,8 +78,7 @@ impl OutboxProcessor {
 
         info!("Starting outbox processing batch");
 
-        // Fetch unprocessed events
-        let events = sqlx::query!(
+        let rows = sqlx::query(
             r#"
             SELECT id, aggregate_type, aggregate_id, event_type, payload, created_at
             FROM change_outbox
@@ -87,10 +86,26 @@ impl OutboxProcessor {
             ORDER BY created_at ASC
             LIMIT $1
             "#,
-            self.config.batch_size as i64
         )
+        .bind(self.config.batch_size as i64)
         .fetch_all(&self.pool)
         .await?;
+
+        let events: Vec<OutboxEvent> = rows
+            .into_iter()
+            .map(|row| {
+                Ok(OutboxEvent {
+                    id: row.try_get("id")?,
+                    aggregate_type: row.try_get("aggregate_type")?,
+                    aggregate_id: row.try_get("aggregate_id")?,
+                    event_type: row.try_get("event_type")?,
+                    payload: row.try_get("payload")?,
+                    created_at: row.try_get("created_at")?,
+                    processed: false,
+                    processed_at: None,
+                })
+            })
+            .collect::<Result<Vec<_>, sqlx::Error>>()?;
 
         if events.is_empty() {
             debug!("No unprocessed events found");
@@ -141,31 +156,30 @@ impl OutboxProcessor {
     }
 
     /// Process a single outbox event
-    async fn process_single_event(&self, event: &sqlx::postgres::PgRow) -> Result<(), anyhow::Error> {
-        let id: Uuid = event.get("id");
-        let aggregate_type: String = event.get("aggregate_type");
-        let aggregate_id: Uuid = event.get("aggregate_id");
-        let event_type: String = event.get("event_type");
-        let payload: Value = event.get("payload");
+    async fn process_single_event(&self, event: &OutboxEvent) -> Result<(), anyhow::Error> {
+        let id = event.id;
+        let aggregate_type = event.aggregate_type.as_str();
+        let aggregate_id = &event.aggregate_id;
+        let event_type = event.event_type.as_str();
+        let payload = &event.payload;
 
         // Step 1: Write to DuckDB (analytics database)
         // This is where the actual data transformation and loading happens
-        self.write_to_duckdb(&aggregate_type, &aggregate_id, &event_type, &payload)
+        self.write_to_duckdb(aggregate_type, aggregate_id, event_type, payload)
             .await
             .map_err(|e| {
                 error!("DuckDB write failed for event {}: {}", id, e);
                 anyhow::anyhow!("DuckDB write failed: {}", e)
             })?;
 
-        // Step 2: Mark as processed only after successful DuckDB write
-        sqlx::query!(
+        sqlx::query(
             r#"
             UPDATE change_outbox
             SET processed = true, processed_at = NOW()
             WHERE id = $1
             "#,
-            id
         )
+        .bind(id)
         .execute(&self.pool)
         .await?;
 
@@ -218,15 +232,15 @@ impl OutboxProcessor {
 
     /// Increment retry count for a failed event
     async fn increment_retry_count(&self, event_id: Uuid) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             UPDATE change_outbox
             SET retry_count = retry_count + 1,
                 last_error = 'Processing failed'
             WHERE id = $1
             "#,
-            event_id
         )
+        .bind(event_id)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -242,17 +256,17 @@ impl OutboxProcessor {
     ) -> Result<Uuid, sqlx::Error> {
         let id = Uuid::new_v4();
 
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO change_outbox (id, aggregate_type, aggregate_id, event_type, payload)
             VALUES ($1, $2, $3, $4, $5)
             "#,
-            id,
-            aggregate_type,
-            aggregate_id,
-            event_type,
-            payload
         )
+        .bind(id)
+        .bind(aggregate_type)
+        .bind(aggregate_id)
+        .bind(event_type)
+        .bind(payload)
         .execute(&self.pool)
         .await?;
 
@@ -266,22 +280,23 @@ impl OutboxProcessor {
 
     /// Get count of unprocessed events
     pub async fn unprocessed_count(&self) -> Result<i64, sqlx::Error> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             r#"
             SELECT COUNT(*) as count
             FROM change_outbox
             WHERE processed = false
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(row.count.unwrap_or(0))
+        let count: i64 = row.try_get("count")?;
+        Ok(count)
     }
 
     /// Get outbox statistics
     pub async fn get_stats(&self) -> Result<OutboxStats, sqlx::Error> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             r#"
             SELECT
                 COUNT(*) FILTER (WHERE processed = false) as pending,
@@ -289,16 +304,16 @@ impl OutboxProcessor {
                 COUNT(*) FILTER (WHERE processed = false AND retry_count > 0) as failed,
                 MAX(created_at) FILTER (WHERE processed = false) as oldest_pending
             FROM change_outbox
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
 
         Ok(OutboxStats {
-            pending: row.pending.unwrap_or(0),
-            completed: row.completed.unwrap_or(0),
-            failed: row.failed.unwrap_or(0),
-            oldest_pending: row.oldest_pending,
+            pending: row.try_get::<i64, _>("pending")?,
+            completed: row.try_get::<i64, _>("completed")?,
+            failed: row.try_get::<i64, _>("failed")?,
+            oldest_pending: row.try_get::<Option<DateTime<Utc>>, _>("oldest_pending")?,
         })
     }
 }

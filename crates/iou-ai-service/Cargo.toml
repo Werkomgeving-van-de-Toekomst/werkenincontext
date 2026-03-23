@@ -1,0 +1,21 @@
+[package]
+name = "iou-ai-service"
+version.workspace = true
+edition.workspace = true
+description = "HTTP AI-gateway: cloud LLM (LLM_*) en lokale SLM (SLM_*) voor IOU-Modern"
+
+[[bin]]
+name = "iou-ai-service"
+path = "src/main.rs"
+
+[dependencies]
+iou-ai = { path = "../iou-ai" }
+
+axum.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tower-http.workspace = true

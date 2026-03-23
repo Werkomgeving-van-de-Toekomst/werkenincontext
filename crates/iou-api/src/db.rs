@@ -127,6 +127,23 @@ impl Database {
             }
         }
 
+        let graph_schema = include_str!("../../../migrations/004_graph_optimization.sql");
+        for statement in graph_schema.split(';') {
+            let stmt = statement.trim();
+            if !stmt.is_empty() && !stmt.starts_with("--") {
+                if let Err(e) = conn.execute(stmt, []) {
+                    let err_str = e.to_string();
+                    if !err_str.contains("already exists")
+                        && !err_str.contains("table")
+                        && !err_str.contains("index")
+                        && !err_str.contains("view")
+                    {
+                        tracing::warn!("Graph optimization schema statement failed: {}", err_str);
+                    }
+                }
+            }
+        }
+
         tracing::info!("Database schema initialized");
         Ok(())
     }

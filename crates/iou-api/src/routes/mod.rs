@@ -11,6 +11,7 @@ pub mod context;
 pub mod documents;
 pub mod graphrag;
 pub mod health;
+pub mod id;
 pub mod objects;
 pub mod search;
 pub mod stakeholder;

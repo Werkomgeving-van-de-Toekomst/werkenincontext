@@ -1,6 +1,6 @@
 //! Collects and exports performance metrics for Supabase/PostgreSQL.
 
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use std::time::Duration;
 use tracing::debug;
 
@@ -102,7 +102,7 @@ impl MetricsCollector {
 
     /// Collect query performance statistics from pg_stat_statements
     pub async fn collect_query_stats(&self) -> Result<QueryStats, sqlx::Error> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             r#"
             SELECT
                 COALESCE(SUM(calls), 0) as query_count,
@@ -111,25 +111,25 @@ impl MetricsCollector {
                 COALESCE(MAX(max_exec_time), 0.0) as max_exec_time,
                 COALESCE(SUM(total_exec_time) / NULLIF(SUM(calls), 0), 0.0) as mean_exec_time
             FROM pg_stat_statements
-            "#
+            "#,
         )
         .fetch_optional(&self.pool)
         .await?;
 
         match row {
             Some(row) => {
-                let mean = row.mean_exec_time;
+                let mean: f64 = row.try_get("mean_exec_time")?;
+                let query_count: i64 = row.try_get("query_count")?;
+                let total_exec_time: f64 = row.try_get("total_exec_time")?;
+                let min_exec_time: f64 = row.try_get("min_exec_time")?;
+                let max_exec_time: f64 = row.try_get("max_exec_time")?;
 
-                // Estimate percentiles from mean
-                // In production, you'd use actual percentile calculations
-                // from pg_stat_statements or a dedicated metrics system
                 Ok(QueryStats {
-                    query_count: row.query_count.unwrap_or(0),
-                    total_exec_time_ms: row.total_exec_time.unwrap_or(0.0),
-                    min_exec_time_ms: row.min_exec_time.unwrap_or(0.0),
-                    max_exec_time_ms: row.max_exec_time.unwrap_or(0.0),
+                    query_count,
+                    total_exec_time_ms: total_exec_time,
+                    min_exec_time_ms: min_exec_time,
+                    max_exec_time_ms: max_exec_time,
                     mean_exec_time_ms: mean,
-                    // Estimates based on typical latency distribution
                     p50_latency_ms: mean * 0.8,
                     p95_latency_ms: mean * 1.5,
                     p99_latency_ms: mean * 2.0,
@@ -144,74 +144,60 @@ impl MetricsCollector {
 
     /// Collect database-level metrics
     pub async fn collect_db_stats(&self) -> Result<DbStats, sqlx::Error> {
-        // Get connection statistics
-        let conn_stats = sqlx::query!(
+        let conn_stats = sqlx::query(
             r#"
             SELECT
                 (SELECT count(*) FROM pg_stat_activity WHERE state = 'active') as active_connections,
                 (SELECT count(*) FROM pg_stat_activity WHERE state = 'idle') as idle_connections,
                 (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections
-            "#
+            "#,
         )
         .fetch_optional(&self.pool)
         .await?;
 
-        // Get database size information
-        let size_stats = sqlx::query!(
+        let size_stats = sqlx::query(
             r#"
             SELECT
                 pg_database_size(current_database()) as db_size_bytes
-            "#
+            "#,
         )
         .fetch_optional(&self.pool)
         .await?;
 
+        let (active_connections, idle_connections, max_connections) =
+            if let Some(r) = conn_stats.as_ref() {
+                (
+                    r.try_get::<i64, _>("active_connections")? as i32,
+                    r.try_get::<i64, _>("idle_connections")? as i32,
+                    r.try_get::<Option<i32>, _>("max_connections")?
+                        .unwrap_or(20),
+                )
+            } else {
+                (0, 0, 20)
+            };
+
+        let disk_usage_bytes = if let Some(r) = size_stats.as_ref() {
+            r.try_get::<i64, _>("db_size_bytes")?
+        } else {
+            0
+        };
+
         Ok(DbStats {
-            active_connections: conn_stats
-                .as_ref()
-                .and_then(|r| r.active_connections)
-                .unwrap_or(0),
-            idle_connections: conn_stats
-                .as_ref()
-                .and_then(|r| r.idle_connections)
-                .unwrap_or(0),
-            max_connections: conn_stats
-                .as_ref()
-                .and_then(|r| r.max_connections)
-                .unwrap_or(20),
-            replication_lag_secs: None, // Would require CDC setup
-            wal_size_bytes: 0,          // Would require pg_walfile_name() access
-            disk_usage_bytes: size_stats
-                .as_ref()
-                .and_then(|r| r.db_size_bytes)
-                .unwrap_or(0),
-            disk_free_bytes: 0, // Would require system-level access
-            disk_free_percent: 100.0, // Would require df-like access
+            active_connections,
+            idle_connections,
+            max_connections,
+            replication_lag_secs: None,
+            wal_size_bytes: 0,
+            disk_usage_bytes,
+            disk_free_bytes: 0,
+            disk_free_percent: 100.0,
         })
     }
 
     /// Collect real-time subscription metrics
     pub async fn collect_realtime_stats(&self) -> Result<RealtimeStats, sqlx::Error> {
-        // In production, this would query Supabase Realtime's internal metrics
-        // For now, we check if there's a realtime_subscription table
-        let count = sqlx::query!(
-            r#"
-            SELECT COUNT(*) as count
-            FROM (
-                SELECT 1
-                FROM information_schema.tables
-                WHERE table_name = 'realtime_subscription'
-                LIMIT 1
-            ) as t
-            "#
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(RealtimeStats {
-            active_subscriptions: 0, // Would query actual subscriptions
-            messages_per_second: 0.0, // Would calculate from message logs
-        })
+        // In productie: Supabase Realtime-interne metrics; nu placeholders.
+        Ok(RealtimeStats::default())
     }
 
     /// Collect all system metrics

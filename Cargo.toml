@@ -4,6 +4,7 @@ members = [
     "crates/iou-core",
     "crates/iou-api",
     "crates/iou-ai",
+    "crates/iou-ai-service",
     "crates/iou-regels",
     "crates/iou-frontend",
     "crates/iou-storage",

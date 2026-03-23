@@ -3,6 +3,8 @@
 //! This module implements EBSI-compliant Verifiable Presentation (VP) verification
 //! for Dutch Wallet (nl-wallet) integration.
 //!
+//! Voor de **wallet_web**-stroom (sessie starten in de browser), zie [`crate::id`].
+//!
 //! # Flow
 //!
 //! 1. User presents Verifiable Presentation via Dutch Wallet app
@@ -60,6 +62,30 @@ impl Default for VcConfig {
             vc_token_expiration_min: 60, // 1 hour
             strict_mode: false,
         }
+    }
+}
+
+impl VcConfig {
+    /// Laad trustlijst en strictheid uit de omgeving (`VC_TRUSTED_ISSUERS`, `VC_STRICT_MODE`, `JWT_SECRET`).
+    pub fn from_env() -> Self {
+        let mut c = Self::default();
+        if let Ok(s) = std::env::var("VC_TRUSTED_ISSUERS") {
+            let issuers: Vec<String> = s
+                .split(',')
+                .map(|x| x.trim().to_string())
+                .filter(|x| !x.is_empty())
+                .collect();
+            if !issuers.is_empty() {
+                c.trusted_issuers = issuers;
+            }
+        }
+        if let Ok(v) = std::env::var("VC_STRICT_MODE") {
+            c.strict_mode = v == "1" || v.eq_ignore_ascii_case("true");
+        }
+        if let Ok(secret) = std::env::var("JWT_SECRET") {
+            c.jwt_secret = secret;
+        }
+        c
     }
 }
 

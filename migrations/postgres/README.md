@@ -4,7 +4,9 @@ This directory contains the PostgreSQL migration scripts for the hybrid DuckDB +
 
 ## Setup
 
-### 1. Start Supabase
+### 1. Start Supabase (persistent volume onder projectdir)
+
+Postgres-data staat in **`data/supabase/postgres`** (bind mount in `docker-compose.supabase.yml`).
 
 ```bash
 # Copy the example environment file
@@ -13,23 +15,27 @@ cp .env.supabase.example .env.supabase
 # Update with secure values
 # Edit .env.supabase and change POSTGRES_PASSWORD and JWT_SECRET
 
-# Start Supabase
-docker-compose -f docker-compose.supabase.yml up -d
+# Start + alle migraties in één keer (aanbevolen)
+./scripts/supabase-up-and-migrate.sh
 
-# Check status
-docker-compose -f docker-compose.supabase.yml ps
+# Of handmatig:
+docker compose -f docker-compose.supabase.yml --env-file .env.supabase up -d
+docker compose -f docker-compose.supabase.yml --env-file .env.supabase ps
 ```
 
 ### 2. Run Migrations
 
-#### Using psql directly:
+Als je `./scripts/supabase-up-and-migrate.sh` hebt gedraaid, zijn migraties al uitgevoerd.
+
+#### Handmatig (psql op de host):
 
 ```bash
-# Set database URL
 export SUPABASE_DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/iou_modern"
-
-# Run migration
-psql $SUPABASE_DATABASE_URL -f migrations/postgres/001_create_initial_schema.sql
+# 003 vóór 002 (kolommen voor RLS)
+for m in 001_create_initial_schema.sql 003_optimization_indexes.sql 002_rls_policies.sql \
+         004_rls_optimization.sql 005_outbox_table.sql 006_graphrag_entities.sql; do
+  psql "$SUPABASE_DATABASE_URL" -v ON_ERROR_STOP=1 -f "migrations/postgres/$m"
+done
 ```
 
 #### Using sqlx-cli (recommended for production):

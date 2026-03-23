@@ -2,6 +2,12 @@
 
 Geïsoleerde runtime voor de Camunda-service task `iou-deep-agent`. De Rust-API (`iou-api`) proxy’t hiernaartoe via `POST /api/internal/camunda/deep-agent`.
 
+## LLM / aparte AI-service
+
+Voor echte agent-runs kun je LLM-calls **niet** in `iou-api` laten maar naar de Rust-gateway **`iou-ai-service`** sturen (`POST /v1/chat` of `/v1/slm/chat`). Zo blijven `LLM_*` / `SLM_*` secrets en rate limiting gecentraliseerd. Zie [`docs/architecture/ai-service.md`](../../docs/architecture/ai-service.md).
+
+**Lichte Ollama-modellen:** default **`qwen2.5:3b`**; Mistral lokaal **`ministral-3:3b`** of **`mistral`** (7B); zwaardere tool-runs **`qwen2.5:7b`** / **`llama3.1:8b`**. Details: [`docs/architecture/ollama-models.md`](../../docs/architecture/ollama-models.md).
+
 ## Lokale run
 
 ```bash

@@ -44,6 +44,8 @@ pub enum Route {
     DataVerkenner,
     #[route("/apps/document-generator")]
     DocumentGenerator,
+    #[route("/apps/nl-wallet")]
+    NlWalletE2e,
     #[route("/apps/nalevingscontrole")]
     Nalevingscontrole,
     #[route("/minfin")]

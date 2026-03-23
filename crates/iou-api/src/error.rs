@@ -30,6 +30,9 @@ pub enum ApiError {
     #[error("Payload too large: {0}")]
     PayloadTooLarge(String),
 
+    #[error("Service unavailable: {0}")]
+    ServiceUnavailable(String),
+
     #[error("Database error: {0}")]
     Database(#[from] duckdb::Error),
 
@@ -63,6 +66,11 @@ impl IntoResponse for ApiError {
             ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, "FORBIDDEN", msg.clone()),
             ApiError::TooManyRequests(msg) => (StatusCode::TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", msg.clone()),
             ApiError::PayloadTooLarge(msg) => (StatusCode::PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE", msg.clone()),
+            ApiError::ServiceUnavailable(msg) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "SERVICE_UNAVAILABLE",
+                msg.clone(),
+            ),
             ApiError::Database(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "DATABASE_ERROR",

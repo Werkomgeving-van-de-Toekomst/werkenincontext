@@ -23,14 +23,16 @@ pub async fn list_rules(
         tenant.tenant_id.as_str().to_string(),
         tenant.holder_did.clone(),
         AuditAction::Custom("rules_listed".to_string()),
-        "rules",
-        "list",
+        "rules".to_string(),
+        "list".to_string(),
     );
     let _ = iou_core::audit::log_shared(&audit, &audit_entry).await;
 
     // Discover DMN rules from Open Regels
-    let decisions = evaluator.discover_dmn_decisions(None).await
-        .map_err(|e| crate::error::ApiError::Internal(format!("Failed to discover rules: {}", e)))?;
+    let decisions = evaluator
+        .discover_dmn_decisions(None)
+        .await
+        .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Failed to discover rules: {}", e)))?;
 
     let rules: Vec<RuleInfo> = decisions.into_iter().map(|r| RuleInfo {
         id: r.uri.clone(),
@@ -70,7 +72,7 @@ pub struct RuleEvaluationResponse {
 pub async fn evaluate_rule(
     Extension(tenant): Extension<TenantContext>,
     Extension(audit): Extension<iou_core::audit::SharedAuditLogger>,
-    Extension(evaluator): State<Arc<DmnEvaluator>>,
+    State(evaluator): State<Arc<DmnEvaluator>>,
     Path(rule_id): Path<String>,
     Json(req): Json<RuleEvaluationRequest>,
 ) -> Result<Json<RuleEvaluationResponse>, crate::error::ApiError> {
@@ -79,14 +81,15 @@ pub async fn evaluate_rule(
         tenant.tenant_id.as_str().to_string(),
         tenant.holder_did.clone(),
         AuditAction::RuleEvaluated,
-        "rule",
-        &rule_id,
+        "rule".to_string(),
+        rule_id.clone(),
     )
     .with_context(serde_json::json!({
         "inputs": req.inputs,
     }));
-    iou_core::audit::log_shared(&audit, &audit_entry).await
-        .map_err(|e| crate::error::ApiError::Internal(format!("Audit failed: {}", e)))?;
+    iou_core::audit::log_shared(&audit, &audit_entry)
+        .await
+        .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Audit failed: {}", e)))?;
 
     // Build decision context
     let mut context_inputs = HashMap::new();
@@ -115,8 +118,9 @@ pub async fn evaluate_rule(
     };
 
     // Evaluate rule
-    let result = evaluator.evaluate(&rule_id, &context)
-        .map_err(|e| crate::error::ApiError::Internal(format!("Evaluation failed: {}", e)))?;
+    let result = evaluator
+        .evaluate(&rule_id, &context)
+        .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Evaluation failed: {}", e)))?;
 
     // Convert outputs to JSON
     let mut outputs = HashMap::new();
@@ -144,7 +148,7 @@ pub async fn evaluate_rule(
 pub async fn get_open_regels_rule(
     Extension(tenant): Extension<TenantContext>,
     Extension(audit): Extension<iou_core::audit::SharedAuditLogger>,
-    Extension(client): State<Arc<iou_regels::OpenRegelsClient>>,
+    State(client): State<Arc<iou_regels::OpenRegelsClient>>,
     Path(rule_uri): Path<String>,
 ) -> Result<Json<RegelDetail>, crate::error::ApiError> {
     // Write audit
@@ -152,8 +156,8 @@ pub async fn get_open_regels_rule(
         tenant.tenant_id.as_str().to_string(),
         tenant.holder_did.clone(),
         AuditAction::Custom("rule_fetched".to_string()),
-        "regel",
-        &rule_uri,
+        "regel".to_string(),
+        rule_uri.clone(),
     );
     let _ = iou_core::audit::log_shared(&audit, &audit_entry).await;
 
@@ -163,7 +167,7 @@ pub async fn get_open_regels_rule(
         rule_uri
     ))
     .await
-    .map_err(|e| crate::error::ApiError::Internal(format!("Failed to fetch rule: {}", e)))?;
+    .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Failed to fetch rule: {}", e)))?;
 
     // Convert to JSON value
     let bindings: Vec<serde_json::Value> = json_ld.into_iter().map(|mut b| {

@@ -1,0 +1,2 @@
+# Alleen macOS + Apple Silicon (Metal). Zie README.md.
+mlx-lm>=0.18.0

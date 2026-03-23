@@ -2,7 +2,7 @@
 
 use iou_core::audit::{AuditAction, AuditEntry};
 use iou_core::tenancy::TenantContext;
-use iou_regels::{BpmnProcessEngine, ProcessInstanceState};
+use iou_regels::BpmnProcessEngine;
 use axum::{
     extract::{Extension, State, Path},
     Json,
@@ -42,7 +42,7 @@ pub struct ProcessInstanceResponse {
 pub async fn start_process(
     Extension(tenant): Extension<TenantContext>,
     Extension(audit): Extension<iou_core::audit::SharedAuditLogger>,
-    Extension(engine): State<Arc<BpmnProcessEngine>>,
+    State(engine): State<Arc<BpmnProcessEngine>>,
     Json(req): Json<ProcessRequest>,
 ) -> Result<Json<ProcessResponse>, crate::error::ApiError> {
     let instance_id = Uuid::new_v4();
@@ -52,15 +52,16 @@ pub async fn start_process(
         tenant.tenant_id.as_str().to_string(),
         tenant.holder_did.clone(),
         AuditAction::ProcessStarted,
-        "process",
+        "process".to_string(),
         instance_id.to_string(),
     )
     .with_context(serde_json::json!({
         "process_definition_id": req.process_definition_id,
         "variables": req.variables,
     }));
-    iou_core::audit::log_shared(&audit, &audit_entry).await
-        .map_err(|e| crate::error::ApiError::Internal(format!("Audit failed: {}", e)))?;
+    iou_core::audit::log_shared(&audit, &audit_entry)
+        .await
+        .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Audit failed: {}", e)))?;
 
     // Convert variables
     let mut vars = HashMap::new();
@@ -83,8 +84,10 @@ pub async fn start_process(
     }
 
     // Start process
-    let instance = engine.start_process(&req.process_definition_id, vars).await
-        .map_err(|e| crate::error::ApiError::Internal(format!("Failed to start process: {}", e)))?;
+    let instance = engine
+        .start_process(&req.process_definition_id, vars)
+        .await
+        .map_err(|e| crate::error::ApiError::Internal(anyhow::anyhow!("Failed to start process: {}", e)))?;
 
     Ok(Json(ProcessResponse {
         process_instance_id: instance.id,
@@ -105,7 +108,7 @@ pub async fn get_process(
         tenant.tenant_id.as_str().to_string(),
         tenant.holder_did.clone(),
         AuditAction::Custom("process_status".to_string()),
-        "process",
+        "process".to_string(),
         id.to_string(),
     );
     let _ = iou_core::audit::log_shared(&audit, &audit_entry).await;
