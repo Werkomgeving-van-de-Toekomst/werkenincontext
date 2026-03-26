@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GraphRAG Explorer - IOU Concept</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0066cc 0%, #004c99 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            z-index: 5;
+        }
+
+        .graph-container {
+            flex: 1;
+            position: relative;
+            background: #f9f9f9;
+        }
+
+        #mynetwork {
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .panel h3 {
+            color: #0066cc;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 5px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #004c99;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .legend-item:hover {
+            background: #e9ecef;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        #node-details {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            border-left: 5px solid #0066cc;
+        }
+
+        .close-btn {
+            float: right;
+            cursor: pointer;
+            font-size: 20px;
+            color: #999;
+        }
+
+        .detail-row {
+            margin-bottom: 10px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 20px;
+            color: #0066cc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🕸️ GraphRAG Explorer</h1>
+        <div>
+            <button class="btn btn-secondary" onclick="window.location.href='context_dashboard.html'">🏠
+                Dashboard</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="sidebar">
+            <div class="panel">
+                <h3>🔍 Zoeken</h3>
+                <input type="text" id="search" class="search-box" placeholder="Zoek entiteit..."
+                    onkeyup="searchNodes()">
+            </div>
+
+            <div class="panel">
+                <h3>📊 Statistieken</h3>
+                <div class="stat-row">
+                    <span>Entiteiten:</span>
+                    <span class="stat-value" id="node-count">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Relaties:</span>
+                    <span class="stat-value" id="edge-count">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Communities:</span>
+                    <span class="stat-value" id="community-count">0</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🎨 Legenda</h3>
+                <div id="legend-container">
+                    <!-- Legend items will be dynamic -->
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="fitNetwork()">🔍 Zoom Fit</button>
+                <button class="btn" onclick="togglePhysics()">⚡ Toggle Physics</button>
+                <button class="btn" onclick="clusterByCommunity()">🧩 Cluster Communities</button>
+            </div>
+        </div>
+
+        <div class="graph-container">
+            <div id="loading" class="loading-overlay">
+                <div>⏳ Laden van kennisgraaf...</div>
+            </div>
+            <div id="mynetwork"></div>
+
+            <div id="node-details">
+                <span class="close-btn" onclick="closeDetails()">&times;</span>
+                <h3 id="detail-title" style="margin-bottom: 15px; color: #0066cc;">Details</h3>
+                <div id="detail-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+    <script src="https://unpkg.com/neo4j-driver@5.14.0/lib/browser/neo4j-web.min.js"></script>
+
+    <script>
+        // Configuration
+        // const NEO4J_URI = 'bolt://localhost:7687'; // Disabled for static demo
+        // const NEO4J_USER = 'neo4j';
+        // const NEO4J_PASSWORD = 'iou_password';
+
+        let network = null;
+        let physicsEnabled = true;
+        let nodesDataSet = new vis.DataSet();
+        let edgesDataSet = new vis.DataSet();
+        // let driver = null; // Not used in static mode
+
+        // Color mapping
+        const colors = {
+            'ORGANIZATION': '#0066CC',
+            'PERSON': '#7CB342',
+            'LOCATION': '#FF9800',
+            'CONCEPT': '#9C27B0',
+            'LAW': '#F44336',
+            'EVENT': '#00BCD4',
+            'Domain': '#607D8B',
+            'Document': '#795548',
+            'PROJECT': '#9C27B0'
+        };
+
+        async function initGraph() {
+            try {
+                // driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
+                await fetchData();
+            } catch (error) {
+                console.error("Initialization Error:", error);
+                alert("Er is een fout opgetreden bij het laden van de graaf.");
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function fetchData() {
+            // const session = driver.session();
+            try {
+                // Fetch data from static JSON file instead of Neo4j
+                const response = await fetch('graph_data.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                const nodes = [];
+                const nodeIds = new Set();
+                const types = new Set();
+
+                // Process Nodes
+                data.nodes.forEach(node => {
+                    if (!nodeIds.has(node.id)) {
+                        nodeIds.add(node.id);
+                        types.add(node.group);
+                        nodes.push({
+                            id: node.id,
+                            label: node.label,
+                            group: node.group,
+                            color: colors[node.group] || '#999',
+                            size: node.group === 'Domain' ? 30 : 20,
+                            font: { color: 'black' }
+                        });
+                    }
+                });
+
+                // Process Edges
+                const edges = [];
+                data.edges.forEach(edge => {
+                    if (nodeIds.has(edge.from) && nodeIds.has(edge.to)) {
+                        edges.push({
+                            from: edge.from,
+                            to: edge.to,
+                            label: edge.label,
+                            arrows: 'to',
+                            color: { color: '#ccc' },
+                            font: { size: 10, align: 'middle' }
+                        });
+                    }
+                });
+
+                // Update Stats
+                document.getElementById('node-count').innerText = nodes.length;
+                document.getElementById('edge-count').innerText = edges.length;
+                document.getElementById('community-count').innerText = "3"; // Mock value
+
+                // Update Legend
+                updateLegend(types);
+
+                // Render Network
+                renderNetwork(nodes, edges);
+
+            } catch (error) {
+                console.error("Data Fetch Error:", error);
+                document.getElementById('loading').innerHTML = `<div style="color: red">Fout bij laden data: ${error.message}</div>`;
+            } finally {
+                // await session.close();
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function updateLegend(types) {
+            const container = document.getElementById('legend-container');
+            container.innerHTML = '';
+            types.forEach(type => {
+                const div = document.createElement('div');
+                div.className = 'legend-item';
+                div.innerHTML = `
+                        <div class="legend-color" style="background: ${colors[type] || '#999'}"></div>
+                        <span>${type}</span>
+                    `;
+                div.onclick = () => filterByType(type);
+                container.appendChild(div);
+            });
+        }
+
+        function renderNetwork(nodes, edges) {
+            nodesDataSet = new vis.DataSet(nodes);
+            edgesDataSet = new vis.DataSet(edges);
+
+            const container = document.getElementById('mynetwork');
+            const data = { nodes: nodesDataSet, edges: edgesDataSet };
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    shadow: true
+                },
+                physics: {
+                    stabilization: false,
+                    barnesHut: {
+                        gravitationalConstant: -8000,
+                        springConstant: 0.04,
+                        springLength: 95
+                    }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200
+                }
+            };
+
+            network = new vis.Network(container, data, options);
+
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    showNodeDetails(params.nodes[0]);
+                } else {
+                    closeDetails();
+                }
+            });
+        }
+
+        function showNodeDetails(nodeId) {
+            const node = nodesDataSet.get(nodeId);
+            const details = document.getElementById('node-details');
+            document.getElementById('detail-title').innerText = node.label;
+
+            let content = `
+                    <div class="detail-row">
+                        <div class="detail-label">Type</div>
+                        <div>${node.group}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">ID</div>
+                        <div>${node.id}</div>
+                    </div>
+                `;
+
+            document.getElementById('detail-content').innerHTML = content;
+            details.style.display = 'block';
+            details.style.borderColor = node.color;
+        }
+
+        function closeDetails() {
+            document.getElementById('node-details').style.display = 'none';
+        }
+
+        function searchNodes() {
+            const term = document.getElementById('search').value.toLowerCase();
+            const matches = nodesDataSet.get({
+                filter: function (item) {
+                    return item.label.toLowerCase().includes(term);
+                }
+            });
+
+            if (matches.length > 0) {
+                network.selectNodes(matches.map(n => n.id));
+                if (matches.length === 1) {
+                    network.focus(matches[0].id, { animation: true, scale: 1.2 });
+                    showNodeDetails(matches[0].id);
+                }
+            } else {
+                network.unselectAll();
+            }
+        }
+
+        function fitNetwork() {
+            network.fit({ animation: { duration: 1000 } });
+        }
+
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            network.setOptions({ physics: physicsEnabled });
+        }
+
+        function clusterByCommunity() {
+            // Placeholder for community clustering visualization
+            alert("Community clustering zou hier de nodes groeperen op basis van hun community ID.");
+        }
+
+        function filterByType(type) {
+            // Simple filter implementation
+            const allNodes = nodesDataSet.get();
+            const hiddenNodes = allNodes.filter(n => n.group !== type).map(n => n.id);
+            // This is a basic toggle, for a real app we might want more complex logic
+            alert(`Filter op ${type} (Demo: functionaliteit nog niet volledig geïmplementeerd)`);
+        }
+
+        // Initialize
+        window.onload = initGraph;
+
+    </script>
+</body>
+
+</html>

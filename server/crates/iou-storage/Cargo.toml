@@ -1,0 +1,24 @@
+[package]
+name = "iou-storage"
+version.workspace = true
+edition = "2021"
+description = "S3/MinIO storage abstraction for IOU-Modern"
+
+[dependencies]
+iou-core.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+
+# AWS SDK for S3
+aws-config.workspace = true
+aws-sdk-s3.workspace = true
+aws-smithy-types.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true

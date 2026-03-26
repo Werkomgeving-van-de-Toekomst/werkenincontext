@@ -1,0 +1,27 @@
+# Alleen Zeebe (minimaal). Voor Zeebe + Rust-worker + Python Deep Agents:
+#   docker compose -f docker-compose.document-workflow.yml up -d
+#
+# Camunda 8 — Zeebe gateway for local development (no OAuth).
+# Start: docker compose -f docker-compose.camunda.yml up -d
+# gRPC gateway: localhost:26500
+#
+# Deploy BPMN (from repo root, with zeebe-cli or worker deploy on startup):
+#   docker run --rm -v "$PWD/infra/camunda/bpmn:/bpmn" camunda/zeebe:8.5.5 zbctl deploy /bpmn/document-pipeline.bpmn --insecure --address host.docker.internal:26500
+#
+# Or use iou-camunda-worker --deploy-on-start.
+
+services:
+  zeebe:
+    image: camunda/zeebe:8.5.5
+    container_name: iou-zeebe
+    ports:
+      - "26500:26500"
+    environment:
+      ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE: none
+      ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_AUTHENTICATIONMODE: none
+    # Single-node broker; data is ephemeral unless you mount a volume
+    volumes:
+      - zeebe-data:/usr/local/zeebe/data
+
+volumes:
+  zeebe-data:

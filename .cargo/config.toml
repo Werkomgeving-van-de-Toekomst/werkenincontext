@@ -1,0 +1,3 @@
+[alias]
+wasm-build = ["build", "--package", "iou-core", "--package", "iou-regels", "--package", "iou-frontend", "--no-default-features", "--features", "iou-core/wasm,iou-regels/wasm", "--target", "wasm32-unknown-unknown"]
+wasm-check = ["check", "--package", "iou-core", "--package", "iou-regels", "--package", "iou-frontend", "--no-default-features", "--features", "iou-core/wasm,iou-regels/wasm", "--target", "wasm32-unknown-unknown"]

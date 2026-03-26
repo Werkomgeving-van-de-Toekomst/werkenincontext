@@ -1,0 +1,31 @@
+[application]
+name = "iou-frontend"
+default_platform = "web"
+asset_dir = "assets"
+
+[web.app]
+title = "IOU-Modern - Informatie Ondersteunde Werkomgeving"
+# Proxy configuration for development API requests
+# Note: Dioxus proxy may not properly forward /api/* requests in all versions
+# Fallback: density_heatmap.rs uses absolute localhost:8000 URLs
+proxy = "http://localhost:8000"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "assets"]
+
+[web.resource]
+# Leaflet CSS (existing 2D map)
+style = [
+    "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+    "https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css",
+]
+# Leaflet JS, vis-network, and MapLibre GL JS (for 3D map)
+script = [
+    "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+    "https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js",
+    "https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js",
+]
+
+[web.resource.dev]
+script = []

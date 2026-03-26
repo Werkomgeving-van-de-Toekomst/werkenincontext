@@ -1,0 +1,61 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/.planning/01-entity-relationship-extraction/sections",
+  "target_dir": "/Users/marc/Projecten/iou-modern",
+  "state_dir": "/Users/marc/Projecten/iou-modern/.planning/01-entity-relationship-extraction/implementation",
+  "git_root": "/Users/marc/Projecten/iou-modern",
+  "commit_style": "simple",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-00-feasibility-spike",
+    "section-01-foundation-types",
+    "section-02-baseline-extraction",
+    "section-03-rijksoverheid-api",
+    "section-04-llm-extractor",
+    "section-05-normalization-deduplication",
+    "section-06-main-extractor",
+    "section-07-pipeline-integration",
+    "section-08-knowledgegraph-extensions",
+    "section-09-api-endpoints",
+    "section-10-testing-validation"
+  ],
+  "sections_state": {
+    "section-00-feasibility-spike": {
+      "status": "complete",
+      "commit_hash": "d3984ff"
+    },
+    "section-01-foundation-types": {
+      "status": "complete",
+      "commit_hash": "65e99b8"
+    },
+    "section-02-baseline-extraction": {
+      "status": "complete",
+      "commit_hash": "6b28241"
+    },
+    "section-03-rijksoverheid-api": {
+      "status": "complete",
+      "commit_hash": "b2a8340"
+    },
+    "section-04-llm-extractor": {
+      "status": "complete",
+      "commit_hash": "3d8b295"
+    },
+    "section-05-normalization-deduplication": {
+      "status": "complete",
+      "commit_hash": "f1762ef"
+    },
+    "section-06-main-extractor": {
+      "status": "complete",
+      "commit_hash": "3f781aa"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-16T15:26:49.732036+00:00"
+}

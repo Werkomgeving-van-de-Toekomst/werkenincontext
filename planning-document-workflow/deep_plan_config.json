@@ -1,0 +1,8 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-plan/0.3.2",
+  "planning_dir": "/Users/marc/Projecten/iou-modern/planning-document-workflow",
+  "initial_file": "/Users/marc/Projecten/iou-modern/planning-document-workflow/spec.md",
+  "review_mode": "opus_subagent",
+  "session_id": "a5408a8e-2b5a-4f13-8a96-7b51d28ae41d",
+  "mode": "new"
+}

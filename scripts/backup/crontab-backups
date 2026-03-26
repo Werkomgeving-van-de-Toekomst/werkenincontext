@@ -1,0 +1,22 @@
+# IOU-Modern Backup Crontab Configuration
+#
+# Install with: crontab -u iou-backup scripts/backup/crontab-backups
+# Or add to root crontab for system-wide backups
+#
+# Environment variables must be set in the backup user's profile
+# or in each script invocation.
+
+# Daily PostgreSQL backup at 2 AM
+0 2 * * * /usr/local/bin/backup-postgres.sh >> /var/log/iou-backup/postgres.log 2>&1
+
+# Weekly DuckDB export on Sunday at 3 AM
+0 3 * * 0 /usr/local/bin/backup-duckdb.sh >> /var/log/iou-backup/duckdb.log 2>&1
+
+# Weekly backup testing on Sunday at 4 AM
+0 4 * * 0 /usr/local/bin/test-backups.sh >> /var/log/iou-backup/test.log 2>&1
+
+# Monthly full backup verification on the 1st at 5 AM
+0 5 1 * * /usr/local/bin/test-backups.sh --keep-test-db >> /var/log/iou-backup/monthly-test.log 2>&1
+
+# Cleanup old log files weekly (keep last 90 days)
+0 6 * * 0 find /var/log/iou-backup/ -name "*.log" -mtime +90 -delete

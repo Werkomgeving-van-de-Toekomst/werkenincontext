@@ -1,0 +1,53 @@
+[package]
+name = "iou-ai"
+version.workspace = true
+edition = "2024"
+description = "AI/ML services for IOU-Modern: NER, GraphRAG, embeddings"
+
+[dependencies]
+# Internal
+iou-core.workspace = true
+iou-storage.workspace = true
+
+# Graph algorithms
+petgraph = "0.6"
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Types
+uuid.workspace = true
+chrono.workspace = true
+strum.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# Template engine
+tera = "1.20"
+slug = "0.1"
+
+# Async runtime
+tokio = { workspace = true, features = ["test-util"] }
+
+# Async trait
+async-trait.workspace = true
+
+# HTTP client for LLM APIs
+reqwest.workspace = true
+
+# URL encoding
+urlencoding = "2.1"
+
+# Text processing
+regex = "1.10"
+lazy_static = "1.5"
+once_cell = "1.19"
+
+# String similarity
+strsim = "0.11"

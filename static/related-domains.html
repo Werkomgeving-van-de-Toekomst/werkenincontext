@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="nl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="flevoland-theme.css">
+    <title>Gerelateerde Domeinen - Provincie Flevoland</title>
+        <link rel="stylesheet" href="styles.css" />
+        <script
+            type="text/javascript"
+            src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+        ></script>
+        <style>
+            .domain-header {
+                background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+                color: white;
+                padding: 2rem;
+                border-radius: 8px;
+                margin-bottom: 2rem;
+            }
+
+            .domain-header h1 {
+                margin: 0 0 0.5rem 0;
+                font-size: 1.8rem;
+            }
+
+            .domain-header p {
+                margin: 0;
+                opacity: 0.9;
+            }
+
+            .network-container {
+                background: white;
+                border-radius: 8px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 2rem;
+            }
+
+            #domainNetwork {
+                width: 100%;
+                height: 500px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+            }
+
+            .network-controls {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .network-controls button {
+                background: #0066CC;
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                transition: background 0.2s;
+            }
+
+            .network-controls button:hover {
+                background: #5568d3;
+            }
+
+            .filter-group {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+            }
+
+            .filter-group label {
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+                background: #f7fafc;
+                padding: 0.4rem 0.8rem;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.9rem;
+            }
+
+            .filter-group input[type="checkbox"] {
+                cursor: pointer;
+            }
+
+            .domain-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .domain-card {
+                background: white;
+                border-radius: 8px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+            }
+
+            .domain-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            }
+
+            .domain-card-header {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .domain-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+            }
+
+            .domain-icon.project {
+                background: linear-gradient(135deg, #0066CC 0%, #7CB342 100%);
+            }
+            .domain-icon.case {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .domain-icon.policy {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            }
+
+            .domain-card-title h3 {
+                margin: 0 0 0.25rem 0;
+                font-size: 1.1rem;
+                color: #2d3748;
+            }
+
+            .domain-type {
+                display: inline-block;
+                padding: 0.2rem 0.6rem;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .domain-type.project {
+                background: #e6f0ff;
+                color: #0066CC;
+            }
+            .domain-type.case {
+                background: #ffe6f0;
+                color: #f5576c;
+            }
+            .domain-type.policy {
+                background: #e6f9ff;
+                color: #00a8cc;
+            }
+
+            .domain-meta {
+                display: flex;
+                gap: 1rem;
+                margin: 1rem 0;
+                font-size: 0.85rem;
+                color: #718096;
+            }
+
+            .domain-meta-item {
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            }
+
+            .relations-list {
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e2e8f0;
+            }
+
+            .relations-list h4 {
+                margin: 0 0 0.5rem 0;
+                font-size: 0.9rem;
+                color: #4a5568;
+            }
+
+            .relation-tag {
+                display: inline-block;
+                background: #f7fafc;
+                padding: 0.3rem 0.6rem;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                margin: 0.2rem;
+                color: #4a5568;
+            }
+
+            .legend {
+                background: white;
+                border-radius: 8px;
+                padding: 1rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 2rem;
+            }
+
+            .legend h3 {
+                margin: 0 0 0.75rem 0;
+                font-size: 1rem;
+                color: #2d3748;
+            }
+
+            .legend-items {
+                display: flex;
+                gap: 1.5rem;
+                flex-wrap: wrap;
+            }
+
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            .legend-color {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .stat-card {
+                background: white;
+                border-radius: 8px;
+                padding: 1.25rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .stat-value {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #0066CC;
+                margin: 0.5rem 0;
+            }
+
+            .stat-label {
+                font-size: 0.85rem;
+                color: #718096;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="domain-header">
+                <h1>🔗 Gerelateerde Domeinen</h1>
+                <p>
+                    Ontdek de verbindingen tussen projecten, zaken en
+                    beleidsonderwerpen
+                </p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Totaal Domeinen</div>
+                    <div class="stat-value">12</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Relaties</div>
+                    <div class="stat-value">9</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Projecten</div>
+                    <div class="stat-value">4</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Zaken</div>
+                    <div class="stat-value">5</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Beleidsonderwerpen</div>
+                    <div class="stat-value">3</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <h3>Legenda</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div
+                            class="legend-color"
+                            style="
+                                background: linear-gradient(
+                                    135deg,
+                                    #0066CC 0%,
+                                    #7CB342 100%
+                                );
+                            "
+                        ></div>
+                        <span>Project</span>
+                    </div>
+                    <div class="legend-item">
+                        <div
+                            class="legend-color"
+                            style="
+                                background: linear-gradient(
+                                    135deg,
+                                    #f093fb 0%,
+                                    #f5576c 100%
+                                );
+                            "
+                        ></div>
+                        <span>Zaak</span>
+                    </div>
+                    <div class="legend-item">
+                        <div
+                            class="legend-color"
+                            style="
+                                background: linear-gradient(
+                                    135deg,
+                                    #4facfe 0%,
+                                    #00f2fe 100%
+                                );
+                            "
+                        ></div>
+                        <span>Beleid</span>
+                    </div>
+                    <div class="legend-item">
+                        <div
+                            class="legend-color"
+                            style="background: #48bb78"
+                        ></div>
+                        <span>Expertise</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="network-container">
+                <h2 style="margin-top: 0">Netwerk Visualisatie</h2>
+                <div class="network-controls">
+                    <button onclick="fitNetwork()">📍 Centreer</button>
+                    <button onclick="resetZoom()">🔍 Reset Zoom</button>
+                    <div class="filter-group">
+                        <label>
+                            <input
+                                type="checkbox"
+                                id="showProjects"
+                                checked
+                                onchange="updateFilters()"
+                            />
+                            Projecten
+                        </label>
+                        <label>
+                            <input
+                                type="checkbox"
+                                id="showCases"
+                                checked
+                                onchange="updateFilters()"
+                            />
+                            Zaken
+                        </label>
+                        <label>
+                            <input
+                                type="checkbox"
+                                id="showPolicies"
+                                checked
+                                onchange="updateFilters()"
+                            />
+                            Beleid
+                        </label>
+                    </div>
+                </div>
+                <div id="domainNetwork"></div>
+            </div>
+
+            <h2>Alle Domeinen</h2>
+            <div class="domain-list">
+                <!-- Project: Circulaire Economie Flevoland -->
+                <div class="domain-card" data-type="project">
+                    <div class="domain-card-header">
+                        <div class="domain-icon project">📊</div>
+                        <div class="domain-card-title">
+                            <h3>Circulaire Economie Flevoland 2025</h3>
+                            <span class="domain-type project">Project</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Start: 01-01-2024</div>
+                        <div class="domain-meta-item">💰 €15M</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Stimuleren van circulaire economie praktijken in
+                        bedrijfsleven en overheden
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >🏛️ Verduurzaming Overheidsgebouwen</span
+                        >
+                        <span class="relation-tag"
+                            >📋 Circulaire Economie Beleid</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Project: Smart City Almere -->
+                <div class="domain-card" data-type="project">
+                    <div class="domain-card-header">
+                        <div class="domain-icon project">📊</div>
+                        <div class="domain-card-title">
+                            <h3>Smart City Almere 2030</h3>
+                            <span class="domain-type project">Project</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Start: 15-03-2024</div>
+                        <div class="domain-meta-item">💰 €25M</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Digitale transformatie van Almere met IoT sensoren en
+                        slimme infrastructuur
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📱 Digitale Dienstverlening</span
+                        >
+                        <span class="relation-tag"
+                            >🚦 Smart Verkeerslichten Pilot</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Project: Windpark IJsselmeer -->
+                <div class="domain-card" data-type="project">
+                    <div class="domain-card-header">
+                        <div class="domain-icon project">📊</div>
+                        <div class="domain-card-title">
+                            <h3>Windpark IJsselmeer Noord</h3>
+                            <span class="domain-type project">Project</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Start: 01-06-2023</div>
+                        <div class="domain-meta-item">💰 €35M</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Ontwikkeling van 15 windturbines in het noordelijke
+                        IJsselmeer
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >⚖️ Bezwaar Windpark IJsselmeer</span
+                        >
+                        <span class="relation-tag">🌱 Klimaat en Energie</span>
+                    </div>
+                </div>
+
+                <!-- Project: Natura 2000 -->
+                <div class="domain-card" data-type="project">
+                    <div class="domain-card-header">
+                        <div class="domain-icon project">📊</div>
+                        <div class="domain-card-title">
+                            <h3>Natura 2000 Bescherming Oostvaardersplassen</h3>
+                            <span class="domain-type project">Project</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Start: 01-09-2023</div>
+                        <div class="domain-meta-item">💰 €5M</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Herstel en bescherming natuurgebied met focus op
+                        biodiversiteit
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >🌳 Kapvergunning Oostvaardersplassen</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Case: Bezwaar Windpark -->
+                <div class="domain-card" data-type="case">
+                    <div class="domain-card-header">
+                        <div class="domain-icon case">⚖️</div>
+                        <div class="domain-card-title">
+                            <h3>Bezwaar Windpark IJsselmeer</h3>
+                            <span class="domain-type case">Zaak</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 12-02-2024</div>
+                        <div class="domain-meta-item">⚡ In behandeling</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Formeel bezwaar van 23 omwonenden tegen geluidsoverlast
+                        en horizonvervuiling
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Windpark IJsselmeer Noord</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Case: Woo Verzoek Smart City -->
+                <div class="domain-card" data-type="case">
+                    <div class="domain-card-header">
+                        <div class="domain-icon case">⚖️</div>
+                        <div class="domain-card-title">
+                            <h3>Woo Verzoek Smart City Sensoren</h3>
+                            <span class="domain-type case">Zaak</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 18-03-2024</div>
+                        <div class="domain-meta-item">⚡ In behandeling</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Journalist vraagt documenten over privacy waarborgen IoT
+                        sensoren
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Smart City Almere 2030</span
+                        >
+                        <span class="relation-tag"
+                            >📱 Digitale Dienstverlening</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Case: Kapvergunning -->
+                <div class="domain-card" data-type="case">
+                    <div class="domain-card-header">
+                        <div class="domain-icon case">⚖️</div>
+                        <div class="domain-card-title">
+                            <h3>Kapvergunning Oostvaardersplassen</h3>
+                            <span class="domain-type case">Zaak</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 05-04-2024</div>
+                        <div class="domain-meta-item">⚡ Goedgekeurd</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Aanvraag voor selectief kappen van 12 zieke bomen in
+                        beschermd gebied
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Natura 2000 Bescherming</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Case: Smart Verkeerslichten -->
+                <div class="domain-card" data-type="case">
+                    <div class="domain-card-header">
+                        <div class="domain-icon case">⚖️</div>
+                        <div class="domain-card-title">
+                            <h3>Smart Verkeerslichten Pilot</h3>
+                            <span class="domain-type case">Zaak</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 22-04-2024</div>
+                        <div class="domain-meta-item">⚡ Lopend</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Pilot project voor adaptieve verkeerslichten op basis
+                        van real-time data
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Smart City Almere 2030</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Case: Woo-verzoek Basiskaart Agrarisch -->
+                <div class="domain-card" data-type="case">
+                    <div class="domain-card-header">
+                        <div class="domain-icon case">⚖️</div>
+                        <div class="domain-card-title">
+                            <h3>
+                                Woo-verzoek Basiskaart Agrarische
+                                Bedrijfssituatie
+                            </h3>
+                            <span class="domain-type case">Zaak</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 14-02-2023</div>
+                        <div class="domain-meta-item">⚡ Afgehandeld</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Woo-verzoek van journalisten voor landbouwdata,
+                        afgehandeld met openbare publicatie dataset
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span
+                            class="relation-tag"
+                            onclick="window.location.href='document-detail-woo.html'"
+                            style="cursor: pointer"
+                            >📊 Dataset Landbouw 2021</span
+                        >
+                        <span class="relation-tag">🏛️ Ministerie LNV</span>
+                        <span class="relation-tag"
+                            >📰 NRC/FTM/Omroep Gelderland</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Policy: Circulaire Economie -->
+                <div class="domain-card" data-type="policy">
+                    <div class="domain-card-header">
+                        <div class="domain-icon policy">📋</div>
+                        <div class="domain-card-title">
+                            <h3>Circulaire Economie Beleid</h3>
+                            <span class="domain-type policy">Beleid</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Vastgesteld: 2024</div>
+                        <div class="domain-meta-item">⚡ Actief</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Strategisch beleidskader voor transitie naar circulaire
+                        economie in Flevoland
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Circulaire Economie Flevoland 2025</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Policy: Digitale Dienstverlening -->
+                <div class="domain-card" data-type="policy">
+                    <div class="domain-card-header">
+                        <div class="domain-icon policy">📋</div>
+                        <div class="domain-card-title">
+                            <h3>Digitale Dienstverlening 2025</h3>
+                            <span class="domain-type policy">Beleid</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Vastgesteld: 2024</div>
+                        <div class="domain-meta-item">⚡ Actief</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Beleidskader voor digitalisering gemeentelijke
+                        dienstverlening
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Smart City Almere 2030</span
+                        >
+                        <span class="relation-tag"
+                            >⚖️ Woo Verzoek Smart City</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Policy: Klimaat en Energie -->
+                <div class="domain-card" data-type="policy">
+                    <div class="domain-card-header">
+                        <div class="domain-icon policy">📋</div>
+                        <div class="domain-card-title">
+                            <h3>Klimaat en Energie Transitie</h3>
+                            <span class="domain-type policy">Beleid</span>
+                        </div>
+                    </div>
+                    <div class="domain-meta">
+                        <div class="domain-meta-item">📅 Vastgesteld: 2023</div>
+                        <div class="domain-meta-item">⚡ Actief</div>
+                    </div>
+                    <p style="color: #4a5568; font-size: 0.9rem">
+                        Strategisch beleid voor CO2-reductie en hernieuwbare
+                        energie in Flevoland
+                    </p>
+                    <div class="relations-list">
+                        <h4>Gerelateerd aan:</h4>
+                        <span class="relation-tag"
+                            >📊 Windpark IJsselmeer Noord</span
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; text-align: center">
+                <button
+                    onclick="window.location.href='context_dashboard.html'"
+                    style="
+                        background: #0066CC;
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                    "
+                >
+                    ← Terug naar Dashboard
+                </button>
+            </div>
+        </div>
+
+        <script>
+            let network;
+            let allNodes, allEdges;
+
+            // Initialize network visualization
+            function initNetwork() {
+                const container = document.getElementById("domainNetwork");
+
+                // Define nodes with all domains
+                const nodes = new vis.DataSet([
+                    // Projects (purple gradient)
+                    {
+                        id: 1,
+                        label: "Circulaire Economie\nFlevoland 2025",
+                        color: { background: "#0066CC", border: "#7CB342" },
+                        type: "project",
+                        shape: "box",
+                    },
+                    {
+                        id: 2,
+                        label: "Smart City\nAlmere 2030",
+                        color: { background: "#0066CC", border: "#7CB342" },
+                        type: "project",
+                        shape: "box",
+                    },
+                    {
+                        id: 3,
+                        label: "Windpark\nIJsselmeer Noord",
+                        color: { background: "#0066CC", border: "#7CB342" },
+                        type: "project",
+                        shape: "box",
+                    },
+                    {
+                        id: 4,
+                        label: "Natura 2000\nOostvaardersplassen",
+                        color: { background: "#0066CC", border: "#7CB342" },
+                        type: "project",
+                        shape: "box",
+                    },
+
+                    // Cases (pink gradient)
+                    {
+                        id: 5,
+                        label: "Bezwaar Windpark\nIJsselmeer",
+                        color: { background: "#f093fb", border: "#f5576c" },
+                        type: "case",
+                        shape: "ellipse",
+                    },
+                    {
+                        id: 6,
+                        label: "Woo Verzoek\nSmart City Sensoren",
+                        color: { background: "#f093fb", border: "#f5576c" },
+                        type: "case",
+                        shape: "ellipse",
+                    },
+                    {
+                        id: 7,
+                        label: "Kapvergunning\nOostvaardersplassen",
+                        color: { background: "#f093fb", border: "#f5576c" },
+                        type: "case",
+                        shape: "ellipse",
+                    },
+                    {
+                        id: 8,
+                        label: "Smart Verkeerslichten\nPilot",
+                        color: { background: "#f093fb", border: "#f5576c" },
+                        type: "case",
+                        shape: "ellipse",
+                    },
+
+                    // Policies (blue gradient)
+                    {
+                        id: 9,
+                        label: "Circulaire Economie\nBeleid",
+                        color: { background: "#4facfe", border: "#00f2fe" },
+                        type: "policy",
+                        shape: "diamond",
+                    },
+                    {
+                        id: 10,
+                        label: "Digitale Dienstverlening\n2025",
+                        color: { background: "#4facfe", border: "#00f2fe" },
+                        type: "policy",
+                        shape: "diamond",
+                    },
+                    {
+                        id: 11,
+                        label: "Klimaat en Energie\nTransitie",
+                        color: { background: "#4facfe", border: "#00f2fe" },
+                        type: "policy",
+                        shape: "diamond",
+                    },
+                ]);
+
+                // Define edges (relationships)
+                const edges = new vis.DataSet([
+                    { from: 1, to: 9, label: "ondersteunt", arrows: "to" },
+                    {
+                        from: 3,
+                        to: 5,
+                        label: "heeft bezwaar",
+                        arrows: "to",
+                        color: { color: "#f5576c" },
+                    },
+                    { from: 3, to: 11, label: "implementeert", arrows: "to" },
+                    {
+                        from: 2,
+                        to: 6,
+                        label: "Woo verzoek",
+                        arrows: "to",
+                        color: { color: "#f5576c" },
+                    },
+                    { from: 2, to: 10, label: "implementeert", arrows: "to" },
+                    { from: 2, to: 8, label: "onderdeel van", arrows: "from" },
+                    {
+                        from: 4,
+                        to: 7,
+                        label: "vergunning voor",
+                        arrows: "from",
+                    },
+                    { from: 6, to: 10, label: "betreft", arrows: "to" },
+                ]);
+
+                allNodes = nodes;
+                allEdges = edges;
+
+                const data = {
+                    nodes: nodes,
+                    edges: edges,
+                };
+
+                const options = {
+                    nodes: {
+                        font: {
+                            size: 14,
+                            color: "#ffffff",
+                            face: "Arial",
+                            bold: {
+                                size: 14,
+                            },
+                        },
+                        borderWidth: 2,
+                        shadow: true,
+                        margin: 10,
+                    },
+                    edges: {
+                        font: {
+                            size: 12,
+                            align: "middle",
+                        },
+                        color: {
+                            color: "#718096",
+                            highlight: "#0066CC",
+                        },
+                        smooth: {
+                            type: "continuous",
+                        },
+                        width: 2,
+                    },
+                    physics: {
+                        stabilization: {
+                            enabled: true,
+                            iterations: 100,
+                        },
+                        barnesHut: {
+                            gravitationalConstant: -4000,
+                            centralGravity: 0.3,
+                            springLength: 150,
+                            springConstant: 0.04,
+                        },
+                    },
+                    interaction: {
+                        hover: true,
+                        tooltipDelay: 100,
+                    },
+                };
+
+                network = new vis.Network(container, data, options);
+
+                // Add click handler
+                network.on("click", function (params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        alert(
+                            "Klik op domein ID: " +
+                                nodeId +
+                                "\n(In een volledige implementatie zou dit naar de detail pagina leiden)",
+                        );
+                    }
+                });
+            }
+
+            function fitNetwork() {
+                if (network) {
+                    network.fit();
+                }
+            }
+
+            function resetZoom() {
+                if (network) {
+                    network.moveTo({
+                        scale: 1.0,
+                        animation: true,
+                    });
+                }
+            }
+
+            function updateFilters() {
+                const showProjects =
+                    document.getElementById("showProjects").checked;
+                const showCases = document.getElementById("showCases").checked;
+                const showPolicies =
+                    document.getElementById("showPolicies").checked;
+
+                // Filter nodes
+                const nodesToShow = [];
+                allNodes.forEach((node) => {
+                    if (
+                        (node.type === "project" && showProjects) ||
+                        (node.type === "case" && showCases) ||
+                        (node.type === "policy" && showPolicies)
+                    ) {
+                        nodesToShow.push(node.id);
+                    }
+                });
+
+                // Filter edges - only show if both nodes are visible
+                const edgesToShow = [];
+                allEdges.forEach((edge) => {
+                    if (
+                        nodesToShow.includes(edge.from) &&
+                        nodesToShow.includes(edge.to)
+                    ) {
+                        edgesToShow.push(edge);
+                    }
+                });
+
+                // Update network
+                const filteredNodes = allNodes.get(nodesToShow);
+                network.setData({
+                    nodes: filteredNodes,
+                    edges: edgesToShow,
+                });
+
+                // Also filter domain cards
+                const cards = document.querySelectorAll(".domain-card");
+                cards.forEach((card) => {
+                    const type = card.dataset.type;
+                    if (
+                        (type === "project" && showProjects) ||
+                        (type === "case" && showCases) ||
+                        (type === "policy" && showPolicies)
+                    ) {
+                        card.style.display = "block";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+            }
+
+            // Initialize on page load
+            window.addEventListener("load", function () {
+                initNetwork();
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-plan/0.3.2",
+  "planning_dir": "/Users/marc/Projecten/iou-modern/planning",
+  "initial_file": "/Users/marc/Projecten/iou-modern/planning/agent-orchestration-spec.md",
+  "review_mode": "opus_subagent",
+  "session_id": "f69443d3-0f4d-4b84-ac03-d33a174ee250",
+  "mode": "new"
+}

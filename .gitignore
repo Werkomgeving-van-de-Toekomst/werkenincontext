@@ -1,0 +1,49 @@
+# Rust
+/target/
+**/target/
+server/target/
+services/*/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.supabase
+
+# Database
+*.duckdb
+*.duckdb.wal
+data/
+
+# Frontend build
+/crates/iou-frontend/dist/
+frontend/crates/iou-frontend/dist/
+static/wasm/
+static/terrain/
+
+# Terrain tiles (too large for repo)
+frontend/crates/iou-frontend/assets/terrain/
+static/terrain/
+
+# Claude
+.claude/projects/
+.claude/memory/
+.claude/plugins/cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test coverage
+/coverage/
+*.profraw

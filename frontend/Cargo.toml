@@ -1,0 +1,56 @@
+# =============================================================================
+# IOU-Modern - Frontend Workspace (WASM-compatible)
+# =============================================================================
+# This workspace contains WASM-compatible crates for the Dioxus frontend.
+#
+# Build:   cargo build --manifest-path frontend/Cargo.toml --target wasm32-unknown-unknown
+# Bundle:  dx build --manifest-path frontend/Cargo.toml
+# Serve:   dx serve --manifest-path frontend/Cargo.toml
+# =============================================================================
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/iou-frontend",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["IOU-Modern Team"]
+license = "MIT"
+repository = "https://github.com/terminal-woo/iou-modern"
+
+[workspace.dependencies]
+# Shared crates from parent workspace (with wasm feature)
+iou-core = { path = "../crates/iou-core", features = ["wasm"], default-features = false }
+iou-regels = { path = "../crates/iou-regels", features = ["wasm"], default-features = false }
+
+# Frontend crate
+iou-frontend = { path = "crates/iou-frontend" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4", "js"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random number generation for WASM
+getrandom = { version = "0.2", features = ["js", "std"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+
+# HTTP client (for desktop feature - has default features disabled)
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1

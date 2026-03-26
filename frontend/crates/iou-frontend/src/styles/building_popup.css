@@ -1,0 +1,31 @@
+/* Building Popup Styles for 3D Buildings Layer */
+
+/* Main popup container */
+.building-popup {
+    padding: var(--spacing-md);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-primary);
+    min-width: 200px;
+    box-sizing: border-box;
+}
+
+/* Popup title */
+.building-popup h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 16px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--spacing-xs);
+}
+
+/* Property rows */
+.building-popup p {
+    margin: var(--spacing-xs) 0;
+    line-height: 1.4;
+}
+
+/* Property labels (strong text) */
+.building-popup strong {
+    color: var(--text-secondary);
+}

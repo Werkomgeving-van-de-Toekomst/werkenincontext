@@ -1,0 +1,52 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/planning-backend-eval/sections",
+  "target_dir": "/Users/marc/Projecten/iou-modern",
+  "state_dir": "/Users/marc/Projecten/iou-modern/planning-backend-eval/implementation",
+  "git_root": "/Users/marc/Projecten/iou-modern",
+  "commit_style": "conventional",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-assessment",
+    "section-02-foundation",
+    "section-03-auth-realtime",
+    "section-04-cutover",
+    "section-05-stabilization",
+    "section-06-cleanup"
+  ],
+  "sections_state": {
+    "section-01-assessment": {
+      "status": "complete",
+      "commit_hash": "a17255b"
+    },
+    "section-02-foundation": {
+      "status": "complete",
+      "commit_hash": "522485a"
+    },
+    "section-03-auth-realtime": {
+      "status": "complete",
+      "commit_hash": "c2972ae"
+    },
+    "section-04-cutover": {
+      "status": "complete",
+      "commit_hash": "ed67c90"
+    },
+    "section-05-stabilization": {
+      "status": "complete",
+      "commit_hash": "b1739bb2c90cd65d92126e540907d28fe0fa0f39"
+    },
+    "section-06-cleanup": {
+      "status": "complete",
+      "commit_hash": "ad141061dd2e73a66a69b9a9514e0341d7e6d1a0"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-13T11:12:46.506583+00:00"
+}

@@ -1,0 +1,109 @@
+# Docker Compose for self-hosted Supabase
+# This file deploys Supabase alongside the existing DuckDB setup
+# Postgres-data: ./data/supabase/postgres (persistent, onder projectdir)
+
+services:
+  db:
+    image: supabase/postgres:15.1.0.147
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: iou_modern
+      POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    # Persistent data onder projectdir (zie .gitignore: data/)
+    volumes:
+      - ./data/supabase/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Postgres Meta API — vereist voor Studio ("Table Editor", schema laden)
+  meta:
+    image: supabase/postgres-meta:v0.95.2
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: iou_modern
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CRYPTO_KEY: ${PG_META_CRYPTO_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+    expose:
+      - "8080"
+
+  studio:
+    # Pinned oude tags verdwijnen van Docker Hub; latest blijft pullbaar
+    image: supabase/studio:latest
+    restart: unless-stopped
+    environment:
+      # IPv4 + IPv6 (zoals upstream Supabase compose)
+      HOSTNAME: "::"
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: iou_modern
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PG_META_CRYPTO_KEY: ${PG_META_CRYPTO_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      PGRST_DB_SCHEMAS: public
+      STUDIO_PG_RESET_URL: ${STUDIO_PG_RESET_URL:-http://localhost:3000/api/reset}
+      DEFAULT_ORGANIZATION_NAME: "IOU-Modern"
+      DEFAULT_PROJECT_NAME: "Migration"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      meta:
+        condition: service_started
+
+  auth:
+    image: supabase/gotrue:v2.143.0
+    restart: unless-stopped
+    environment:
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-change-in-production}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/iou_modern
+      GOTRUE_SITE_URL: http://localhost:3000
+    ports:
+      - "9999:9999"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  realtime:
+    image: supabase/realtime:latest
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: iou_modern
+      SLOT_NAME: supabase_realtime
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  rest:
+    image: postgrest/postgrest:v12.0.1
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/iou_modern
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: postgres
+    ports:
+      - "3001:3000"
+    depends_on:
+      db:
+        condition: service_healthy

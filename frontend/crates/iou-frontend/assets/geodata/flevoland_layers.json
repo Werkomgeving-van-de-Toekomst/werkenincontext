@@ -1,0 +1,173 @@
+{
+  "map": {
+    "center": [5.6, 52.4],
+    "zoom": 10,
+    "pitch": 0,
+    "bearing": 0
+  },
+  "style_url": "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  "layers": [
+    {
+      "kind": "raster",
+      "id": "edugis_osm",
+      "name": "OpenStreetMap (EduGIS)",
+      "visible": false,
+      "tiles": [
+        "https://tiles.edugis.nl/mapproxy/osm/tiles/osm_EPSG900913/{z}/{x}/{y}.png?origin=nw"
+      ],
+      "attribution": "© OpenStreetMap contributors",
+      "minzoom": 0,
+      "maxzoom": 19,
+      "group": "Achtergrond (EduGIS / PDOK)",
+      "exclusive_group": "achtergrond"
+    },
+    {
+      "kind": "raster",
+      "id": "pdok_brt_standaard",
+      "name": "BRT achtergrondkaart (PDOK)",
+      "visible": false,
+      "tiles": [
+        "https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png"
+      ],
+      "attribution": "© Kadaster CC-BY 4.0",
+      "minzoom": 5,
+      "maxzoom": 18,
+      "bounds": [-1.6, 47.5, 13.0, 56.0],
+      "group": "Achtergrond (EduGIS / PDOK)",
+      "exclusive_group": "achtergrond"
+    },
+    {
+      "kind": "raster",
+      "id": "pdok_brt_water",
+      "name": "BRT water (PDOK)",
+      "visible": false,
+      "tiles": [
+        "https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/water/EPSG:3857/{z}/{x}/{y}.png"
+      ],
+      "attribution": "© Kadaster CC-BY 4.0",
+      "minzoom": 5,
+      "maxzoom": 18,
+      "bounds": [-1.6, 47.5, 13.0, 56.0],
+      "group": "Achtergrond (EduGIS / PDOK)",
+      "exclusive_group": "achtergrond"
+    },
+    {
+      "kind": "raster",
+      "id": "edugis_osm_grijs",
+      "name": "OSM grijs (EduGIS)",
+      "visible": false,
+      "tiles": [
+        "https://tiles.edugis.nl/mapproxy/osm/tiles/osmgrayscale_EPSG900913/{z}/{x}/{y}.png?origin=nw"
+      ],
+      "attribution": "© OpenStreetMap contributors",
+      "minzoom": 0,
+      "maxzoom": 19,
+      "group": "Achtergrond (EduGIS / PDOK)",
+      "exclusive_group": "achtergrond"
+    },
+    {
+      "kind": "raster",
+      "id": "esri_world_imagery",
+      "name": "Luchtfoto wereld (ESRI)",
+      "visible": false,
+      "tiles": [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "attribution": "Esri, Maxar, Earthstar Geographics",
+      "minzoom": 0,
+      "maxzoom": 22,
+      "group": "Luchtfoto",
+      "exclusive_group": "luchtfoto"
+    },
+    {
+      "kind": "raster",
+      "id": "pdok_luchtfoto_actueel",
+      "name": "Luchtfoto NL actueel (PDOK)",
+      "visible": false,
+      "tiles": [
+        "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg"
+      ],
+      "attribution": "© CC-BY Kadaster",
+      "minzoom": 5,
+      "maxzoom": 21,
+      "bounds": [2.75, 50.5, 7.5, 53.6],
+      "group": "Luchtfoto",
+      "exclusive_group": "luchtfoto"
+    },
+    {
+      "kind": "raster",
+      "id": "pdok_luchtfoto_2016",
+      "name": "Luchtfoto NL 2016 (PDOK)",
+      "visible": false,
+      "tiles": [
+        "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/2016_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg"
+      ],
+      "attribution": "© CC-BY Kadaster",
+      "minzoom": 5,
+      "maxzoom": 18,
+      "bounds": [2.75, 50.5, 7.5, 53.6],
+      "group": "Luchtfoto",
+      "exclusive_group": "luchtfoto"
+    },
+    {
+      "kind": "geojson",
+      "id": "provinciegrens",
+      "name": "Provinciegrens",
+      "url": "/assets/geodata/provinciegrens.geojson",
+      "layer_type": "polygon",
+      "visible": true,
+      "color": "#e74c3c",
+      "group": "Kaartdata (Flevoland)"
+    },
+    {
+      "kind": "geojson",
+      "id": "cultuurhistorie",
+      "name": "Cultuurhistorie",
+      "url": "/assets/geodata/cultuurhistorie.geojson",
+      "layer_type": "point",
+      "visible": false,
+      "color": "#3498db",
+      "group": "Kaartdata (Flevoland)"
+    },
+    {
+      "kind": "geojson",
+      "id": "windturbines",
+      "name": "Windturbines",
+      "url": "/assets/geodata/windturbines.geojson",
+      "layer_type": "point",
+      "visible": false,
+      "color": "#1565C0",
+      "group": "Kaartdata (Flevoland)"
+    },
+    {
+      "kind": "geojson",
+      "id": "zonneparken",
+      "name": "Zonneparken",
+      "url": "/assets/geodata/zonneparken.geojson",
+      "layer_type": "polygon",
+      "visible": false,
+      "color": "#F57F17",
+      "group": "Kaartdata (Flevoland)"
+    },
+    {
+      "kind": "geojson",
+      "id": "fietsnetwerken",
+      "name": "Fietsnetwerken",
+      "url": "/assets/geodata/fietsnetwerken.geojson",
+      "layer_type": "line",
+      "visible": false,
+      "color": "#7CB342",
+      "group": "Kaartdata (Flevoland)"
+    },
+    {
+      "kind": "geojson",
+      "id": "drinkwater",
+      "name": "Drinkwatergebieden",
+      "url": "/assets/geodata/drinkwater.geojson",
+      "layer_type": "polygon",
+      "visible": false,
+      "color": "#0288D1",
+      "group": "Kaartdata (Flevoland)"
+    }
+  ]
+}

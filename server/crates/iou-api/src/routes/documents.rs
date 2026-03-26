@@ -1,0 +1,485 @@
+//! Document creation and management API routes
+//!
+//! This module provides REST endpoints for:
+//! - Creating new documents via the agent pipeline
+//! - Querying document status
+//! - Approving/rejecting documents
+//! - Accessing audit trails
+//! - Downloading generated documents
+
+use axum::{
+    extract::{Extension, Path, Query},
+    response::{IntoResponse, Json},
+};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::broadcast;
+use uuid::Uuid;
+
+use crate::db::Database;
+use crate::document_workflow::{DocumentWorkflowDriver, DocumentWorkflowRuntime};
+use crate::error::ApiError;
+use crate::middleware::auth::AuthContext;
+use crate::orchestrator::{WorkflowOrchestrator, types::StatusMessage};
+use crate::websockets::types::DocumentStatus;
+use iou_core::document::{DocumentMetadata, AuditEntry, DocumentFormat};
+use iou_core::workflows::WorkflowStatus;
+use iou_orchestrator::{
+    WorkflowContext,
+    context::{DocumentRequest, DocumentType},
+};
+
+// ============================================
+// Request/Response Types
+// ============================================
+
+/// Request payload for document creation
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateDocumentRequest {
+    pub domain_id: String,
+    pub document_type: String,
+    pub context: HashMap<String, String>,
+}
+
+/// Response for successful document creation
+#[derive(Debug, Serialize)]
+pub struct CreateDocumentResponse {
+    pub document_id: Uuid,
+    pub state: String,
+    pub estimated_completion: Option<DateTime<Utc>>,
+}
+
+/// Document status response
+#[derive(Debug, Serialize)]
+pub struct DocumentStatusResponse {
+    pub document_id: Uuid,
+    pub state: String,
+    pub current_agent: Option<String>,
+    pub compliance_score: f32,
+    pub confidence_score: f32,
+    pub requires_approval: bool,
+    pub errors: Vec<String>,
+}
+
+/// Approval request
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ApprovalRequest {
+    pub approved: bool,
+    pub comments: Option<String>,
+}
+
+/// Approval response
+#[derive(Debug, Serialize)]
+pub struct ApprovalResponse {
+    pub document_id: Uuid,
+    pub state: String,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub approved_by: Option<String>,
+}
+
+/// Audit trail response
+#[derive(Debug, Serialize)]
+pub struct AuditTrailResponse {
+    pub document_id: Uuid,
+    pub audit_trail: Vec<AuditEntryDto>,
+}
+
+/// Audit entry DTO
+#[derive(Debug, Serialize)]
+pub struct AuditEntryDto {
+    pub agent: String,
+    pub action: String,
+    pub timestamp: DateTime<Utc>,
+    pub details: serde_json::Value,
+}
+
+/// Download parameters
+#[derive(Debug, Deserialize)]
+pub struct DownloadParams {
+    pub format: Option<DocumentFormat>,
+}
+
+// ============================================
+// Route Handlers
+// ============================================
+
+/// POST /api/documents/create
+pub async fn create_document(
+    Extension(db): Extension<Arc<Database>>,
+    Extension(status_tx): Extension<broadcast::Sender<StatusMessage>>,
+    Extension(doc_status_tx): Extension<broadcast::Sender<DocumentStatus>>,
+    Extension(workflow_rt): Extension<Arc<DocumentWorkflowRuntime>>,
+    Json(req): Json<CreateDocumentRequest>,
+) -> Result<Json<CreateDocumentResponse>, ApiError> {
+    // Validate template exists
+    let template = db
+        .get_active_template_async(req.domain_id.clone(), req.document_type.clone())
+        .await?
+        .ok_or_else(|| ApiError::Validation(format!(
+            "No template found for type '{}' in domain '{}'",
+            req.document_type, req.domain_id
+        )))?;
+
+    let document_id = Uuid::new_v4();
+    let now = Utc::now();
+    let requested_by = Uuid::new_v4(); // TODO: auth context
+    let context_json =
+        serde_json::to_value(&req.context).map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
+
+    // Parse document type
+    let document_type = parse_document_type(&req.document_type)?;
+
+    // Create document record in database
+    let document = DocumentMetadata {
+        id: document_id,
+        domain_id: req.domain_id.clone(),
+        document_type: req.document_type.clone(),
+        state: WorkflowStatus::Draft,
+        current_version_key: String::new(),
+        previous_version_key: None,
+        compliance_score: 0.0,
+        confidence_score: 0.0,
+        created_at: now,
+        updated_at: now,
+    };
+
+    db.create_document_async(document).await?;
+
+    match workflow_rt.driver {
+        DocumentWorkflowDriver::Camunda => {
+            let gw = workflow_rt
+                .camunda
+                .as_ref()
+                .ok_or_else(|| ApiError::Internal(anyhow::anyhow!(
+                    "IOU_DOCUMENT_WORKFLOW=camunda maar Zeebe-gateway niet geïnitialiseerd"
+                )))?;
+
+            db.upsert_document_pipeline_input_async(
+                document_id,
+                req.domain_id.clone(),
+                req.document_type.clone(),
+                context_json,
+                requested_by,
+                "1.0.0".to_string(),
+            )
+            .await?;
+
+            let run_deep = std::env::var("CAMUNDA_RUN_DEEP_AGENT")
+                .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                .unwrap_or(true);
+
+            let wf_ver = "1.0.0";
+            let (pi, pd) = gw
+                .start_document_pipeline(
+                    document_id,
+                    &req.domain_id,
+                    &req.document_type,
+                    &template.id,
+                    requested_by,
+                    wf_ver,
+                    run_deep,
+                )
+                .await
+                .map_err(|e| ApiError::Internal(anyhow::anyhow!("Zeebe start mislukt: {}", e)))?;
+
+            db.update_document_camunda_keys_async(document_id, pi, pd)
+                .await?;
+
+            let ts = Utc::now().timestamp();
+            let _ = status_tx.send(StatusMessage::Started {
+                document_id,
+                agent: "camunda".to_string(),
+                timestamp: ts,
+            });
+            let _ = doc_status_tx.send(
+                StatusMessage::Started {
+                    document_id,
+                    agent: "camunda".to_string(),
+                    timestamp: ts,
+                }
+                .to_document_status(),
+            );
+
+            tracing::info!(
+                domain_id = %req.domain_id,
+                document_type = %req.document_type,
+                document_id = %document_id,
+                process_instance_key = pi,
+                "Document aangemaakt — Camunda-proces gestart (geen Rust-orchestrator)"
+            );
+        }
+        DocumentWorkflowDriver::Rust => {
+            let document_request = DocumentRequest {
+                id: document_id,
+                domain_id: req.domain_id.clone(),
+                document_type: document_type.clone(),
+                context: req.context,
+                requested_by,
+                requested_at: now,
+                priority: Default::default(),
+            };
+
+            let workflow_context =
+                WorkflowContext::new(document_id, document_request, "1.0.0".to_string());
+
+            let orchestrator = WorkflowOrchestrator::new(db, status_tx, doc_status_tx);
+            orchestrator
+                .start_workflow(workflow_context)
+                .await
+                .map_err(|e| {
+                    ApiError::Internal(anyhow::anyhow!("Failed to start workflow: {}", e))
+                })?;
+
+            tracing::info!(
+                domain_id = %req.domain_id,
+                document_type = %req.document_type,
+                document_id = %document_id,
+                "Document creation requested and Rust workflow started"
+            );
+        }
+    }
+
+    // Calculate estimated completion time (8 minutes max)
+    let estimated_completion = now + chrono::Duration::minutes(8);
+
+    Ok(Json(CreateDocumentResponse {
+        document_id,
+        state: "draft".to_string(),
+        estimated_completion: Some(estimated_completion),
+    }))
+}
+
+/// GET /api/documents/{id}/status
+pub async fn get_status(
+    Extension(db): Extension<Arc<Database>>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<DocumentStatusResponse>, ApiError> {
+    let document = db
+        .get_document_async(id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("No document with ID {}", id)))?;
+
+    // Determine if approval is required based on domain trust level
+    // TODO: Load domain config and check trust level
+    let requires_approval = match document.state {
+        WorkflowStatus::Submitted | WorkflowStatus::InReview => true,
+        _ => false,
+    };
+
+    Ok(Json(DocumentStatusResponse {
+        document_id: id,
+        state: format!("{:?}", document.state).to_lowercase(),
+        current_agent: None,
+        compliance_score: document.compliance_score,
+        confidence_score: document.confidence_score,
+        requires_approval,
+        errors: vec![],
+    }))
+}
+
+/// POST /api/documents/{id}/approve
+pub async fn approve_document(
+    Extension(db): Extension<Arc<Database>>,
+    Extension(workflow_rt): Extension<Arc<DocumentWorkflowRuntime>>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<ApprovalRequest>,
+) -> Result<Json<ApprovalResponse>, ApiError> {
+    // TODO: Check for object_approver role from auth context
+
+    let mut document = db
+        .get_document_async(id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("No document with ID {}", id)))?;
+
+    // Verify document is in approvable state
+    if !matches!(document.state, WorkflowStatus::Submitted | WorkflowStatus::InReview) {
+        return Err(ApiError::Validation(format!(
+            "Document is in {:?} state, cannot approve",
+            document.state
+        )));
+    }
+
+    // Process approval or rejection
+    let new_state = if req.approved {
+        WorkflowStatus::Approved
+    } else {
+        WorkflowStatus::Draft
+    };
+
+    document.state = new_state;
+    document.updated_at = Utc::now();
+
+    db.update_document_async(document).await?;
+
+    if req.approved && workflow_rt.driver == DocumentWorkflowDriver::Camunda {
+        if let Some(gw) = workflow_rt.camunda.as_ref() {
+            if db.get_document_camunda_keys_async(id).await?.is_some() {
+                gw.publish_document_approved(id, true)
+                    .await
+                    .map_err(|e| {
+                        ApiError::Internal(anyhow::anyhow!("Zeebe document_approved: {}", e))
+                    })?;
+                tracing::info!(document_id = %id, "Zeebe-bericht document_approved gepubliceerd");
+            }
+        }
+    }
+
+    tracing::info!(
+        document_id = %id,
+        approved = %req.approved,
+        "Document approval processed"
+    );
+
+    Ok(Json(ApprovalResponse {
+        document_id: id,
+        state: format!("{:?}", new_state).to_lowercase(),
+        approved_at: if req.approved { Some(Utc::now()) } else { None },
+        approved_by: None, // TODO: Get from auth context
+    }))
+}
+
+/// GET /api/documents/{id}/audit
+pub async fn get_audit_trail(
+    Extension(db): Extension<Arc<Database>>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<AuditTrailResponse>, ApiError> {
+    // Verify document exists
+    let _document = db
+        .get_document_async(id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("No document with ID {}", id)))?;
+
+    // Fetch audit entries ordered by timestamp DESC
+    let audit_entries = db.get_audit_trail_async(id).await?;
+
+    let audit_trail: Vec<AuditEntryDto> = audit_entries
+        .into_iter()
+        .map(|entry| AuditEntryDto {
+            agent: entry.agent_name,
+            action: entry.action,
+            timestamp: entry.timestamp,
+            details: entry.details,
+        })
+        .collect();
+
+    Ok(Json(AuditTrailResponse {
+        document_id: id,
+        audit_trail,
+    }))
+}
+
+/// GET /api/documents/{id}/download?format=odf|pdf|md
+pub async fn download_document(
+    Extension(db): Extension<Arc<Database>>,
+    Extension(s3_client): Extension<Arc<iou_core::storage::S3Client>>,
+    Path(id): Path<Uuid>,
+    Query(params): Query<DownloadParams>,
+) -> Result<impl IntoResponse, ApiError> {
+    let document = db
+        .get_document_async(id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("No document with ID {}", id)))?;
+
+    // Only published/approved documents can be downloaded
+    if document.state != WorkflowStatus::Published && document.state != WorkflowStatus::Approved {
+        return Err(ApiError::Validation(
+            "Document must be approved before download".to_string(),
+        ));
+    }
+
+    // Generate storage key
+    let storage_key = if document.current_version_key.is_empty() {
+        format!("documents/{}.pdf", id)
+    } else {
+        document.current_version_key.clone()
+    };
+
+    // Download from S3
+    let data = s3_client.download(&storage_key).await?;
+
+    // Determine content type
+    let content_type = params.format
+        .unwrap_or(DocumentFormat::PDF)
+        .content_type()
+        .to_string();
+
+    tracing::info!(
+        document_id = %id,
+        storage_key = %storage_key,
+        size = data.len(),
+        "Document downloaded from S3"
+    );
+
+    Ok((
+        [(axum::http::header::CONTENT_TYPE, content_type),
+         (axum::http::header::CONTENT_DISPOSITION, format!("attachment; filename=\"{}.pdf\"", id))],
+        data,
+    ))
+}
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/// Parse document type from string to DocumentType enum.
+fn parse_document_type(s: &str) -> Result<DocumentType, ApiError> {
+    match s.to_lowercase().as_str() {
+        "woo_besluit" => Ok(DocumentType::WooBesluit),
+        "woo_informatie" => Ok(DocumentType::WooInformatie),
+        "woo_besluit_beroep" => Ok(DocumentType::WooBesluitBeroep),
+        "woo_informatie_beroep" => Ok(DocumentType::WooInformatieBeroep),
+        "beleidsnotitie" => Ok(DocumentType::Beleidsnotitie),
+        "raadsvoorstel" => Ok(DocumentType::Raadsvoorstel),
+        "ambtsbericht" => Ok(DocumentType::Ambtsbericht),
+        "persbericht" => Ok(DocumentType::Persbericht),
+        "interne_memo" => Ok(DocumentType::InterneMemo),
+        _ => Ok(DocumentType::Custom(s.to_string())),
+    }
+}
+
+// ============================================
+// Tests
+// ============================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_document_request_serialization() {
+        let mut context = HashMap::new();
+        context.insert("reference".to_string(), "REF-001".to_string());
+
+        let req = CreateDocumentRequest {
+            domain_id: "test_domain".to_string(),
+            document_type: "woo_besluit".to_string(),
+            context,
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("REF-001"));
+    }
+
+    #[test]
+    fn test_approval_request_serialization() {
+        let req = ApprovalRequest {
+            approved: true,
+            comments: Some("Looks good".to_string()),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("Looks good"));
+    }
+
+    #[test]
+    fn test_document_format_content_type() {
+        assert_eq!(DocumentFormat::Markdown.content_type(), "text/markdown");
+        assert_eq!(
+            DocumentFormat::ODF.content_type(),
+            "application/vnd.oasis.opendocument.text"
+        );
+        assert_eq!(DocumentFormat::PDF.content_type(), "application/pdf");
+    }
+}

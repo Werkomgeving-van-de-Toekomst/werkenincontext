@@ -1,0 +1,50 @@
+[package]
+name = "iou-regels"
+version = "0.1.0"
+edition = "2024"
+description = "Open Regels integratie voor IOU-Modern: SPARQL client, regelspecificaties en agentic tools"
+
+[dependencies]
+# Internal - direct path to avoid workspace inheritance issues
+iou-core = { path = "../iou-core", default-features = false, features = ["server"] }
+
+# HTTP client (default features disabled - will be enabled via features)
+reqwest = { version = "0.12", default-features = false, features = ["json"], optional = true }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Async runtime (optional for WASM)
+tokio = { version = "1.43", optional = true, default-features = false }
+
+# Logging
+tracing = "0.1"
+
+# Enum string serialization
+strum = { version = "0.26", features = ["derive"] }
+
+# XML parsing for DMN/BPMN
+quick-xml = { version = "0.37", features = ["serialize"] }
+
+# Async traits (optional)
+async-trait = { version = "0.1", optional = true }
+
+# Random number generation for WASM (optional)
+getrandom = { version = "0.2", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1.43", features = ["full", "macros"] }
+
+[features]
+default = ["reqwest", "async-trait"]
+wasm = ["iou-core/wasm", "getrandom/js"]
+no-tokio = []

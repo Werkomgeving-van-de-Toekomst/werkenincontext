@@ -1,0 +1,77 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/planning-document-workflow/sections",
+  "target_dir": "/Users/marc/Projecten/iou-modern",
+  "state_dir": "/Users/marc/Projecten/iou-modern/planning-document-workflow/implementation",
+  "git_root": "/Users/marc/Projecten/iou-modern",
+  "commit_style": "simple",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-database-schema",
+    "section-02-core-types",
+    "section-03-config-system",
+    "section-04-multi-stage-engine",
+    "section-05-diff-generator",
+    "section-06-delegation-system",
+    "section-07-sla-escalation",
+    "section-08-version-storage",
+    "section-09-api-endpoints",
+    "section-10-frontend-components",
+    "section-11-testing-integration"
+  ],
+  "sections_state": {
+    "section-01-database-schema": {
+      "status": "complete",
+      "commit_hash": "449032b"
+    },
+    "section-02-core-types": {
+      "status": "complete",
+      "commit_hash": "57a4433"
+    },
+    "section-03-config-system": {
+      "status": "complete",
+      "commit_hash": "525632c"
+    },
+    "section-04-multi-stage-engine": {
+      "status": "complete",
+      "commit_hash": "7fbc39c"
+    },
+    "section-05-diff-generator": {
+      "status": "complete",
+      "commit_hash": "26c8e96"
+    },
+    "section-06-delegation-system": {
+      "status": "complete",
+      "commit_hash": "968b2c7"
+    },
+    "section-07-sla-escalation": {
+      "status": "complete",
+      "commit_hash": "36561a5"
+    },
+    "section-08-version-storage": {
+      "status": "complete",
+      "commit_hash": "58af6d0"
+    },
+    "section-09-api-endpoints": {
+      "status": "complete",
+      "commit_hash": "f32ea32"
+    },
+    "section-10-frontend-components": {
+      "status": "complete",
+      "commit_hash": "8921490"
+    },
+    "section-11-testing-integration": {
+      "status": "complete",
+      "commit_hash": "662ef24"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-24T05:46:19.032488+00:00"
+}

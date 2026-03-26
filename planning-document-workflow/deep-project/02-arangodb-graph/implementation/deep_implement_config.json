@@ -1,0 +1,87 @@
+{
+  "plugin_root": "/Users/marc/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/marc/Projecten/iou-modern/planning-document-workflow/deep-project/02-arangodb-graph/sections",
+  "target_dir": "/Users/marc/Projecten/iou-modern",
+  "state_dir": "/Users/marc/Projecten/iou-modern/planning-document-workflow/deep-project/02-arangodb-graph/implementation",
+  "git_root": "/Users/marc/Projecten/iou-modern",
+  "commit_style": "simple",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-dependencies",
+    "section-02-connection",
+    "section-03-errors",
+    "section-04-entity-operations",
+    "section-05-relationship-operations",
+    "section-06-graph-traversals",
+    "section-07-communities",
+    "section-08-query-builders",
+    "section-09-module-exports",
+    "section-10-integration-tests",
+    "section-11-transactions",
+    "section-12-bulk-operations",
+    "section-13-migration"
+  ],
+  "sections_state": {
+    "section-01-dependencies": {
+      "status": "complete",
+      "commit_hash": "964529a"
+    },
+    "section-03-errors": {
+      "status": "complete",
+      "commit_hash": "ecab42d"
+    },
+    "section-02-connection": {
+      "status": "complete",
+      "commit_hash": "37fa4ca"
+    },
+    "section-04-entity-operations": {
+      "status": "complete",
+      "commit_hash": "c750816"
+    },
+    "section-05-relationship-operations": {
+      "status": "complete",
+      "commit_hash": "fc18d38"
+    },
+    "section-06-graph-traversals": {
+      "status": "complete",
+      "commit_hash": "239354d"
+    },
+    "section-07-communities": {
+      "status": "complete",
+      "commit_hash": "90d8372"
+    },
+    "section-08-query-builders": {
+      "status": "complete",
+      "commit_hash": "f94f926"
+    },
+    "section-09-module-exports": {
+      "status": "complete",
+      "commit_hash": "d0f01be"
+    },
+    "section-10-integration-tests": {
+      "status": "complete",
+      "commit_hash": "a71f295"
+    },
+    "section-11-transactions": {
+      "status": "complete",
+      "commit_hash": "deferred-no-code-changes"
+    },
+    "section-12-bulk-operations": {
+      "status": "complete",
+      "commit_hash": "a43215c"
+    },
+    "section-13-migration": {
+      "status": "complete",
+      "commit_hash": "d810c18"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-25T12:18:15.381035+00:00"
+}

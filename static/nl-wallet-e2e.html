@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IOU — NL Wallet sessie (e2e)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    code, pre { background: #f4f4f5; padding: 0.2em 0.4em; border-radius: 4px; }
+    pre { padding: 1rem; overflow: auto; }
+    button { padding: 0.6rem 1rem; font-size: 1rem; cursor: pointer; margin-right: 0.5rem; margin-bottom: 0.5rem; }
+    .err { color: #b91c1c; }
+    .ok { color: #15803d; }
+    section { margin-top: 2rem; border-top: 1px solid #e4e4e7; padding-top: 1rem; }
+  </style>
+  <!-- Optioneel: kopieer nl-wallet wallet_web/dist/nl-wallet-web.iife.js naar static/nl-wallet-web.iife.js -->
+  <script src="/nl-wallet-web.iife.js" defer onerror="window.__nlWalletWebMissing = true"></script>
+</head>
+<body>
+  <h1>NL Wallet × IOU API</h1>
+  <p>
+    Deze pagina moet via de <strong>IOU API</strong> worden geopend (zelfde host/poort als <code>/api/...</code>),
+    bijvoorbeeld <code>http://127.0.0.1:8000/nl-wallet-e2e.html</code>, zodat <code>POST /api/id/nl-wallet/sessions</code> zonder CORS-fouten werkt.
+  </p>
+
+  <section>
+    <h2>1. Sessie starten (fetch — zelfde contract als wallet_web)</h2>
+    <p>Usecase-naam moet bestaan in de MinBZK <code>verification_server</code>-config.</p>
+    <label>Usecase <input id="usecase" type="text" value="iou_modern_demo" style="width:16rem" /></label>
+    <p>
+      <button type="button" id="btn-fetch">Start sessie (fetch)</button>
+    </p>
+    <pre id="out-fetch">(nog geen response)</pre>
+  </section>
+
+  <section id="wallet-web-block">
+    <h2>2. Officiële nl-wallet-button (wallet_web)</h2>
+    <p id="wallet-web-missing" class="err" hidden>
+      <code>nl-wallet-web.iife.js</code> ontbreekt. Bouw <code>wallet_web</code> in de nl-wallet-repo en kopieer
+      <code>dist/nl-wallet-web.iife.js</code> naar <code>static/nl-wallet-web.iife.js</code> in dit project.
+    </p>
+    <p>Als het script geladen is, verschijnt hier de knop (tekst moet “NL Wallet” bevatten — eis van de library):</p>
+    <div id="wallet-slot"></div>
+    <pre id="out-wallet">(events van de knop verschijnen hier)</pre>
+  </section>
+
+  <script>
+    const sessionUrl = "/api/id/nl-wallet/sessions";
+    const usecaseEl = document.getElementById("usecase");
+    const outFetch = document.getElementById("out-fetch");
+    const outWallet = document.getElementById("out-wallet");
+
+    document.getElementById("btn-fetch").onclick = async () => {
+      outFetch.textContent = "Bezig…";
+      try {
+        const r = await fetch(sessionUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ usecase: usecaseEl.value.trim() || "iou_modern_demo" }),
+        });
+        const text = await r.text();
+        let pretty = text;
+        try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (_) {}
+        outFetch.textContent = r.status + " " + r.statusText + "\n\n" + pretty;
+        outFetch.className = r.ok ? "ok" : "err";
+      } catch (e) {
+        outFetch.textContent = String(e);
+        outFetch.className = "err";
+      }
+    };
+
+    function logWallet(ev, label) {
+      const d = ev.detail;
+      outWallet.textContent = label + "\n" + JSON.stringify(d, null, 2);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (window.__nlWalletWebMissing) {
+        document.getElementById("wallet-web-missing").hidden = false;
+        return;
+      }
+      // Custom element registreert async; kort wachten
+      setTimeout(() => {
+        if (!customElements.get("nl-wallet-button")) {
+          document.getElementById("wallet-web-missing").hidden = false;
+          return;
+        }
+        const slot = document.getElementById("wallet-slot");
+        const btn = document.createElement("nl-wallet-button");
+        btn.setAttribute("text", "Inloggen met NL Wallet (IOU)");
+        btn.setAttribute("usecase", usecaseEl.value.trim() || "iou_modern_demo");
+        btn.setAttribute("start-url", sessionUrl);
+        btn.setAttribute("lang", "nl");
+        btn.addEventListener("success", (e) => logWallet(e, "success"));
+        btn.addEventListener("failed", (e) => logWallet(e, "failed"));
+        usecaseEl.addEventListener("change", () => btn.setAttribute("usecase", usecaseEl.value.trim() || "iou_modern_demo"));
+        slot.appendChild(btn);
+      }, 0);
+    });
+  </script>
+</body>
+</html>

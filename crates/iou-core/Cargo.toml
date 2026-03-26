@@ -1,0 +1,72 @@
+[package]
+name = "iou-core"
+version = "0.1.0"
+edition = "2024"
+description = "Core domain models for IOU-Modern - Dutch government information management"
+
+[dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4", "js"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random number generation
+getrandom = { version = "0.2", features = ["std"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+
+# YAML configuration parsing
+serde_yaml = "0.9"
+
+# RWLock for WASM compatibility
+parking_lot = "0.12"
+
+# Enum utilities
+strum = { version = "0.26", features = ["derive"] }
+
+# Validation
+validator = { version = "0.19", features = ["derive"] }
+
+# Diff generation
+similar = "2.4"
+
+# Compression
+flate2 = "1.0"
+
+# Optional server dependencies
+notify = { version = "6.0", optional = true }
+tokio = { version = "1.43", optional = true, default-features = false }
+http = { version = "1.2", optional = true }
+async-trait = { version = "0.1", optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["json"], optional = true }
+sqlx = { version = "0.8", default-features = false, features = ["postgres", "chrono", "uuid", "json"], optional = true }
+arangors = { version = "0.6", default-features = false, features = ["rocksdb"], optional = true }
+mobc = { version = "0.9", optional = true }
+mobc-arangors = { version = "0.2", optional = true }
+
+[dev-dependencies]
+tempfile = "3.13"
+testcontainers = "0.15"
+
+[features]
+default = ["server"]
+server = [
+    "tokio",
+    "reqwest",
+    "http",
+    "async-trait",
+    "sqlx",
+    "arangors",
+    "mobc",
+    "mobc-arangors",
+    "notify",
+]
+wasm = []

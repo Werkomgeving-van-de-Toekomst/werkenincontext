@@ -1,0 +1,86 @@
+[package]
+name = "iou-api"
+version.workspace = true
+edition = "2024"
+description = "REST API server for IOU-Modern using Axum and DuckDB"
+
+[lib]
+name = "iou_api"
+path = "src/lib.rs"
+
+[[bin]]
+name = "iou-api"
+path = "src/main.rs"
+
+[dependencies]
+# Internal crates (paths are relative to server/crates/)
+iou-core.workspace = true
+iou-ai = { path = "../iou-ai" }
+iou-orchestrator = { path = "../iou-orchestrator" }
+iou-regels.workspace = true
+
+# Web framework
+axum = { workspace = true, features = ["ws"] }
+tower.workspace = true
+tower-http.workspace = true
+
+# Async runtime
+tokio.workspace = true
+
+# Async trait support
+async-trait.workspace = true
+
+# Database - DuckDB embedded
+duckdb.workspace = true
+
+# Database - PostgreSQL (for Supabase)
+sqlx.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Types
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Authentication
+jsonwebtoken.workspace = true
+
+# Verifiable Credential support
+base64 = "0.22"
+md-5 = "0.10"
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Config
+dotenvy.workspace = true
+
+# HTTP client for external APIs
+reqwest.workspace = true
+
+# MIME type detection
+mime_guess.workspace = true
+
+proj = "0.31.0"
+
+# WebSocket support
+tokio-tungstenite.workspace = true
+futures-util.workspace = true
+bytes.workspace = true
+
+# Concurrent collections
+dashmap.workspace = true
+
+# Camunda 8 (Zeebe) — optional integration
+zeebe-rs.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
+futures.workspace = true

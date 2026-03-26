@@ -1,0 +1,29 @@
+# Optionele PostgreSQL alleen voor nl-wallet verification_server (handmatige modus).
+#
+# Standaard is het eenvoudiger om MinBZK's eigen Postgres te starten:
+#   ./scripts/nl-wallet-verification-up.sh
+#
+# Gebruik deze compose als je alleen een lege DB wilt (poort 5433) en zelf
+# verification_server.toml + migraties draait vanuit wallet_core.
+#
+#   docker compose -f docker-compose.nl-wallet-verification.yml up -d
+#   # storage.url in verification_server.toml:
+#   #   postgres://postgres:postgres@127.0.0.1:5433/verification_server
+
+services:
+  nl-wallet-postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: iou-nl-wallet-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - nl_wallet_pg:/var/lib/postgresql/data
+      - ./scripts/nl-wallet/init-verification-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+volumes:
+  nl_wallet_pg:
+    name: iou_nl_wallet_postgres_data

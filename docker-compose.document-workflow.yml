@@ -1,0 +1,70 @@
+# Volledige document-workflow via Camunda 8 + geïsoleerde containers (Zeebe, Rust-worker, Python Deep Agents).
+#
+# iou-api draait typisch op de host (DuckDB) of in een aparte stack. Workers in Docker
+# bellen de API via host.docker.internal (Linux: extra_hosts hieronder).
+#
+# Gebruik:
+#   export CAMUNDA_WORKER_TOKEN="$(openssl rand -hex 24)"
+#   export IOU_API_URL=http://host.docker.internal:8000
+#   docker compose -f docker-compose.document-workflow.yml up -d --build
+#
+# API-omgeving (zelfde token):
+#   IOU_DOCUMENT_WORKFLOW=camunda
+#   ZEEBE_ADDRESS=127.0.0.1:26500
+#   CAMUNDA_WORKER_TOKEN=<zelfde>
+#   DEEP_AGENT_SERVICE_URL=http://127.0.0.1:8091   # als deep-agents poort 8091 naar host map je
+#
+# Als de API ook in Docker zit op hetzelfde netwerk: ZEEBE_ADDRESS=zeebe:26500 en IOU_API_URL=http://iou-api:8000
+
+services:
+  zeebe:
+    image: camunda/zeebe:8.5.5
+    container_name: iou-zeebe
+    ports:
+      - "26500:26500"
+    environment:
+      ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE: none
+    volumes:
+      - zeebe-data:/usr/local/zeebe/data
+    networks:
+      - iou-dwf
+
+  deep-agents:
+    build:
+      context: ./services/deep-agents-worker
+      dockerfile: Dockerfile
+    container_name: iou-deep-agents
+    ports:
+      - "8091:8091"
+    environment:
+      CAMUNDA_WORKER_TOKEN: ${CAMUNDA_WORKER_TOKEN:?Zet CAMUNDA_WORKER_TOKEN}
+      IOU_API_TOOL_BASE_URL: ${IOU_API_TOOL_BASE_URL:-http://host.docker.internal:8000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - iou-dwf
+
+  iou-camunda-worker:
+    build:
+      context: .
+      dockerfile: crates/iou-camunda-worker/Dockerfile
+    container_name: iou-camunda-worker
+    environment:
+      ZEEBE_ADDRESS: zeebe:26500
+      IOU_API_URL: ${IOU_API_URL:-http://host.docker.internal:8000}
+      CAMUNDA_WORKER_TOKEN: ${CAMUNDA_WORKER_TOKEN:?Zet CAMUNDA_WORKER_TOKEN}
+      ZEEBE_DEPLOY_BPMN: /app/bpmn/document-pipeline.bpmn
+    depends_on:
+      - zeebe
+      - deep-agents
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - iou-dwf
+
+volumes:
+  zeebe-data:
+
+networks:
+  iou-dwf:
+    name: iou-document-workflow

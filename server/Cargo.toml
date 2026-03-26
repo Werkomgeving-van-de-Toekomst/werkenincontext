@@ -1,0 +1,132 @@
+# =============================================================================
+# IOU-Modern - Server Workspace
+# =============================================================================
+# This workspace contains server-only crates that require tokio and
+# other native dependencies.
+#
+# Build: cargo build --manifest-path server/Cargo.toml
+# Run:  cargo run --manifest-path server/Cargo.toml --bin iou-api
+# =============================================================================
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/iou-api",
+    "crates/iou-storage",
+    "crates/iou-orchestrator",
+    "crates/iou-ai",
+    "crates/iou-ai-service",
+    "crates/iou-camunda-worker",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["IOU-Modern Team"]
+license = "MIT"
+repository = "https://github.com/terminal-woo/iou-modern"
+
+[workspace.dependencies]
+# Shared crates from parent workspace
+iou-core = { path = "../crates/iou-core", default-features = false, features = ["server"] }
+iou-regels = { path = "../crates/iou-regels", default-features = false }
+
+# Server-only crates
+iou-api = { path = "crates/iou-api" }
+iou-storage = { path = "crates/iou-storage" }
+iou-orchestrator = { path = "crates/iou-orchestrator" }
+iou-ai = { path = "crates/iou-ai" }
+iou-ai-service = { path = "crates/iou-ai-service" }
+iou-camunda-worker = { path = "crates/iou-camunda-worker" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Random
+getrandom = "0.2"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Async runtime
+tokio = { version = "1.43", features = ["full"] }
+
+# Database - DuckDB
+duckdb = { version = "1.1", features = ["bundled", "json", "parquet"] }
+
+# Database - PostgreSQL
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json", "migrate", "macros"] }
+
+# Web framework
+axum = { version = "0.8", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Async trait support
+async-trait = { version = "0.1" }
+
+# Open Regels dependencies (non-optional versions for workspace)
+getrandom-no-js = { version = "0.2", package = "getrandom" }
+
+# Open Regels dependencies
+strum = { version = "0.26", features = ["derive"] }
+quick-xml = { version = "0.37", features = ["serialize"] }
+
+# Authentication
+jsonwebtoken = "9.3"
+
+# MIME type detection
+mime_guess = "2.0"
+
+# Config
+dotenvy = "0.15"
+
+# WebSocket support
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+bytes = "1.9"
+
+# Concurrent collections
+dashmap = "6.1"
+
+# Camunda 8 (Zeebe)
+zeebe-rs = "0.4.1"
+
+# AWS SDK for S3
+aws-config = { version = "1.5", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.65"
+aws-smithy-types = "1.2"
+
+# HTTP types
+http = "1.2"
+
+# Collections
+indexmap = "2.5"
+
+# Random
+rand = "0.8"
+
+# Concurrency testing
+loom = "0.7"
+
+# Testing
+tokio-test = "0.4"
+futures = "0.3"
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1

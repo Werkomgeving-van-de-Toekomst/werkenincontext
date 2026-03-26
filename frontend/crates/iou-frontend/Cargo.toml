@@ -1,0 +1,41 @@
+[package]
+name = "iou-frontend"
+version = "0.1.0"
+edition = "2021"
+description = "Dioxus WebAssembly frontend for IOU-Modern"
+
+[dependencies]
+# Internal
+iou-core = { path = "../../../crates/iou-core", features = ["wasm"], default-features = false }
+iou-regels = { path = "../../../crates/iou-regels", features = ["wasm"], default-features = false }
+
+# Dioxus framework
+dioxus = { version = "0.7", features = ["router"] }
+
+# WASM bindings
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4", "js"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random number generation for WASM
+getrandom = { version = "0.2", features = ["js", "std"] }
+
+# Error handling
+thiserror = "2.0"
+
+[dev-dependencies]
+approx = "0.5"
+serial_test = "3"
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop"]

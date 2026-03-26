@@ -1,0 +1,57 @@
+# =============================================================================
+# IOU-Modern - Root Workspace (Shared Crates)
+# =============================================================================
+# This workspace contains platform-agnostic shared crates used by both
+# server and frontend workspaces.
+#
+# Build commands:
+# - Server:   cargo build --manifest-path server/Cargo.toml
+# - Frontend: cargo build --manifest-path frontend/Cargo.toml
+# =============================================================================
+
+[workspace]
+resolver = "2"
+members = ["crates/iou-core", "crates/iou-regels"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["IOU-Modern Team"]
+license = "MIT"
+repository = "https://github.com/terminal-woo/iou-modern"
+
+[workspace.dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v4", "js"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random number generation
+getrandom = { version = "0.2", features = ["std"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+
+# Enum utilities
+strum = { version = "0.26", features = ["derive"] }
+
+# HTTP client
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
+# Async runtime
+tokio = { version = "1.43", default-features = false, features = ["rt-multi-thread", "macros", "time"] }
+
+# Async traits
+async-trait = { version = "0.1" }
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
