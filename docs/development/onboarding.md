@@ -1,6 +1,6 @@
 # Developer Onboarding Guide
 
-**Last Updated:** 2026-03-14
+**Last Updated:** 2026-03-26
 
 ---
 
@@ -9,298 +9,163 @@
 ### Prerequisites
 
 - Rust 1.80+ (Edition 2024)
-- Docker & Docker Compose
-- PostgreSQL client tools
+- Git
 
 ### 1. Clone and Setup
 
 ```bash
 # Clone repository
-git clone https://github.com/terminal-woo/iou-modern.git
-cd iou-modern
-
-# Copy environment files
-cp .env.example .env
-cp .env.supabase.example .env.supabase
-
-# Start Supabase
-docker-compose -f docker-compose.supabase.yml up -d
+git clone https://github.com/Werkomgeving-van-de-Toekomst/werkenincontext.git
+cd werkenincontext
 ```
 
-### 2. Database Setup
-
-**Supabase (Primary):**
-```bash
-# Export connection string
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
-
-# Run migrations
-psql $DATABASE_URL -f migrations/postgres/001_create_initial_schema.sql
-psql $DATABASE_URL -f migrations/postgres/002_rls_policies.sql
-psql $DATABASE_URL -f migrations/postgres/003_optimization_indexes.sql
-psql $DATABASE_URL -f migrations/postgres/004_rls_optimization.sql
-psql $DATABASE_URL -f migrations/postgres/005_outbox_table.sql
-```
-
-**DuckDB (Analytics):**
-```bash
-# DuckDB file is created automatically by ETL
-# No manual setup required
-# File location: data/analytics.duckdb (created on first ETL run)
-```
-
-### 3. Run the Application
+### 2. Build Core Libraries
 
 ```bash
-# Build
-cargo build
+# Build all shared crates
+cargo build --release
 
-# Run API server
-cargo run --bin iou-api
-
-# Run tests
-cargo test
-
-# Run with ETL enabled
-ETL_ENABLED=true cargo run
+# Build specific crate
+cargo build -p iou-core --release
+cargo build -p iou-regels --release
 ```
 
----
+### 3. Frontend Development
 
-## Architecture Overview
+```bash
+# Navigate to frontend workspace
+cd frontend
 
-### Database Architecture
+# Development server with hot reload
+dx serve --port 8080
 
-IOU-Modern uses a **hybrid database approach**:
-
-```
-┌──────────────┐
-│  Application │
-└───────┬──────┘
-        │
-        ├──────────────┬───────────────┐
-        ▼              ▼               ▼
-   ┌─────────┐   ┌─────────┐    ┌──────────┐
-   │Supabase │   │Realtime │    │  DuckDB  │
-   │(Primary)│   │(Supabase│    │(Analytics)│
-   │         │   │   Auth) │    │          │
-   └─────────┘   └─────────┘    └──────────┘
+# Production build
+dx build --release
 ```
 
-- **Supabase (PostgreSQL):** Primary transactional database
-- **Supabase Realtime:** WebSocket connections for collaboration
-- **DuckDB:** Analytics and full-text search
-
-### Crate Structure
+## Project Structure
 
 ```
 iou-modern/
 ├── crates/
-│   ├── iou-api/          # Main API server
-│   ├── iou-core/         # Domain models
-│   ├── iou-storage/      # DuckDB metadata operations
-│   ├── iou-frontend/     # Frontend components
-│   ├── iou-ai/           # AI/ML features
-│   ├── iou-regels/       # Rules engine
-│   └── iou-orchestrator/ # Workflow orchestration
-├── migrations/           # Database migrations
-│   └── postgres/         # PostgreSQL migrations
-└── docs/                 # Documentation
+│   ├── iou-core/       # Shared domain models (WASM-compatible)
+│   └── iou-regels/     # PROVISA/BPMN/DMN rules engine
+├── frontend/
+│   └── crates/
+│       └── iou-frontend/   # Dioxus WASM app
+├── docs/                # Architecture documentation
+└── templates/           # Document templates
 ```
-
----
-
-## Common Development Tasks
-
-### Querying Analytics (DuckDB)
-
-```bash
-# Use DuckDB CLI
-duckdb data/analytics.duckdb
-
-# Example: Get compliance overview
-SELECT * FROM v_compliance_overview;
-
-# Example: Full-text search
-SELECT * FROM information_objects
-WHERE search_text LIKE '%keyword%';
-```
-
-### Checking RLS Policies
-
-```bash
-# Via psql
-psql $DATABASE_URL
-
-# View all policies
-SELECT polname, polcmd, polrelid::regclass
-FROM pg_policy
-JOIN pg_class ON pg_class.oid = polrelid;
-
-# Test a policy as a specific user
-SET ROLE user_id;
-SELECT * FROM documents LIMIT 1;
-```
-
-### Running ETL Manually
-
-```bash
-# Trigger immediate ETL cycle
-curl -X POST http://localhost:8080/admin/etl/run \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-
-# Check ETL status
-curl http://localhost:8080/admin/etl/stats \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-```
-
-### Debugging Real-time Issues
-
-```bash
-# Check active subscriptions
-psql $DATABASE_URL
-
-SELECT * FROM realtime.subscription WHERE status = 'active';
-
-# View channel topics
-SELECT * FROM realtime.topic;
-
-# Check presence
-SELECT * FROM presence.tracker;
-```
-
----
 
 ## Key Concepts
 
-### Row-Level Security (RLS)
+### iou-core
+Platform-agnostic domain models that work on both native and WASM targets:
+- Domain types (Informatiedomeinen)
+- Compliance (Woo, AVG, Archiefwet)
+- GraphRAG data types
+- Delegation types
+- Multi-tenancy support
 
-All tables use RLS for organization isolation:
-- Users see only their organization's data
-- Classification-based filtering applies
-- Public documents accessible via Woo publication
+### iou-regels
+Dutch government rules engine:
+- **PROVISA**: Provinciale selectielijst archiefwetgeving
+- **BPMN**: Business Process Model and Notation
+- **DMN**: Decision Model and Notation
+- Open Regels integration
 
-**Adding RLS to a new table:**
-```sql
-ALTER TABLE new_table ENABLE ROW LEVEL SECURITY;
+### Workspace Configuration
+See [docs/workspaces.md](../workspaces.md) for details on the multi-workspace setup.
 
-CREATE POLICY new_table_org_policy ON new_table
-FOR ALL
-TO authenticated
-USING (organization_id = auth.organization_id());
-```
+## Development Workflow
 
-### ETL Pipeline
-
-Data flows from Supabase → DuckDB via ETL:
-1. Application writes to Supabase
-2. Outbox event created (in same transaction)
-3. ETL processor picks up events
-4. Data written to DuckDB
-5. Event marked as processed
-
-**Configuration:** `.env` file
-```bash
-ETL_ENABLED=true
-ETL_INTERVAL_SECONDS=300
-ETL_BATCH_SIZE=1000
-```
-
-### Real-time Subscriptions
-
-Supabase Realtime handles WebSocket connections:
-- Channel: `documents:{document_id}`
-- Events: `INSERT`, `UPDATE`, `DELETE`
-- Presence tracking for collaboration
-
----
-
-## Troubleshooting
-
-### Issue: Database connection errors
+### Working on Core Library
 
 ```bash
-# Check Supabase is running
-docker-compose ps supabase
-
-# Restart if needed
-docker-compose restart supabase
+# Make changes to crates/iou-core
+cargo build -p iou-core
+cargo test -p iou-core
 ```
 
-### Issue: ETL not running
+### Working on Rules Engine
 
 ```bash
-# Check environment
-echo $ETL_ENABLED
-
-# Verify outbox table exists
-psql $DATABASE_URL -c "\d change_outbox"
-
-# Check logs
-journalctl -u iou-api -f | grep etl
+# Make changes to crates/iou-regels
+cargo build -p iou-regels
+cargo test -p iou-regels
 ```
 
-### Issue: Tests failing
+### Working on Frontend
 
 ```bash
-# Ensure Supabase is running
-docker-compose -f docker-compose.supabase.yml up -d
+cd frontend
+dx serve  # Auto-reload on changes
+```
 
-# Run with logs
+## Testing
+
+```bash
+# Run all tests
+cargo test
+
+# Run specific crate tests
+cargo test -p iou-core
+cargo test -p iou-regels
+
+# With output
 cargo test -- --nocapture
-
-# Run specific test
-cargo test test_name
 ```
 
----
+## Feature Flags
+
+### iou-core
+
+```toml
+[features]
+default = ["server"]  # Native builds include server features
+wasm = []             # WASM builds exclude server dependencies
+server = [
+    "tokio",
+    "reqwest",
+    "sqlx",
+    "arangors",
+    # ... other server-only deps
+]
+```
+
+## Common Tasks
+
+### Adding a new dependency
+
+1. **Shared dependency**: Add to root `Cargo.toml` `[workspace.dependencies]`
+2. **Frontend-only**: Add to `frontend/Cargo.toml`
+
+### Running the frontend locally
+
+```bash
+cd frontend
+dx serve
+# Open http://localhost:8080
+```
 
 ## Resources
 
-### Documentation
+- [README.md](../../README.md) - Project overview
+- [workspaces.md](../workspaces.md) - Workspace structure details
+- [architecture/](../architecture/) - Architecture documentation
 
-- [Database Architecture](../architecture/database.md)
-- [ETL Troubleshooting](../operations/runbooks/etl_troubleshooting.md)
-- [Stabilization Runbook](../operations/stabilization_runbook.md)
-- [Migration Plan](../../planning-backend-eval/spec.md)
+## Troubleshooting
 
-### Internal Tools
+### "tokio doesn't work on WASM"
+Expected. Use root workspace for native builds, frontend workspace for WASM.
 
-- Supabase Dashboard: `https://supabase.com/project/xxx`
-- Grafana Dashboard: `http://localhost:3000` (if configured)
-- API Documentation: `http://localhost:8080/docs`
+### Feature flag errors
+Make sure to build with correct features:
+- Native: `cargo build` (default features)
+- WASM: `cd frontend && dx build` (automatically uses wasm feature)
 
-### Getting Help
-
-- #backend-development on Slack
-- Create GitHub issue for bugs
-- Contact backend lead for architecture questions
-
----
-
-## Next Steps
-
-1. Complete the [Training Checklist](#training-checklist)
-2. Set up your local development environment
-3. Make your first commit following the [Contribution Guidelines](../CONTRIBUTING.md)
-4. Attend the weekly backend sync meeting
-
----
-
-## Training Checklist
-
-Complete these items to be fully onboarded:
-
-- [ ] Development environment running locally
-- [ ] Successfully run all tests
-- [ ] Navigate Supabase dashboard independently
-- [ ] Understand RLS policy structure
-- [ ] Debug a real-time subscription issue
-- [ ] Manually trigger ETL and verify results
-- [ ] Write an analytics query in DuckDB
-- [ ] Create and apply a database migration
-- [ ] Debug a failing test
-- [ ] Deploy to staging environment
-
-**Mentor:** ___________________
-**Completion Date:** ___________________
+### Path dependency issues
+When frontend depends on shared crates:
+```toml
+iou-core = { path = "../../crates/iou-core" }
+```
