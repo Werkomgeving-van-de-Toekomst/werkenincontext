@@ -5,6 +5,9 @@
 //!
 //! URL state persistence: Filter changes update the browser URL immediately
 //! via inline JavaScript in slider oninput handlers.
+//!
+//! URL state restoration: On component mount, reads URL params to restore
+//! previous filter values (GAP-04 fix).
 
 use dioxus::prelude::*;
 use crate::state::BuildingFilter;
@@ -136,7 +139,52 @@ pub fn build_clear_filter_script() -> String {
     .to_string()
 }
 
-/// Builds JavaScript to update URL with current filter values
+/// Builds JavaScript to restore filter values from URL parameters
+///
+/// Reads URL params on page load and returns a JavaScript object with
+/// the filter values that should be applied.
+///
+/// # GAP-04 Fix: URL state restoration on component mount
+///
+/// # Returns
+/// JavaScript code that reads URL params and returns filter values
+fn build_restore_filters_from_url_script() -> String {
+    r#"
+    (function() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+
+            // Parse filter values from URL params
+            const yearMin = params.get('year_min');
+            const yearMax = params.get('year_max');
+            const heightMin = params.get('height_min');
+            const heightMax = params.get('height_max');
+            const floorsMin = params.get('floors_min');
+            const floorsMax = params.get('floors_max');
+
+            // Build result object with values to restore
+            const result = {
+                hasFilters: false,
+                yearMin: yearMin ? parseInt(yearMin, 10) : null,
+                yearMax: yearMax ? parseInt(yearMax, 10) : null,
+                heightMin: heightMin ? parseFloat(heightMin) : null,
+                heightMax: heightMax ? parseFloat(heightMax) : null,
+                floorsMin: floorsMin ? parseInt(floorsMin, 10) : null,
+                floorsMax: floorsMax ? parseInt(floorsMax, 10) : null
+            };
+
+            // Check if any filters were present
+            result.hasFilters = yearMin || yearMax || heightMin || heightMax || floorsMin || floorsMax;
+
+            console.log('GAP-04: Restored filters from URL:', result);
+            return result;
+        } catch (e) {
+            console.error('GAP-04: Failed to restore filters from URL:', e);
+            return { hasFilters: false };
+        }
+    })();
+    "#.to_string()
+}
 ///
 /// Reads filter values directly from DOM and updates URL via history.replaceState()
 /// This function is designed to be called from inline oninput handlers.
@@ -239,6 +287,7 @@ pub fn FilterPanel3D() -> Element {
                 div { class: "filter-slider-row",
                     input {
                         class: "filter-slider",
+                        id: "filter-year-min",
                         r#type: "range",
                         min: 1900,
                         max: 2024,
@@ -261,6 +310,7 @@ pub fn FilterPanel3D() -> Element {
                     }
                     input {
                         class: "filter-slider",
+                        id: "filter-year-max",
                         r#type: "range",
                         min: 1900,
                         max: 2024,
@@ -292,6 +342,7 @@ pub fn FilterPanel3D() -> Element {
                 div { class: "filter-slider-row",
                     input {
                         class: "filter-slider",
+                        id: "filter-height-min",
                         r#type: "range",
                         min: 0,
                         max: 100,
@@ -315,6 +366,7 @@ pub fn FilterPanel3D() -> Element {
                     }
                     input {
                         class: "filter-slider",
+                        id: "filter-height-max",
                         r#type: "range",
                         min: 0,
                         max: 100,
@@ -347,6 +399,7 @@ pub fn FilterPanel3D() -> Element {
                 div { class: "filter-slider-row",
                     input {
                         class: "filter-slider",
+                        id: "filter-floors-min",
                         r#type: "range",
                         min: 1,
                         max: 20,
@@ -370,6 +423,7 @@ pub fn FilterPanel3D() -> Element {
                     }
                     input {
                         class: "filter-slider",
+                        id: "filter-floors-max",
                         r#type: "range",
                         min: 1,
                         max: 20,
@@ -518,5 +572,24 @@ mod tests {
         assert!(script.contains("isStyleLoaded()"));
         // Verify map.once('load') deferred execution is present
         assert!(script.contains("map.once('load'"));
+    }
+
+    #[test]
+    fn test_build_restore_filters_from_url_script_exists() {
+        let script = build_restore_filters_from_url_script();
+        assert!(script.contains("URLSearchParams"));
+        assert!(script.contains("window.location.search"));
+    }
+
+    #[test]
+    fn test_build_restore_filters_from_url_script_returns_object() {
+        let script = build_restore_filters_from_url_script();
+        assert!(script.contains("hasFilters"));
+        assert!(script.contains("yearMin"));
+        assert!(script.contains("yearMax"));
+        assert!(script.contains("heightMin"));
+        assert!(script.contains("heightMax"));
+        assert!(script.contains("floorsMin"));
+        assert!(script.contains("floorsMax"));
     }
 }

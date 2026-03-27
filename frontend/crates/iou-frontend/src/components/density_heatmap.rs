@@ -22,6 +22,9 @@ const BUFFER_METERS: f64 = 50.0;
 ///
 /// # Returns
 /// JavaScript code that creates/updates the MapLibre heatmap layer
+///
+/// # GAP-02 Fix: Automatically switches to 2D view when heatmap is enabled
+/// to prevent "purple buildings" visual issue where 3D buildings obscure the heatmap.
 pub fn build_add_heatmap_layer_script(enabled: bool) -> String {
     format!(
         r#"
@@ -37,6 +40,19 @@ pub fn build_add_heatmap_layer_script(enabled: bool) -> String {
                 const layerId = 'density-heatmap';
 
                 if ({enabled}) {{
+                    // GAP-02 FIX: Switch to 2D view when heatmap is enabled
+                    // This prevents the "purple buildings" issue where 3D extrusions
+                    // obscure the heatmap overlay, making buildings look purple instead
+                    // of showing a proper density gradient.
+                    const buildingLayer = map.getLayer('building-3d');
+                    if (buildingLayer) {{
+                        map.setPaintProperty('building-3d', 'fill-extrusion-height', 0);
+                        map.setPitch(0);
+                        // Update view mode state to match
+                        localStorage.setItem('viewMode', '2d');
+                        console.log('GAP-02: Switched to 2D view for heatmap visibility');
+                    }}
+
                     // Create source if it doesn't exist
                     if (!map.getSource(sourceId)) {{
                         map.addSource(sourceId, {{
@@ -75,7 +91,7 @@ pub fn build_add_heatmap_layer_script(enabled: bool) -> String {
                     // Persist to localStorage
                     localStorage.setItem('{storage_key}', 'true');
 
-                    console.log('Density heatmap layer enabled');
+                    console.log('Density heatmap layer enabled (2D view active)');
 
                 }} else {{
                     // Hide the layer
@@ -603,5 +619,28 @@ mod tests {
         // Dark purple for high density
         assert!(script.contains("156, 39, 176") || script.contains("74, 20, 140"),
                 "Script should include dark purple colors");
+    }
+
+    #[test]
+    fn test_heatmap_enables_switches_to_2d_view() {
+        let script = build_add_heatmap_layer_script(true);
+        // GAP-02: When heatmap is enabled, should switch to 2D view
+        assert!(script.contains("setPaintProperty('building-3d', 'fill-extrusion-height', 0)"),
+                "Enabled heatmap should switch buildings to 2D (height = 0)");
+        assert!(script.contains("setPitch(0)"),
+                "Enabled heatmap should set pitch to 0 for 2D view");
+        assert!(script.contains("localStorage.setItem('viewMode', '2d')"),
+                "Enabled heatmap should persist 2D view mode to localStorage");
+    }
+
+    #[test]
+    fn test_heatmap_disables_does_not_change_view_mode() {
+        let script = build_add_heatmap_layer_script(false);
+        // When disabling heatmap, view mode should NOT be changed
+        assert!(!script.contains("setPaintProperty('building-3d', 'fill-extrusion-height', 0)") ||
+                 script.contains("'visibility', 'none'"),
+                "Disabled heatmap should not change view mode");
+        assert!(script.contains("'visibility', 'none'") || script.contains("localStorage.setItem('{storage_key}', 'false')"),
+                "Disabled heatmap should hide the layer");
     }
 }
