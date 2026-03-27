@@ -6,9 +6,20 @@
 //! # Selectielijsten
 //!
 //! - **Provisa 2020+**: Procesgerichte lijst voor provinciale organen (sinds 1-1-2020)
+//!   - Gepubliceerd door Nationaal Archief (Staatscourant NA/2022/31454164, NA/2022/31455483)
 //! - **Provisa CdK 2020+**: Specifieke lijst voor Commissaris van de Koning als rijksorgaan
-//! - **Provisa 2014-2019**: Procesgerichte lijst (geldig t/m 2019)
+//! - **Provisa 2014-2019**: Procesgerichte lijst (vervallen sinds 2020)
 //! - **Provisa 2005**: Documentgerichte lijst (vervallen)
+//!
+//! # Status
+//!
+//! Sinds oktober 2023 is de PROVISA-applicatie stopgezet. De selectielijsten zijn beschikbaar
+//! via het Nationaal Archief (https://www.nationaalarchief.nl) en via bij12.nl/provisa.
+//!
+//! # Referenties
+//!
+//! - Officiële selectielijst: https://www.nationaalarchief.nl/archiveren/kennisbank/selectielijst-voor-archiefbescheiden-van-de-provinciale-organen-vanaf-1
+//! - PROVISA informatie: https://www.bij12.nl/onderwerp/informatieproducten-van-provincies/provisa/
 //!
 //! # Bewaartermijnen
 //!
@@ -390,14 +401,19 @@ pub struct ProvisaSelectielijst {
 impl ProvisaSelectielijst {
     /// Maak een nieuwe selectielijst
     pub fn new(versie: ProvisaVersion, orgaan: ProvincieOrgaan) -> Self {
-        let naam = match (versie, orgaan) {
-            (ProvisaVersion::V2020, ProvincieOrgaan::ProvincialeOrganen) => {
-                "Selectielijst voor documenten van de provinciale organen (2020)".to_string()
-            }
-            (ProvisaVersion::V2020, ProvincieOrgaan::CommissarisVanDeKoning) => {
-                "Selectielijst voor documenten van de CdK als rijksorgaan (2020)".to_string()
-            }
-            (v, o) => format!("Selectielijst {v:?} - {o:?}"),
+        let (naam, url) = match (versie, orgaan) {
+            (ProvisaVersion::V2020, ProvincieOrgaan::ProvincialeOrganen) => (
+                "Selectielijst voor archiefbescheiden van de provinciale organen (2020)".to_string(),
+                Some("https://www.nationaalarchief.nl/archiveren/kennisbank/selectielijst-voor-archiefbescheiden-van-de-provinciale-organen-vanaf-1".to_string()),
+            ),
+            (ProvisaVersion::V2020, ProvincieOrgaan::CommissarisVanDeKoning) => (
+                "Selectielijst voor de commissaris van de Koning als rijksorgaan (2020)".to_string(),
+                Some("https://www.nationaalarchief.nl/archiveren/kennisbank/selectielijst-commissaris-van-de-koning-als-rijksorgaan-vanaf-1".to_string()),
+            ),
+            (v, o) => (
+                format!("Selectielijst {v:?} - {o:?}"),
+                Some("https://www.bij12.nl/onderwerp/informatieproducten-van-provincies/provisa/".to_string()),
+            ),
         };
 
         Self {
@@ -405,7 +421,7 @@ impl ProvisaSelectielijst {
             orgaan,
             bepalingen: HashMap::new(),
             naam,
-            url: None,
+            url,
         }
     }
 
@@ -428,39 +444,41 @@ impl ProvisaSelectielijst {
         use PetraCategorie::*;
 
         // Provinciale verordeningen en beleidsregels zijn altijd permanent
+        // Referentie: NA/2022/31454164 (Nationaal Archief)
         for &cat in PetraCategorie::all() {
-            lijst.voeg_bepaling_toe(cat, Verordening, Bewaartermijn::permanent("provisa-2020-v"));
-            lijst.voeg_bepaling_toe(cat, Beleidsregel, Bewaartermijn::permanent("provisa-2020-br"));
+            lijst.voeg_bepaling_toe(cat, Verordening, Bewaartermijn::permanent("na-2022-31454164-v"));
+            lijst.voeg_bepaling_toe(cat, Beleidsregel, Bewaartermijn::permanent("na-2022-31454164-br"));
         }
 
         // Besluiten - afhankelijk van impact
         let permanente_besluittypen = [
-            (Bestuur, Besluit, "provisa-2020-b1"),
-            (Strategie, Besluit, "provisa-2020-b2"),
-            (RuimtelijkePlanning, Besluit, "provisa-2020-b3"),
-            (Milieu, Vergunning, "provisa-2020-m1"),
+            (Bestuur, Besluit, "na-2022-31454164-b1"),
+            (Strategie, Besluit, "na-2022-31454164-b2"),
+            (RuimtelijkePlanning, Besluit, "na-2022-31454164-b3"),
+            (Milieu, Vergunning, "na-2022-31454164-m1"),
         ];
         for (cat, btype, ref_code) in permanente_besluittypen {
             lijst.voeg_bepaling_toe(cat, btype, Bewaartermijn::permanent(ref_code));
         }
 
         // Tijdelijke bewaartermijnen voor uitvoerende stukken
-        lijst.voeg_bepaling_toe(HumanResourceManagement, Aanstelling, Bewaartermijn::tijdelijk(90, "provisa-2020-hr1"));
-        lijst.voeg_bepaling_toe(Financien, Subsidie, Bewaartermijn::tijdelijk(20, "provisa-2020-fin1"));
-        lijst.voeg_bepaling_toe(Financien, Contract, Bewaartermijn::tijdelijk(10, "provisa-2020-fin2"));
-        lijst.voeg_bepaling_toe(Informatievoorziening, Email, Bewaartermijn::tijdelijk(5, "provisa-2020-ict1"));
-        lijst.voeg_bepaling_toe(Communicatie, Brief, Bewaartermijn::tijdelijk(10, "provisa-2020-com1"));
-        lijst.voeg_bepaling_toe(Veiligheid, Aanvraag, Bewaartermijn::tijdelijk(15, "provisa-2020-v1"));
+        lijst.voeg_bepaling_toe(HumanResourceManagement, Aanstelling, Bewaartermijn::tijdelijk(90, "na-2022-31454164-hr1"));
+        lijst.voeg_bepaling_toe(Financien, Subsidie, Bewaartermijn::tijdelijk(20, "na-2022-31454164-fin1"));
+        lijst.voeg_bepaling_toe(Financien, Contract, Bewaartermijn::tijdelijk(10, "na-2022-31454164-fin2"));
+        lijst.voeg_bepaling_toe(Informatievoorziening, Email, Bewaartermijn::tijdelijk(5, "na-2022-31454164-ict1"));
+        lijst.voeg_bepaling_toe(Communicatie, Brief, Bewaartermijn::tijdelijk(10, "na-2022-31454164-com1"));
+        lijst.voeg_bepaling_toe(Veiligheid, Aanvraag, Bewaartermijn::tijdelijk(15, "na-2022-31454164-v1"));
 
         // Agenda en notulen - permanent voor PS/GS
         for cat in [Bestuur, Strategie, Concernsturing] {
-            lijst.voeg_bepaling_toe(cat, AgendaNotulen, Bewaartermijn::permanent("provisa-2020-an"));
+            lijst.voeg_bepaling_toe(cat, AgendaNotulen, Bewaartermijn::permanent("na-2022-31454164-an"));
         }
 
         lijst
     }
 
     /// Standaard PROVISA 2020 voor CdK als rijksorgaan
+    /// Referentie: NA/2022/31455483 (Nationaal Archief)
     pub fn cdk_2020() -> Self {
         let mut lijst = Self::new(ProvisaVersion::V2020, ProvincieOrgaan::CommissarisVanDeKoning);
 
@@ -468,9 +486,9 @@ impl ProvisaSelectielijst {
         use PetraCategorie::*;
 
         // CdK taken zijn voornamelijk tijdelijk, behalve burgemeestersbenoemingen
-        lijst.voeg_bepaling_toe(Bestuur, Aanstelling, Bewaartermijn::permanent("provisa-cdk-2020-b1"));
-        lijst.voeg_bepaling_toe(Bestuur, Advies, Bewaartermijn::tijdelijk(20, "provisa-cdk-2020-a1"));
-        lijst.voeg_bepaling_toe(Veiligheid, Besluit, Bewaartermijn::tijdelijk(15, "provisa-cdk-2020-v1"));
+        lijst.voeg_bepaling_toe(Bestuur, Aanstelling, Bewaartermijn::permanent("na-2022-31455483-b1"));
+        lijst.voeg_bepaling_toe(Bestuur, Advies, Bewaartermijn::tijdelijk(20, "na-2022-31455483-a1"));
+        lijst.voeg_bepaling_toe(Veiligheid, Besluit, Bewaartermijn::tijdelijk(15, "na-2022-31455483-v1"));
 
         lijst
     }

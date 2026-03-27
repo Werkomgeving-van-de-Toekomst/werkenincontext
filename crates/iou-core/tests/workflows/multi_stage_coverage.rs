@@ -4,7 +4,7 @@
 
 use iou_core::workflows::*;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{Utc, Datelike};
 
 /// Verify: Stage status transitions are fully covered
 #[test]
@@ -73,22 +73,36 @@ fn verify_quorum_evaluation_coverage() {
 #[test]
 fn verify_sla_calculation_edge_cases() {
     use iou_core::sla::SlaCalculator;
+    use chrono::{TimeZone, Weekday};
 
     let calculator = SlaCalculator::new();
 
-    // Test weekend handling
-    let friday_evening = Utc::now();
-    let monday_morning = friday_evening + chrono::Duration::days(3);
+    // Use a specific Friday evening for deterministic test
+    let friday_evening = "2024-01-05T17:00:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
+    // Monday morning is 3 days after Friday evening
+    let monday_morning = "2024-01-08T09:00:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
+    // Verify the dates are correct
+    assert_eq!(friday_evening.weekday(), Weekday::Fri);
+    assert_eq!(monday_morning.weekday(), Weekday::Mon);
 
     // Calculate deadline for 24 business hour SLA starting Friday evening
     // Should skip weekend and be due Tuesday
     let deadline = calculator.calculate_deadline(friday_evening, 24);
 
-    // Deadline should be after the weekend (at least 3 days later due to weekend)
+    // Deadline should be after Monday morning (due to weekend)
     assert!(deadline > monday_morning);
 
     // Test short SLA (same business day)
-    let morning = Utc::now();
+    let morning = "2024-01-08T09:00:00Z" // Monday morning
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
     let same_day_deadline = calculator.calculate_deadline(morning, 4);
 
     // Should be at least 4 hours later

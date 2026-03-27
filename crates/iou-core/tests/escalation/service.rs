@@ -20,8 +20,21 @@ fn create_test_service() -> EscalationService {
     EscalationService::new(sla_calculator, rt_client)
 }
 
-fn create_test_stage(hours_until_deadline: i32) -> StageDeadlineInfo {
-    let deadline = Utc::now() + chrono::Duration::hours(hours_until_deadline as i64);
+fn create_test_stage_deadline(deadline: DateTime<Utc>) -> StageDeadlineInfo {
+    StageDeadlineInfo {
+        document_id: Uuid::new_v4(),
+        stage_instance_id: Uuid::new_v4(),
+        stage_id: "test_stage".to_string(),
+        stage_name: "Test Review".to_string(),
+        deadline,
+        approvers: vec![Uuid::new_v4()],
+    }
+}
+
+fn create_test_stage_business_hours(hours_until_deadline: i32) -> StageDeadlineInfo {
+    // Use SLA calculator to create deadline with business hours
+    let calculator = SlaCalculator::new();
+    let deadline = calculator.calculate_deadline(Utc::now(), hours_until_deadline);
 
     StageDeadlineInfo {
         document_id: Uuid::new_v4(),
@@ -37,7 +50,7 @@ fn create_test_stage(hours_until_deadline: i32) -> StageDeadlineInfo {
 async fn test_check_overdue_stages_with_24h_remaining() {
     let service = create_test_service();
 
-    let stage = create_test_stage(24);
+    let stage = create_test_stage_business_hours(24);
     let stages = vec![stage.clone()];
 
     let escalations = service.check_overdue_stages(stages).await;
@@ -52,7 +65,7 @@ async fn test_check_overdue_stages_with_24h_remaining() {
 async fn test_check_overdue_stages_with_8h_remaining() {
     let service = create_test_service();
 
-    let stage = create_test_stage(8);
+    let stage = create_test_stage_business_hours(8);
     let stages = vec![stage];
 
     let escalations = service.check_overdue_stages(stages).await;
@@ -66,7 +79,9 @@ async fn test_check_overdue_stages_with_8h_remaining() {
 async fn test_check_overdue_stages_expired() {
     let service = create_test_service();
 
-    let stage = create_test_stage(-1); // 1 hour overdue
+    // Create a deadline 1 hour in the past
+    let past_deadline = Utc::now() - chrono::Duration::hours(1);
+    let stage = create_test_stage_deadline(past_deadline);
     let stages = vec![stage];
 
     let escalations = service.check_overdue_stages(stages).await;
@@ -80,7 +95,7 @@ async fn test_check_overdue_stages_expired() {
 async fn test_check_overdue_stages_no_escalation_needed() {
     let service = create_test_service();
 
-    let stage = create_test_stage(72); // Well outside warning window
+    let stage = create_test_stage_business_hours(72); // Well outside warning window
     let stages = vec![stage];
 
     let escalations = service.check_overdue_stages(stages).await;

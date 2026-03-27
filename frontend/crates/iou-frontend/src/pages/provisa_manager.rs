@@ -6,6 +6,16 @@
 //! - Version comparison (2020 vs 2014 vs 2005)
 //! - AI-powered classification suggestions
 //! - Retention period calculator
+//!
+//! ## Status
+//!
+//! De PROVISA-applicatie is per oktober 2023 stopgezet. De selectielijsten zijn beschikbaar
+//! via het Nationaal Archief en https://bij12.nl/provisa.
+//!
+//! ## Referenties
+//!
+//! - Officiële selectielijst: https://www.nationaalarchief.nl/archiveren/kennisbank/selectielijst-voor-archiefbescheiden-van-de-provinciale-organen-vanaf-1
+//! - PROVISA informatie: https://www.bij12.nl/onderwerp/informatieproducten-van-provincies/provisa/
 
 use dioxus::prelude::*;
 
@@ -254,7 +264,7 @@ pub fn ProvisaManager() -> Element {
         main { class: "container",
             div { class: "page-header",
                 h1 { "PROVISA Beheer" }
-                p { "Beheer archieftermijnen volgens de Provinciale Archiefverordening" }
+                p { "Beheer archieftermijnen volgens de Provinciale Selectielijst (beschikbaar via Nationaal Archief)" }
             }
 
             // Search and Filter Panel
