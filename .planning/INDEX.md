@@ -4,10 +4,9 @@
 
 | Milestone | Status | Last Updated |
 |-----------|--------|-------------|
-| v1.0 - 3D Buildings Phase 2 | ✅ Complete | 2026-03-08 |
-| Gap Closure | 🟡 In Progress (3/7 done) | 2026-03-08 |
+| v1.0 - 3D Buildings Phase 2 | ✅ Complete | 2026-03-27 |
 
-**Current Focus:** Closing UAT gaps from v1.0 milestone audit
+**Current Position:** Milestone v1.0 complete - ready for next feature
 
 ## Document Structure
 
@@ -26,7 +25,7 @@ Detailed implementation plans for each phase:
 | [2.2](phases/2.2-view-toggle/) | 2D/3D View Toggle | ✅ Complete |
 | [2.3](phases/2.3-density-analysis/) | Density Heatmap | ✅ Complete |
 | [2.4](phases/2.4-polish/) | Polish & URL State | ✅ Complete |
-| [2-GAP](phases/2-gap-closure/) | UAT Gap Fixes | 🟡 3/7 Complete |
+| [2-GAP](phases/2-gap-closure/) | UAT Gap Fixes | ✅ 5/5 Complete |
 
 ### Features (`./features/`)
 Cross-cutting features that span multiple phases:
@@ -76,7 +75,7 @@ Phase 2.1 (Filtering)    ██████████████████�
 Phase 2.2 (View Toggle)  ████████████████████ 100%  (Completed 2026-03-08)
 Phase 2.3 (Density)      ████████████████████ 100%  (Completed 2026-03-08)
 Phase 2.4 (Polish)       ████████████████████ 100%  (Completed 2026-03-08)
-Gap Closure              ████████████░░░░░░░░  43%   (3/7 complete)
+Gap Closure              ████████████████████ 100%  (5/5 complete - 2026-03-27)
 Phase 3                  ░░░░░░░░░░░░░░░░░░░░   0%   (Not started)
 ```
 
