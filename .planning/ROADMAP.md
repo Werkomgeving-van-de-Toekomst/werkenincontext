@@ -92,7 +92,7 @@ Phases execute in numeric order: 2.1 (done) -> 2.2 (done) -> 2.3 (done) -> 2.4 (
 | 2.2. View Toggle | 1/1 | COMPLETE | 2026-03-08 |
 | 2.3. Density Analysis | 1/1 | COMPLETE | 2026-03-08 |
 | 2.4. Polish | 2/2 | COMPLETE | 2026-03-08 |
-| Gap Closure | 3/7 | IN PROGRESS | GAP-01, GAP-03, GAP-05 done |
+| Gap Closure | 5/5 | ✅ COMPLETE | 2026-03-27 |
 
 ## Complexity Indicators
 
@@ -149,7 +149,7 @@ Phase 2 Complete
 
 ## Gap Closure Phases (from v1.0 Milestone Audit)
 
-**Status:** GAP-01, GAP-03, GAP-05 Complete (2026-03-08)
+**Status:** ✅ ALL GAPS COMPLETE (2026-03-27)
 
 Plans:
 - [x] GAP-01: Fix MapLibre style load race condition causing "Style is not done loading" errors - COMPLETED 2026-03-08
@@ -164,5 +164,13 @@ Plans:
   - User verified: "No errors" - API returns JSON instead of HTML
   - Commits: 5748c6c, a75ddbd
   - Files: crates/iou-frontend/Dioxus.toml, crates/iou-frontend/src/components/density_heatmap.rs
-- [ ] GAP-02: [Next gap from UAT]
-- [ ] GAP-04 through GAP-07: [Remaining gaps]
+- [x] GAP-02: Heatmap renders as purple buildings - COMPLETED 2026-03-27
+  - Fix: Automatically switch to 2D view when heatmap enabled
+  - Implementation: Modified build_add_heatmap_layer_script() to set fill-extrusion-height=0
+  - Files: crates/iou-frontend/src/components/density_heatmap.rs
+  - Tests: test_heatmap_enables_switches_to_2d_view
+- [x] GAP-04: URL state not restorable on page load - COMPLETED 2026-03-27
+  - Fix: Add URL restoration on component mount with slider DOM manipulation
+  - Implementation: build_restore_filters_from_url_script() + mount effect
+  - Files: crates/iou-frontend/src/components/filter_panel_3d.rs
+  - Tests: test_build_restore_filters_from_url_script_exists, test_build_restore_filters_from_url_script_returns_object
