@@ -1,0 +1,42 @@
+{
+  "generated": "2026-04-01T12:00:00Z",
+  "scanned": {
+    "projects": 2,
+    "artifacts": 31
+  },
+  "summary": {
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "total": 1
+  },
+  "byType": {
+    "STALE-RSCH": 0,
+    "FORGOTTEN-ADR": 0,
+    "UNRESOLVED-COND": 1,
+    "STALE-EXT": 0,
+    "ORPHAN-REQ": 0,
+    "MISSING-TRACE": 0,
+    "VERSION-DRIFT": 0
+  },
+  "projects": [
+    {
+      "id": "001-iou-modern",
+      "artifacts": 31,
+      "findings": [
+        {
+          "severity": "HIGH",
+          "rule": "UNRESOLVED-COND",
+          "file": "reviews/ARC-001-HLDR-v1.0.md",
+          "message": "APPROVED WITH CONDITIONS - 3 blocking and 4 advisory conditions without resolution evidence",
+          "action": "Address BLOCKING-01 (secrets management), BLOCKING-02 (CI/CD pipeline), BLOCKING-03 (DR test) by target dates May-June 2026"
+        }
+      ]
+    },
+    {
+      "id": "000-global",
+      "artifacts": 1,
+      "findings": []
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+# Haven+ Naming Convention
+# {service}-{environment}-{instance}
+
+replicaCount: 3
+
+image:
+  repository: ${ACR_REGISTRY}/iou-api
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+# Haven+ service naming
+service:
+  name: iou-api
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  annotations:
+    # Haven+ NLX Outway annotation
+    nlx.outway.common-ground.nl/publication: "https://api.organization.nl/"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: iou-api.organization.nl
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: iou-api-tls
+      hosts:
+        - iou-api.organization.nl
+
+# Pod disruption budget (Haven+ requirement)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Resource limits (Haven+ baseline)
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Haven+ security context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+# Container security
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+# Environment variables (Haven+ convention)
+env:
+  - name: LOG_LEVEL
+    value: "info"
+  - name: LOG_FORMAT
+    value: "json"
+  - name: RUST_LOG
+    value: "info"
+
+# ConfigMaps
+configMaps:
+  application:
+    enabled: true
+    data:
+      DATABASE_URL: "postgresql://iou-api:5432/iou"
+      REDIS_URL: "redis://iou-redis:6379"
+      S3_ENDPOINT: "http://iou-minio:9000"
+      ENABLE_RLS: "true"
+
+# Secrets (Haven+ - external secret management)
+# Secrets managed via External Secrets Operator or Azure Key Vault
+secrets:
+  database:
+    enabled: true
+    externalSecretRef:
+      name: iou-api-database
+  apiKeys:
+    enabled: true
+    externalSecretRef:
+      name: iou-api-apikeys
+
+# ServiceAccount (Haven+ requirement)
+serviceAccount:
+  create: true
+  automountToken: false
+  annotations:
+    haven.common-ground.nl/organization: "organization"
+
+# Pod labels (Haven+ standard labels)
+podLabels:
+  organization: organization
+  domain: information-management
+  haven-version: "1.0"
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+# Health checks (Haven+ requirement)
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+# Startup probe
+startupProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 30
+
+# HPA (Haven+ autoscaling)
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+
+# Node selector (Haven+ worker pool selection)
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# PostgreSQL dependency
+postgresql:
+  enabled: true
+  auth:
+    database: iou
+    username: iou_api
+  primary:
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 100m
+        memory: 512Mi
+    service:
+      ports:
+        postgresql: 5432
+
+# Redis dependency
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+# MinIO dependency
+minio:
+  enabled: true
+  mode: distributed
+  replicas: 4
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  persistence:
+    size: 100Gi
+
+# Monitoring
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+
+# PodSecurityPolicy (if enforced)
+podSecurityPolicy:
+  create: false

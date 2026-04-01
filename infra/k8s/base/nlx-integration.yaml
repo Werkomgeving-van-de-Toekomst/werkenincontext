@@ -1,0 +1,192 @@
+# Haven+ NLX Integration - Outway (API Exposure)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: iou-api-nlx-outway
+  namespace: iou-base
+  labels:
+    app: iou-api
+    haven.common-ground.nl/nlx-component: "outway"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Haven+ NLX annotations
+    nlx.outway.common-ground.nl/publication: "https://api.organization.nl/"
+    nlx.outway.common-ground.nl/organization: "organization"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.organization.nl
+      http:
+        paths:
+          - path: /api/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: iou-api
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - api.organization.nl
+      secretName: iou-api-nlx-tls
+---
+# NLX Outway Service (internal)
+apiVersion: v1
+kind: Service
+metadata:
+  name: iou-api-nlx-outway
+  namespace: iou-base
+  labels:
+    app: iou-api
+    haven.common-ground.nl/nlx-component: "outway"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: iou-api
+---
+# NLX Directory Registration (Haven+ requirement)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iou-api-nlx-directory
+  namespace: iou-base
+  labels:
+    haven.common-ground.nl/nlx-component: "directory"
+data:
+  directory-url: "https://directory.organization.nl/"
+  organization: "organization"
+  services: |
+    - name: "IOU-Modern API"
+      description: "Information management API"
+      api-spec: "https://api.organization.nl/api/v1/openapi.json"
+      api-type: "open-rest"
+      tags:
+        - "informatie"
+        - "documenten"
+---
+# OpenAPI specification for NLX
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iou-api-openapi
+  namespace: iou-base
+data:
+  openapi.json: |
+    {
+      "openapi": "3.0.0",
+      "info": {
+        "title": "IOU-Modern API",
+        "version": "1.0.0",
+        "description": "Dutch Government Information Management API",
+        "contact": {
+          "name": "API Support",
+          "email": "api@organization.nl"
+        }
+      },
+      "servers": [
+        {
+          "url": "https://api.organization.nl/api/v1",
+          "description": "Production API"
+        }
+      ],
+      "paths": {
+        "/domains": {
+          "get": {
+            "summary": "List domains",
+            "operationId": "listDomains",
+            "tags": ["Domains"],
+            "responses": {
+              "200": {
+                "description": "Successful response",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Domain"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "nlx": []
+              }
+            ]
+          }
+        },
+        "/documents": {
+          "post": {
+            "summary": "Create document",
+            "operationId": "createDocument",
+            "tags": ["Documents"],
+            "requestBody": {
+              "required": true,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DocumentCreate"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "201": {
+                "description": "Document created"
+              }
+            }
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "Domain": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["zaak", "project", "beleid", "expertise"]
+              }
+            }
+          },
+          "DocumentCreate": {
+            "type": "object",
+            "required": ["title", "domain_id"],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "domain_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "content": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "securitySchemes": {
+          "nlx": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "NLX JWT token"
+          }
+        }
+      }
+    }
