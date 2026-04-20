@@ -1,29 +1,6 @@
 # TODO
 
-## Workflow Builder Cleanup
-
-### Delete unused workflow-builder implementation
-**What:** Remove migration 050 and empty workflow-builder crates that duplicate existing Camunda + iou-core workflow infrastructure.
-
-**Why:** The new workflow-builder schema and Rust crates overlap with existing workflow capabilities. Camunda Zeebe handles BPMN orchestration, and iou-core provides approval stage types. Building a parallel system creates duplication without clear benefit.
-
-**Files to delete:**
-- `migrations/050_workflow_builder.sql`
-- `server/crates/workflow-builder/` (entire directory)
-
-**Pros:**
-- Eliminates duplicate workflow infrastructure
-- Reduces maintenance burden
-- Clarifies architectural direction (Camunda-first)
-
-**Cons:**
-- None — the crates are empty (no implementation lost)
-
-**Depends on / blocked by:** None
-
-**Context:** Eng review found that migration 050's `workflows`, `workflow_versions`, `workflow_executions`, etc. duplicate concepts already handled by Camunda Zeebe process instances and iou-core's `WorkflowExecution`, `StageInstance`. The design doc called for a Python validation prototype, but Rust implementation was started instead. Decision: scrap new implementation, use existing infrastructure.
-
----
+## Validation Prototype (from design doc)
 
 ## Validation Prototype (from design doc)
 

@@ -31,7 +31,7 @@ iou-modern/
 │       ├── iou-storage/       # S3/MinIO ✓
 │       ├── iou-orchestrator/  # AI orchestration ✓
 │       ├── iou-ai/            # AI agents ✓
-│       └── workflow-builder/  # NEW
+│       └── iou-camunda-worker/ # Camunda/Zeebe BPMN ✓
 │
 ├── metadata-registry/         # Project 002 workspace
 │   ├── Cargo.toml             # actix-web + ArangoDB
@@ -74,8 +74,8 @@ iou-modern/
 | iou-orchestrator | ✅ | Multi-agent orchestration |
 | iou-ai | ✅ | AI agent implementations |
 | iou-ai-service | ✅ | AI service wrapper |
-| iou-camunda-worker | ✅ | Camunda/Zeebe integration |
-| workflow-builder | ✅ | NEW: Workflow definition |
+| iou-camunda-worker | ✅ | Camunda/Zeebe BPMN integration |
+| ~~workflow-builder~~ | ❌ | REMOVED: Use Camunda instead |
 
 ### Project 002: Metadata Registry ✅ COMPLETE
 
@@ -99,7 +99,7 @@ iou-modern/
 | context-domain | 🟡 MEDIUM | Domain context logic |
 | context-semantic | 🟡 MEDIUM | Semantic context (NER, entities) |
 | context-provenance | 🟡 MEDIUM | Provenance tracking |
-| context-inference | 🔴 HIGH | AI inference service |
+| context-inference | ✅ | Nebul API + local NLP (Dutch entities, BWBR) |
 | context-quality | 🟡 MEDIUM | Quality scoring |
 
 ## Frontend Status
