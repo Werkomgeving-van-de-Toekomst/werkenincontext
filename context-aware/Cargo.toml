@@ -1,0 +1,115 @@
+# =============================================================================
+# Context-Aware Data - Workspace (Project 003)
+# =============================================================================
+# Implements context capture, inference, and quality services for
+# transforming raw data into meaningful information through contextual
+# metadata. Aligned with Metamodel GGHH Overheid V2.
+#
+# Build: cargo build --manifest-path context-aware/Cargo.toml
+# =============================================================================
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/context-core",
+    "crates/context-api",
+    "crates/context-domain",
+    "crates/context-semantic",
+    "crates/context-provenance",
+    "crates/context-inference",
+    "crates/context-quality",
+    "crates/context-store",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Ministry of Justice & Security"]
+license = "EUPL-1.2"
+repository = "https://github.com/minjen/iou-modern"
+
+[workspace.dependencies]
+# Shared crates from parent workspace
+iou-core = { path = "../crates/iou-core", default-features = false, features = ["server"] }
+iou-regels = { path = "../crates/iou-regels", default-features = false }
+
+# Metadata Registry (Project 002) integration
+metadata-api = { path = "../metadata-registry/crates/metadata-api" }
+metadata-core = { path = "../metadata-registry/crates/metadata-core" }
+
+# Context-aware crates
+context-core = { path = "crates/context-core" }
+context-api = { path = "crates/context-api" }
+context-domain = { path = "crates/context-domain" }
+context-semantic = { path = "crates/context-semantic" }
+context-provenance = { path = "crates/context-provenance" }
+context-inference = { path = "crates/context-inference" }
+context-quality = { path = "crates/context-quality" }
+context-store = { path = "crates/context-store" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Types
+uuid = { version = "1.11", features = ["serde", "v7"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Async runtime
+tokio = { version = "1.43", features = ["full"] }
+async-trait = "0.1"
+
+# Web framework
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Database (ArangoDB for graph context relationships)
+arangors = { version = "0.6", features = ["rocksdb"] }
+
+# Vector database for semantic context
+qdrant-client = "1.12"
+
+# AI/ML for inference
+candle-core = "0.8"
+candle-transformers = "0.8"
+tokenizers = "0.15"
+
+# Validation
+garde = { version = "0.22", features = ["derive"] }
+
+# Tracing/Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# OpenTelemetry
+tracing-opentelemetry = "0.28"
+opentelemetry = "0.27"
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+
+# Configuration
+config = "0.15"
+
+# Testing
+proptest = "1.5"
+mockito = "1.6"
+
+[workspace.metadata.scripts]
+# Development
+dev-api = "cargo run --bin context-api"
+dev-inference = "cargo run --bin context-inference"
+dev-quality = "cargo run --bin context-quality"
+
+# Testing
+test-context = "cargo test --workspace"
+test-integration = "cargo test --workspace --test '*_integration'"
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+strip = true
