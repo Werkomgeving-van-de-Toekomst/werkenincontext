@@ -82,25 +82,35 @@ IOU-Modern is built on **Privacy by Design**, **Open Government**, and **Soverei
 
 ---
 
-### P3: Archival Integrity (Archiefwet)
+### P3: Archival Integrity (Archiefwet 2025)
 
-**Statement**: Government records are preserved according to Archiefwet requirements with complete provenance.
+**Statement**: Government records are preserved according to the nieuwe Archiefwet (2025) with complete provenance and digital accessibility.
 
 **Rationale**:
-- Archiefwet 1995 mandates record retention (5-20 years depending on type)
-- Historical accountability requires complete records
-- Legal certainty depends on preserved decisions
+- **Nieuwe Archiefwet 2025** (aangenomen door Tweede Kamer op 20-02-2025) mandates transfer to archives after **10 years** (previously 20)
+- Focus on **digital accessibility**: information must remain readable and usable, not just stored
+- Protects government information as Dutch cultural heritage
+- Enables democratic accountability and parliamentary oversight
+- Links with Wet open overheid: Archiefwet regulates archived info, Woo regulates active info
 
 **Implications**:
-- Retention periods: Besluit (20y), Document (10y), Email (5y), Chat (1y)
-- Version history maintained for all InformationObjects
-- Audit trail logs all agent actions with timestamps
-- Automated deletion only after retention expires
-- Records transferred to Nationaal Archief after retention period
+- **10-year transfer rule**: Permanent records transferred to archive after 10 years (down from 20)
+- **Digital-first archiving**: Metadata and formats ensure long-term readability
+- **Provenance tracking**: Complete audit trail of who, what, when, where, why
+- **Retention periods**: Besluit (20y), Document (10y), Email (5y), Chat (1y)
+- **Version history**: All changes tracked with timestamps and actors
+- **Automated deletion**: Only after retention period expires
+- **Archive integration**: Ready for CDD+ and Nationaal Archief formats
+
+**References**:
+- [Nieuwe Archiefwet aangenomen door Tweede Kamer](https://www.open-overheid.nl/actueel/nieuws/2025/02/20/nieuwe-archiefwet-aangenomen-door-tweede-kamer)
+- Archiefbesluit 2020 (updated for Archiefwet 2025)
+- Metamodel GGHH Overheid V2 (alignment with archival metadata)
 
 **Trade-offs Considered**:
 - Storage cost vs. Retention: Retention wins (legal requirement)
 - Performance vs. Audit logging: Complete audit trail required
+- Digital accessibility vs. Security: Balanced with proper access controls
 
 ---
 

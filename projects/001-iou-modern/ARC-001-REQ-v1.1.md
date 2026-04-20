@@ -242,7 +242,7 @@ IOU-Modern enables Dutch government organizations to manage information efficien
 |----|-------------|------------|----------|
 | **NFR-COMP-001** | Woo compliance | Wet open overheid | MUST |
 | **NFR-COMP-002** | AVG compliance | Algemene verordening gegevensbescherming | MUST |
-| **NFR-COMP-003** | Archiefwet compliance | Archiefwet 1995 | MUST |
+| **NFR-COMP-003** | Archiefwet compliance | Archiefwet 2025 (10-year transfer rule) | MUST |
 | **NFR-COMP-004** | WCAG 2.1 AA | European Accessibility Act | SHOULD |
 | **NFR-COMP-005** | Log retention | 7 years for audit logs | MUST |
 
@@ -349,7 +349,7 @@ The following are **NOT** in scope for IOU-Modern v1.0:
 |------|------------|
 | **AVG** | Algemene verordening gegevensbescherming (GDPR Netherlands) |
 | **Woo** | Wet open overheid (Government Information Act) |
-| **Archiefwet** | Dutch Archives Act governing record retention |
+| **Archiefwet** | Dutch Archives Act 2025: transfers to archives after 10 years (was 20), digital accessibility focus |
 | **DigiD** | Dutch digital identity system |
 | **Zaak** | Case or executive work item |
 | **Beleid** | Policy development work |
