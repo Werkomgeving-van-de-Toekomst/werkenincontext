@@ -7,55 +7,106 @@
 //! - Locaties in Nederland
 //! - Datums en bedragen
 
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::OnceLock;
 use uuid::Uuid;
 
 use iou_core::graphrag::{Entity, EntityType};
 
-lazy_static! {
-    // Nederlandse overheidsorganisaties
-    static ref RE_PROVINCIE: Regex = Regex::new(
-        r"(?i)\b(Provincie\s+)?(Flevoland|Noord-Holland|Zuid-Holland|Utrecht|Gelderland|Overijssel|Drenthe|Groningen|Friesland|Zeeland|Noord-Brabant|Limburg)\b"
-    ).unwrap();
+// Nederlandse overheidsorganisaties
+static RE_PROVINCIE: OnceLock<Regex> = OnceLock::new();
+static RE_GEMEENTE: OnceLock<Regex> = OnceLock::new();
+static RE_MINISTERIE: OnceLock<Regex> = OnceLock::new();
 
-    static ref RE_GEMEENTE: Regex = Regex::new(
-        r"(?i)\b(Gemeente\s+)?(Almere|Amsterdam|Rotterdam|Den Haag|Utrecht|Eindhoven|Groningen|Tilburg|Almelo|Lelystad|Dronten|Zeewolde|Urk|Noordoostpolder)\b"
-    ).unwrap();
+// Nederlandse wetten
+static RE_WET: OnceLock<Regex> = OnceLock::new;
 
-    static ref RE_MINISTERIE: Regex = Regex::new(
-        r"(?i)\b(Ministerie\s+van\s+)(Binnenlandse Zaken|BZK|Financiën|Infrastructuur en Waterstaat|I&W|Economische Zaken|EZK|Justitie en Veiligheid|J&V|Onderwijs|OCW|Volksgezondheid|VWS|Sociale Zaken|SZW|Buitenlandse Zaken|BZ|Defensie|Landbouw|LNV)\b"
-    ).unwrap();
+// Artikelverwijzingen
+static RE_ARTIKEL: OnceLock<Regex> = OnceLock::new;
 
-    // Nederlandse wetten
-    static ref RE_WET: Regex = Regex::new(
-        r"(?i)\b(Wet\s+open\s+overheid|Woo|WOO|Algemene\s+verordening\s+gegevensbescherming|AVG|GDPR|Archiefwet|Omgevingswet|Algemene\s+wet\s+bestuursrecht|Awb|Wet\s+openbaarheid\s+van\s+bestuur|Wob|Gemeentewet|Provinciewet|Waterschapswet)\b"
-    ).unwrap();
+// Datums (Nederlandse notatie)
+static RE_DATUM: OnceLock<Regex> = OnceLock::new;
 
-    // Artikelverwijzingen
-    static ref RE_ARTIKEL: Regex = Regex::new(
-        r"(?i)\b(artikel|art\.?)\s*(\d+(?:\.\d+)?(?:\s*(?:lid|sub)\s*\d+)?)\b"
-    ).unwrap();
+// Geldbedragen
+static RE_GELD: OnceLock<Regex> = OnceLock::new;
 
-    // Datums (Nederlandse notatie)
-    static ref RE_DATUM: Regex = Regex::new(
-        r"\b(\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}\s+(?:januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december)\s+\d{4})\b"
-    ).unwrap();
+// Zaaknummers en referenties
+static RE_ZAAKNUMMER: OnceLock<Regex> = OnceLock::new;
 
-    // Geldbedragen
-    static ref RE_GELD: Regex = Regex::new(
-        r"(?i)\b(€\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)\s*(euro|EUR)?\b"
-    ).unwrap();
+// Beleidstermen
+static RE_BELEID: OnceLock<Regex> = OnceLock::new();
 
-    // Zaaknummers en referenties
-    static ref RE_ZAAKNUMMER: Regex = Regex::new(
-        r"\b([A-Z]{1,5}[-/]?\d{4}[-/]\d{3,6}|Z[-/]?\d{4}[-/]\d{3,6})\b"
-    ).unwrap();
+/// Helper functions to get compiled regex patterns
+fn re_provincie() -> &'static Regex {
+    RE_PROVINCIE.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(Provincie\s+)?(Flevoland|Noord-Holland|Zuid-Holland|Utrecht|Gelderland|Overijssel|Drenthe|Groningen|Friesland|Zeeland|Noord-Brabant|Limburg)\b"
+        ).unwrap()
+    })
+}
 
-    // Beleidstermen
-    static ref RE_BELEID: Regex = Regex::new(
-        r"(?i)\b(mobiliteit|duurzaamheid|energietransitie|circulaire economie|klimaatadaptatie|woningbouw|stikstof|biodiversiteit|ruimtelijke ordening|omgevingsvisie)\b"
-    ).unwrap();
+fn re_gemeente() -> &'static Regex {
+    RE_GEMEENTE.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(Gemeente\s+)?(Almere|Amsterdam|Rotterdam|Den Haag|Utrecht|Eindhoven|Groningen|Tilburg|Almelo|Lelystad|Dronten|Zeewolde|Urk|Noordoostpolder)\b"
+        ).unwrap()
+    })
+}
+
+fn re_ministerie() -> &'static Regex {
+    RE_MINISTERIE.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(Ministerie\s+van\s+)(Binnenlandse Zaken|BZK|Financiën|Infrastructuur en Waterstaat|I&W|Economische Zaken|EZK|Justitie en Veiligheid|J&V|Onderwijs|OCW|Volksgezondheid|VWS|Sociale Zaken|SZW|Buitenlandse Zaken|BZ|Defensie|Landbouw|LNV)\b"
+        ).unwrap()
+    })
+}
+
+fn re_wet() -> &'static Regex {
+    RE_WET.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(Wet\s+open\s+overheid|Woo|WOO|Algemene\s+verordening\s+gegevensbescherming|AVG|GDPR|Archiefwet|Omgevingswet|Algemene\s+wet\s+bestuursrecht|Awb|Wet\s+openbaarheid\s+van\s+bestuur|Wob|Gemeentewet|Provinciewet|Waterschapswet)\b"
+        ).unwrap()
+    })
+}
+
+fn re_artikel() -> &'static Regex {
+    RE_ARTIKEL.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(artikel|art\.?)\s*(\d+(?:\.\d+)?(?:\s*(?:lid|sub)\s*\d+)?)\b"
+        ).unwrap()
+    })
+}
+
+fn re_datum() -> &'static Regex {
+    RE_DATUM.get_or_init(|| {
+        Regex::new(
+            r"\b(\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}\s+(?:januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december)\s+\d{4})\b"
+        ).unwrap()
+    })
+}
+
+fn re_geld() -> &'static Regex {
+    RE_GELD.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(€\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)\s*(euro|EUR)?\b"
+        ).unwrap()
+    })
+}
+
+fn re_zaaknummer() -> &'static Regex {
+    RE_ZAAKNUMMER.get_or_init(|| {
+        Regex::new(
+            r"\b([A-Z]{1,5}[-/]?\d{4}[-/]\d{3,6}|Z[-/]?\d{4}[-/]\d{3,6})\b"
+        ).unwrap()
+    })
+}
+
+fn re_beleid() -> &'static Regex {
+    RE_BELEID.get_or_init(|| {
+        Regex::new(
+            r"(?i)\b(mobiliteit|duurzaamheid|energietransitie|circulaire economie|klimaatadaptatie|woningbouw|stikstof|biodiversiteit|ruimtelijke ordening|omgevingsvisie)\b"
+        ).unwrap()
+    })
 }
 
 /// Dutch NER extractor using pattern matching
@@ -72,7 +123,7 @@ impl DutchNerExtractor {
         let now = chrono::Utc::now();
 
         // Extract organizations (provinces, municipalities, ministries)
-        for cap in RE_PROVINCIE.captures_iter(text) {
+        for cap in re_provincie().captures_iter(text) {
             entities.push(Entity {
                 id: Uuid::new_v4(),
                 name: cap.get(0).unwrap().as_str().to_string(),
@@ -86,7 +137,7 @@ impl DutchNerExtractor {
             });
         }
 
-        for cap in RE_GEMEENTE.captures_iter(text) {
+        for cap in re_gemeente().captures_iter(text) {
             entities.push(Entity {
                 id: Uuid::new_v4(),
                 name: cap.get(0).unwrap().as_str().to_string(),
@@ -100,7 +151,7 @@ impl DutchNerExtractor {
             });
         }
 
-        for cap in RE_MINISTERIE.captures_iter(text) {
+        for cap in re_ministerie().captures_iter(text) {
             entities.push(Entity {
                 id: Uuid::new_v4(),
                 name: cap.get(0).unwrap().as_str().to_string(),
@@ -115,7 +166,7 @@ impl DutchNerExtractor {
         }
 
         // Extract laws
-        for cap in RE_WET.captures_iter(text) {
+        for cap in re_wet().captures_iter(text) {
             let name = cap.get(0).unwrap().as_str();
             let canonical = match name.to_lowercase().as_str() {
                 s if s.contains("woo") || s.contains("open overheid") => "Wet open overheid (Woo)",
@@ -140,7 +191,7 @@ impl DutchNerExtractor {
         }
 
         // Extract dates
-        for cap in RE_DATUM.captures_iter(text) {
+        for cap in re_datum().captures_iter(text) {
             entities.push(Entity {
                 id: Uuid::new_v4(),
                 name: cap.get(0).unwrap().as_str().to_string(),
@@ -155,7 +206,7 @@ impl DutchNerExtractor {
         }
 
         // Extract money amounts
-        for cap in RE_GELD.captures_iter(text) {
+        for cap in re_geld().captures_iter(text) {
             let full_match = cap.get(0).unwrap().as_str();
             // Only include if it looks like a significant amount
             if let Some(amount) = cap.get(2) {
@@ -179,7 +230,7 @@ impl DutchNerExtractor {
         }
 
         // Extract policy terms
-        for cap in RE_BELEID.captures_iter(text) {
+        for cap in re_beleid().captures_iter(text) {
             entities.push(Entity {
                 id: Uuid::new_v4(),
                 name: cap.get(0).unwrap().as_str().to_string(),
@@ -212,7 +263,7 @@ impl DutchNerExtractor {
         let now = chrono::Utc::now();
 
         // For each regex, capture positions
-        for cap in RE_PROVINCIE.captures_iter(text) {
+        for cap in re_provincie().captures_iter(text) {
             let m = cap.get(0).unwrap();
             results.push((
                 Entity {

@@ -39,6 +39,37 @@ pub enum DocumentStatus {
         error: String,
         timestamp: i64,
     },
+
+    /// Stage status changed (workflow-specific)
+    #[serde(rename = "stage_status_changed")]
+    StageStatusChanged {
+        document_id: Uuid,
+        stage_id: String,
+        stage_name: String,
+        old_status: String,
+        new_status: String,
+        timestamp: i64,
+    },
+
+    /// Approval received (workflow-specific)
+    #[serde(rename = "approval_received")]
+    ApprovalReceived {
+        document_id: Uuid,
+        stage_id: String,
+        approver_id: Uuid,
+        decision: String,
+        timestamp: i64,
+    },
+
+    /// Delegation added (workflow-specific)
+    #[serde(rename = "delegation_added")]
+    DelegationAdded {
+        document_id: Uuid,
+        stage_id: String,
+        from_user_id: Uuid,
+        to_user_id: Uuid,
+        timestamp: i64,
+    },
 }
 
 impl DocumentStatus {
@@ -49,6 +80,9 @@ impl DocumentStatus {
             DocumentStatus::Progress { document_id, .. } => *document_id,
             DocumentStatus::Completed { document_id, .. } => *document_id,
             DocumentStatus::Failed { document_id, .. } => *document_id,
+            DocumentStatus::StageStatusChanged { document_id, .. } => *document_id,
+            DocumentStatus::ApprovalReceived { document_id, .. } => *document_id,
+            DocumentStatus::DelegationAdded { document_id, .. } => *document_id,
         }
     }
 

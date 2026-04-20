@@ -1,5 +1,6 @@
 //! API route handlers
 
+pub mod ai_workflow;
 pub mod apps;
 pub mod auth;
 pub mod buildings_3d;

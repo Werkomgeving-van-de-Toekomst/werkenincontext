@@ -6,18 +6,18 @@
 
 | Field | Value |
 |-------|-------|
-| **Document ID** | ARC-001-DIAG-002-v1.0 |
+| **Document ID** | ARC-001-DIAG-002-v1.1 |
 | **Document Type** | Architecture Diagram (C4 Container) |
 | **Project** | IOU-Modern (Project 001) |
 | **Classification** | OFFICIAL |
-| **Status** | DRAFT |
-| **Version** | 1.0 |
+| **Status** | IN_REVIEW |
+| **Version** | 1.1 |
 | **Created Date** | 2026-03-26 |
-| **Last Modified** | 2026-03-26 |
+| **Last Modified** | 2026-04-20 |
 | **Review Cycle** | Per release |
-| **Next Review Date** | 2026-04-25 |
+| **Next Review Date** | 2026-05-20 |
 | **Owner** | Solution Architect |
-| **Reviewed By** | PENDING |
+| **Reviewed By** | ArcKit AI on 2026-04-20 |
 | **Approved By** | PENDING |
 | **Distribution** | Project Team, Architecture Team, Development Team |
 
@@ -26,6 +26,7 @@
 | Version | Date | Author | Changes | Approved By | Approval Date |
 |---------|------|--------|---------|-------------|---------------|
 | 1.0 | 2026-03-26 | ArcKit AI | Initial C4 Container diagram creation | PENDING | PENDING |
+| 1.1 | 2026-04-20 | ArcKit AI | Added source code traceability - mapped containers to actual crate/file locations | PENDING | PENDING |
 
 ---
 
@@ -154,25 +155,63 @@ C4Container
 
 ---
 
-## 2. Component Inventory
+## 2. Container Inventory
 
-| ID | Type | Name | Technology | Responsibility | Evolution Stage |
-|----|------|------|------------|----------------|----------------|
-| C-001 | Container | Web Application | Dioxus WASM, Rust | User interface, WCAG 2.2 AA | Custom 0.42 |
-| C-002 | Container | REST API | Axum, Rust | Authentication, routing, rate limiting | Custom 0.42 |
-| C-003 | Container | Research Agent | Rust, async | Context gathering for document generation | Custom 0.35 |
-| C-004 | Container | Content Agent | Rust, async | Document content generation with templates | Custom 0.35 |
-| C-005 | Container | Compliance Agent | Rust, async | Woo/AVG compliance checking, scoring | Custom 0.35 |
-| C-006 | Container | Review Agent | Rust, async | Quality assessment, suggestions | Custom 0.35 |
-| C-007 | Container | NER Service | Rust, regex + rules | Named Entity Recognition | Product 0.70 |
-| C-008 | Container | GraphRAG Service | Python, arangodb | Knowledge graph, entity resolution | Custom 0.42 |
-| C-009 | Container | Embedding Service | Rust, pgvector | Vector search, semantic similarity | Product 0.70 |
-| C-010 | ContainerDb | PostgreSQL | PostgreSQL 15+, RLS | Transactional data, entities, relationships | Commodity 0.95 |
-| C-011 | ContainerDb | DuckDB | In-memory analytics | Full-text search, analytics, vectors | Commodity 0.90 |
-| C-012 | ContainerDb | Document Storage | MinIO/S3 | Binary content, versioned files | Commodity 0.95 |
-| C-013 | ContainerQueue | ETL Queue | In-memory queue | Background job processing | Commodity 0.90 |
+| ID | Type | Name | Technology | Responsibility | Source Location | Evolution Stage |
+|----|------|------|------------|----------------|-----------------|----------------|
+| C-001 | Container | Web Application | Dioxus WASM, Rust | User interface, WCAG 2.2 AA | `frontend/crates/iou-frontend/` | Custom 0.42 |
+| C-002 | Container | REST API | Axum, Rust | Authentication, routing, rate limiting | `server/crates/iou-api/` | Custom 0.42 |
+| C-003 | Container | Research Agent | Rust, async | Context gathering for document generation | `server/crates/iou-ai/src/agents/research.rs` | Custom 0.35 |
+| C-004 | Container | Content Agent | Rust, async | Document content generation with templates | `server/crates/iou-ai/src/agents/content.rs` | Custom 0.35 |
+| C-005 | Container | Compliance Agent | Rust, async | Woo/AVG compliance checking, scoring | `server/crates/iou-ai/src/agents/compliance.rs` | Custom 0.35 |
+| C-006 | Container | Review Agent | Rust, async | Quality assessment, suggestions | `server/crates/iou-ai/src/agents/review.rs` | Custom 0.35 |
+| C-007 | Container | NER Service | Rust, regex + rules | Named Entity Recognition | `server/crates/iou-ai/src/ner.rs` | Product 0.70 |
+| C-008 | Container | GraphRAG Service | Rust, arangodb | Knowledge graph, entity resolution | `server/crates/iou-ai/src/graphrag.rs` | Custom 0.42 |
+| C-009 | Container | Embedding Service | Rust, pgvector | Vector search, semantic similarity | `server/crates/iou-ai/src/semantic.rs` | Product 0.70 |
+| C-010 | ContainerDb | PostgreSQL | Supabase PostgreSQL | Transactional data, entities, relationships | Supabase Cloud | Commodity 0.95 |
+| C-011 | ContainerDb | DuckDB | In-memory analytics | Full-text search, analytics, vectors | `server/crates/iou-api/src/db.rs` | Commodity 0.90 |
+| C-012 | ContainerDb | Document Storage | MinIO/S3 | Binary content, versioned files | `server/crates/iou-storage/src/s3.rs` | Commodity 0.95 |
+| C-013 | ContainerQueue | ETL Queue | In-memory queue | Background job processing | `server/crates/iou-api/src/etl/` | Commodity 0.90 |
 
 **Total Containers**: 13 (within C4 Container threshold of 15)
+
+---
+
+## 2.1. Source Code Traceability by Container
+
+### C-001: Web Application
+- **Location**: `frontend/crates/iou-frontend/`
+- **Key Files**:
+  - `src/components/mod.rs` - Component definitions
+  - `src/api/ai_workflow.rs` - AI workflow API client
+  - `src/components/workflow_*.rs` - Workflow UI components
+
+### C-002: REST API
+- **Location**: `server/crates/iou-api/`
+- **Key Files**:
+  - `src/lib.rs` - Main library exports
+  - `src/middleware/auth.rs` - Authentication & RBAC
+  - `src/routes/*.rs` - API route handlers
+  - `src/db.rs` - DuckDB database layer
+  - `src/etl/` - ETL pipeline and outbox
+  - `src/websockets/` - WebSocket support
+
+### C-003 to C-006: AI Agents
+- **Location**: `server/crates/iou-ai/src/agents/`
+- **Files**: `research.rs`, `content.rs`, `compliance.rs`, `review.rs`
+- **Shared**: `error.rs`, `config.rs`, `checkpoint_store.rs`, `pipeline.rs`
+
+### C-007 to C-009: Knowledge Graph Services
+- **Location**: `server/crates/iou-ai/src/`
+- **Files**: `ner.rs`, `graphrag.rs`, `semantic.rs`, `suggestions.rs`
+
+### C-013: ETL Queue & Pipeline
+- **Location**: `server/crates/iou-api/src/etl/`
+- **Files**:
+  - `pipeline.rs` - ETL pipeline orchestration
+  - `config.rs` - Configuration
+  - `tables.rs` - Database table definitions
+  - `outbox.rs` - Outbox pattern implementation
 
 ---
 

@@ -11,6 +11,7 @@ pub mod review;
 pub mod error;
 pub mod checkpoint_store;
 pub mod pipeline;
+pub mod workflow;
 
 pub use checkpoint_store::PipelineCheckpointStore;
 pub use error::{PipelineError, ErrorSeverity};

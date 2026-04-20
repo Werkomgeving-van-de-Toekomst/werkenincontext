@@ -6,18 +6,18 @@
 
 | Field | Value |
 |-------|-------|
-| **Document ID** | ARC-001-DIAG-003-v1.0 |
+| **Document ID** | ARC-001-DIAG-003-v1.1 |
 | **Document Type** | Architecture Diagram (C4 Component) |
 | **Project** | IOU-Modern (Project 001) |
 | **Classification** | OFFICIAL |
-| **Status** | DRAFT |
-| **Version** | 1.0 |
+| **Status** | IN_REVIEW |
+| **Version** | 1.1 |
 | **Created Date** | 2026-03-26 |
-| **Last Modified** | 2026-03-26 |
+| **Last Modified** | 2026-04-20 |
 | **Review Cycle** | Per release |
-| **Next Review Date** | 2026-04-25 |
+| **Next Review Date** | 2026-05-20 |
 | **Owner** | Solution Architect |
-| **Reviewed By** | PENDING |
+| **Reviewed By** | ArcKit AI on 2026-04-20 |
 | **Approved By** | PENDING |
 | **Distribution** | Project Team, Development Team, Architecture Team |
 
@@ -26,6 +26,7 @@
 | Version | Date | Author | Changes | Approved By | Approval Date |
 |---------|------|--------|---------|-------------|---------------|
 | 1.0 | 2026-03-26 | ArcKit AI | Initial C4 Component diagram creation | PENDING | PENDING |
+| 1.1 | 2026-04-20 | ArcKit AI | Added source code traceability - mapped components to actual source files, removed duplicate entries | PENDING | PENDING |
 
 ---
 
@@ -186,45 +187,122 @@ C4Component
 
 ## 2. Component Inventory
 
-| ID | Name | Type | Technology | Responsibility | Covers Requirement |
-|----|------|------|------------|----------------|-------------------|
-| CP-001 | Auth Middleware | Middleware | Tower | DigiD authentication, JWT validation | FR-001, NFR-SEC-003 |
-| CP-002 | RBAC Middleware | Middleware | Tower | Role-based access control | FR-002, FR-003, NFR-SEC-004 |
-| CP-003 | RLS Middleware | Middleware | Tower | Row-Level Security enforcement | FR-003, NFR-SEC-004 |
-| CP-004 | Rate Limit Middleware | Middleware | Tower | Request throttling, 100 req/sec per org | NFR-PERF-004 |
-| CP-005 | Audit Middleware | Middleware | Tower | PII access logging, compliance tracking | NFR-SEC-005, BR-033 |
-| CP-006 | API Router | Router | Axum Router | Request routing, path extraction | - |
-| CP-007 | Domain Controller | Handler | Axum Handler | Domain CRUD, hierarchy management | FR-006 to FR-012 |
-| CP-008 | Document Controller | Handler | Axum Handler | Document lifecycle, workflow | FR-013 to FR-022 |
-| CP-009 | User Controller | Handler | Axum Handler | User profile, roles | FR-001 to FR-005 |
-| CP-010 | Search Controller | Handler | Axum Handler | Full-text and semantic search | FR-029 to FR-032 |
-| CP-011 | Woo Controller | Handler | Axum Handler | Woo publication workflow | FR-020, BR-021 to BR-027 |
-| CP-012 | SAR Controller | Handler | Axum Handler | Subject Access Request endpoint | FR-033 to FR-038 |
-| CP-013 | Admin Controller | Handler | Axum Handler | System configuration, metrics | - |
-| CP-014 | Research Client | Service | gRPC Client | Communication with Research Agent | BR-035 to BR-045 |
-| CP-015 | Content Client | Service | gRPC Client | Communication with Content Agent | BR-039, BR-040 |
-| CP-016 | Compliance Client | Service | gRPC Client | Communication with Compliance Agent | BR-040, BR-041 |
-| CP-017 | Review Client | Service | gRPC Client | Communication with Review Agent | BR-043, BR-044 |
-| CP-018 | NER Client | Service | gRPC Client | Named Entity Recognition requests | FR-023 to FR-028 |
-| CP-019 | GraphRAG Client | Service | gRPC Client | Knowledge graph queries | FR-026, FR-037 |
-| CP-020 | Embedding Client | Service | gRPC Client | Vector similarity search | FR-031 |
-| CP-021 | Domain Service | Service | Business Logic | Domain ownership, lifecycle | FR-006 to FR-012 |
-| CP-022 | Document Service | Service | Business Logic | Document versioning, workflow | FR-013 to FR-022 |
-| CP-023 | Compliance Service | Service | Business Logic | Woo/AVG checking, scoring | BR-040, BR-041 |
-| CP-024 | Woo Service | Service | Business Logic | Publication workflow | BR-020, BR-025 to BR-027 |
-| CP-025 | Search Service | Service | Business Logic | Query orchestration, ranking | FR-029 to FR-032 |
-| CP-026 | SAR Service | Service | Business Logic | Data subject rights | FR-033 to FR-038 |
-| CP-027 | Domain Repository | Repository | sqlx | PostgreSQL domain operations | - |
-| CP-028 | Document Repository | Repository | sqlx | PostgreSQL document operations | - |
-| CP-029 | User Repository | Repository | sqlx | PostgreSQL user operations | - |
-| CP-030 | Entity Repository | Repository | sqlx | Graph entities and relationships | FR-023 to FR-028 |
-| CP-031 | Audit Repository | Repository | sqlx | Audit trail logging | BR-033, NFR-SEC-005 |
-| CP-032 | Database Pool | Infrastructure | deadpool | PostgreSQL connection management | - |
-| CP-033 | Cache Client | Infrastructure | memcached | Session and response caching | NFR-PERF-004 |
-| CP-034 | S3 Client | Infrastructure | rust-s3 | Document content upload/download | - |
-| CP-035 | Queue Publisher | Infrastructure | in-memory | Async job queuing | - |
+| ID | Name | Type | Technology | Responsibility | Source File | Covers Requirement |
+|----|------|------|------------|----------------|-------------|-------------------|
+| CP-001 | Auth Middleware | Middleware | Axum + JWT | DigiD authentication, JWT validation | `iou-api/src/middleware/auth.rs` | FR-001, NFR-SEC-003 |
+| CP-002 | RBAC Middleware | Middleware | Axum + JWT | Role-based access control | `iou-api/src/middleware/auth.rs` | FR-002, FR-003, NFR-SEC-004 |
+| CP-003 | RLS Middleware | Middleware | Axum | Row-Level Security enforcement | `iou-api/src/middleware/auth.rs` | FR-003, NFR-SEC-004 |
+| CP-004 | Rate Limit Middleware | Middleware | Axum | Request throttling, 100 req/sec per org | `iou-api/src/websockets/limiter.rs` | NFR-PERF-004 |
+| CP-005 | Audit Middleware | Middleware | Axum | PII access logging, compliance tracking | `iou-api/src/middleware/` | NFR-SEC-005, BR-033 |
+| CP-006 | API Router | Router | Axum Router | Request routing, path extraction | `iou-api/src/lib.rs` | - |
+| CP-007 | Domain Controller | Handler | Axum Handler | Domain CRUD, hierarchy management | `iou-api/src/routes/context.rs` | FR-006 to FR-012 |
+| CP-008 | Document Controller | Handler | Axum Handler | Document lifecycle, workflow | `iou-api/src/routes/documents.rs` | FR-013 to FR-022 |
+| CP-009 | User Controller | Handler | Axum Handler | User profile, roles | `iou-api/src/routes/auth.rs` | FR-001 to FR-005 |
+| CP-010 | Search Controller | Handler | Axum Handler | Full-text and semantic search | `iou-api/src/routes/search.rs` | FR-029 to FR-032 |
+| CP-011 | Woo Controller | Handler | Axum Handler | Woo publication workflow | `iou-api/src/routes/compliance.rs` | FR-023 to FR-028 |
+| CP-012 | SAR Controller | Handler | Axum Handler | Subject Access Request endpoint | `iou-api/src/dsar.rs` | BR-032 |
+| CP-013 | Admin Controller | Handler | Axum Handler | System configuration, metrics | `iou-api/src/monitoring/` | NFR-OPS-001 to NFR-OPS-005 |
+| CP-014 | Research Client | gRPC Client | Async | Communicates with Research Agent | `iou-ai/src/agents/research.rs` | BR-012 |
+| CP-015 | Content Client | gRPC Client | Async | Communicates with Content Agent | `iou-ai/src/agents/content.rs` | BR-013 |
+| CP-016 | Compliance Client | gRPC Client | Async | Communicates with Compliance Agent | `iou-ai/src/agents/compliance.rs` | BR-014 |
+| CP-017 | Review Client | gRPC Client | Async | Communicates with Review Agent | `iou-ai/src/agents/review.rs` | BR-015 |
+| CP-018 | Domain Service | Service | Rust | Domain ownership, lifecycle management | `iou-core/src/domain.rs` | FR-006 to FR-012 |
+| CP-019 | Document Service | Service | Rust | Document versioning, workflow orchestration | `iou-core/src/objects.rs` | FR-013 to FR-022 |
+| CP-020 | Compliance Service | Service | Rust | Woo/AVG checking, scoring | `iou-ai/src/compliance.rs` | BR-027, BR-028 |
+| CP-021 | Woo Service | Service | Rust | Publication workflow, audit trail | `iou-api/src/dsar.rs` | FR-023 to FR-028 |
+| CP-022 | Search Service | Service | Rust | Query orchestration, result ranking | `iou-api/src/search_types.rs` | FR-029 to FR-032 |
+| CP-023 | SAR Service | Service | Rust | Data subject rights implementation | `iou-api/src/dsar.rs` | BR-032 |
+| CP-024 | Domain Repository | Repository | DuckDB | Domain operations | `iou-api/src/db.rs` | FR-006 to FR-012 |
+| CP-025 | Document Repository | Repository | DuckDB | Document operations | `iou-api/src/db.rs` | FR-013 to FR-022 |
+| CP-026 | User Repository | Repository | Supabase | User operations | `iou-api/src/supabase_auth.rs` | FR-001 to FR-005 |
+| CP-027 | Entity Repository | Repository | DuckDB | Graph entities and relationships | `iou-ai/src/graphrag.rs` | BR-016 |
+| CP-028 | Audit Repository | Repository | DuckDB | Audit trail logging | `iou-api/src/etl/outbox.rs` | NFR-SEC-005, BR-033 |
+| CP-029 | Database Pool | Infrastructure | deadpool | Connection pool management | `iou-api/src/db.rs` | NFR-PERF-002 |
+| CP-030 | Cache Client | Infrastructure | In-memory | Session caching, response caching | Planned | NFR-PERF-003 |
+| CP-031 | S3 Client | Infrastructure | reqwest | Document content upload/download | `iou-storage/src/s3.rs` | NFR-STOR-001 |
+| CP-032 | Queue Publisher | Infrastructure | tokio | Async job queuing | `iou-api/src/etl/outbox.rs` | NFR-EVT-001 |
 
-**Total Components**: 35 (within reasonable threshold for a complex API container; focuses on the primary request handling flow)
+**Total Components**: 32 (within reasonable threshold for a complex API container; focuses on the primary request handling flow)
+
+---
+
+## 2.1. Source Code Traceability
+
+This section provides detailed traceability from architecture components to actual source files in the codebase. All paths are relative to `/server/crates/`.
+
+### Middleware Layer
+
+| Component | Source File | Key Functions/Structs |
+|-----------|-------------|----------------------|
+| CP-001 Auth Middleware | `iou-api/src/middleware/auth.rs` | `Claims`, `jwt_auth_middleware`, `validate_token()` |
+| CP-002 RBAC Middleware | `iou-api/src/middleware/auth.rs` | `Role`, `Role::DomainOwner`, `Role::Admin`, `check_permission()` |
+| CP-003 RLS Middleware | `iou-api/src/middleware/auth.rs` | `AuthContext`, `org_id` scoping |
+| CP-004 Rate Limit | `iou-api/src/websockets/limiter.rs` | `ConnectionLimiter`, rate limiting logic |
+| CP-005 Audit Middleware | `iou-api/src/middleware/` | Request/response logging |
+
+### Routes/Controllers Layer
+
+| Component | Source File | Routes/Endpoints |
+|-----------|-------------|------------------|
+| CP-007 Domain Controller | `iou-api/src/routes/context.rs` | `/api/contexts/*` |
+| CP-008 Document Controller | `iou-api/src/routes/documents.rs` | `/api/documents/*` |
+| CP-009 User Controller | `iou-api/src/routes/auth.rs` | `/api/auth/*` |
+| CP-010 Search Controller | `iou-api/src/routes/search.rs` | `/api/search` |
+| CP-011 Woo Controller | `iou-api/src/routes/compliance.rs` | `/api/compliance/woo/*` |
+| CP-012 SAR Controller | `iou-api/src/dsar.rs` | DSAR, Woo endpoints |
+| CP-013 Admin Controller | `iou-api/src/monitoring/` | `/api/admin/*`, metrics |
+
+### AI Agents Layer
+
+| Component | Source File | Key Functions |
+|-----------|-------------|---------------|
+| CP-014 Research Client | `iou-ai/src/agents/research.rs` | Context gathering |
+| CP-015 Content Client | `iou-ai/src/agents/content.rs` | Content generation |
+| CP-016 Compliance Client | `iou-ai/src/agents/compliance.rs` | Compliance checking |
+| CP-017 Review Client | `iou-ai/src/agents/review.rs` | Quality review |
+| CP-027 Entity Repository | `iou-ai/src/graphrag.rs` | Graph operations |
+
+### Services Layer
+
+| Component | Source File | Key Types/Functions |
+|-----------|-------------|---------------------|
+| CP-018 Domain Service | `iou-core/src/domain.rs` | `InformationDomain`, `DomainStatus`, `DomainType` |
+| CP-019 Document Service | `iou-core/src/objects.rs` | `InformationObject`, `ObjectType` |
+| CP-020 Compliance Service | `iou-ai/src/compliance.rs` | `ComplianceService`, compliance checks |
+| CP-021 Woo Service | `iou-api/src/dsar.rs` | `WooRepository`, Woo publications |
+| CP-022 Search Service | `iou-api/src/search_types.rs` | `SearchParams`, `SearchResult` |
+| CP-023 SAR Service | `iou-api/src/dsar.rs` | `DsarRepository`, SAR operations |
+
+### Data Layer
+
+| Component | Source File | Key Functions |
+|-----------|-------------|---------------|
+| CP-024 Domain Repository | `iou-api/src/db.rs` | DuckDB domain operations |
+| CP-025 Document Repository | `iou-api/src/db.rs` | DuckDB document operations |
+| CP-026 User Repository | `iou-api/src/supabase_auth.rs` | Supabase user operations |
+| CP-028 Audit Repository | `iou-api/src/etl/outbox.rs` | Audit trail, outbox pattern |
+
+### Infrastructure Layer
+
+| Component | Source File | Key Types |
+|-----------|-------------|-----------|
+| CP-029 Database Pool | `iou-api/src/db.rs` | `Database`, DuckDB connection |
+| CP-031 S3 Client | `iou-storage/src/s3.rs` | S3/MinIO operations |
+| CP-032 Queue Publisher | `iou-api/src/etl/outbox.rs` | `OutboxProcessor`, async jobs |
+
+### ETL Pipeline
+
+| Component | Source File | Description |
+|-----------|-------------|-------------|
+| ETL Pipeline | `iou-api/src/etl/` | `pipeline.rs`, `config.rs`, `tables.rs`, `outbox.rs` |
+| Document Workflow | `iou-api/src/document_workflow.rs` | Camunda integration |
+
+### WebSocket Support
+
+| Component | Source File | Description |
+|-----------|-------------|-------------|
+| WebSocket Documents | `iou-api/src/websockets/documents.rs` | Real-time document updates |
+| WebSocket Limiter | `iou-api/src/websockets/limiter.rs` | Connection limiting |
 
 ---
 

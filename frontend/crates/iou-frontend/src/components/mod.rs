@@ -1,6 +1,7 @@
 //! Reusable UI components
 
 mod approval_actions;
+mod ai_workflow_chat;
 mod app_card;
 mod audit_viewer;
 mod delegation_manager;
@@ -18,12 +19,16 @@ mod terrain_encoding;
 mod timeline;
 mod version_history;
 mod view_toggle;
+mod workflow_analytics;
+mod workflow_generator;
 mod workflow_stage_tracker;
+mod workflow_visualizer;
 mod density_heatmap;
 mod geo_filter_panel;
 mod url_state;
 
 pub use approval_actions::ApprovalActions;
+pub use ai_workflow_chat::AiWorkflowChat;
 pub use app_card::AppCard;
 pub use audit_viewer::AuditTrailViewer;
 pub use diff_viewer::DiffViewer;
@@ -33,7 +38,10 @@ pub use knowledge_graph::KnowledgeGraph;
 pub use panel::Panel;
 pub use timeline::{Timeline, TimelineEvent, TimelineEventType};
 pub use version_history::VersionHistory;
+pub use workflow_analytics::WorkflowAnalyticsDashboard;
+pub use workflow_generator::{WorkflowGenerator, WorkflowConfig};
 pub use workflow_stage_tracker::WorkflowStageTracker;
+pub use workflow_visualizer::WorkflowVisualizer;
 
 // 3D Map Components (Map Engine 3D Upgrade)
 pub use map_3d::{
