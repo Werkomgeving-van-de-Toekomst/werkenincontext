@@ -22,3 +22,26 @@
 **Depends on / blocked by:** None (can start immediately)
 
 **Context:** This was the APPROVED approach in the design doc. The Rust implementation that was started diverged from this plan. If NL-to-BPMN validation succeeds, THEN consider whether to extend existing Camunda workflows or build new AI integration.
+
+## Pre-existing Test Failures
+
+### Priority: P0
+**Title:** Fix Rust test suite compilation errors
+
+**Description:**
+The test suite has pre-existing compilation errors that prevent cargo test from running:
+- Unresolved imports: `iou_core::tag::TagRepository`, `iou_core::category::CategoryRepository`
+- Missing enum variants: `TagType::User`, `TagType::Domain`
+- Type annotation errors in test files
+
+**Branch noticed on:** feature/metadata-registry-context-aware
+**Also affects:** main branch (9 errors on main, 112 cascading errors on feature)
+
+**Files affected:**
+- `crates/iou-core/tests/` (test files)
+- Related modules: tag, category, graphrag
+
+**Next steps:**
+1. Fix module exports to include TagRepository, CategoryRepository
+2. Add missing TagType enum variants
+3. Fix type annotation errors
