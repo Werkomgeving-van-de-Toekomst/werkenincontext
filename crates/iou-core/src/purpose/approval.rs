@@ -243,8 +243,7 @@ mod tests {
 
     #[test]
     fn test_approval_workflow() {
-        let workflow = purpose_approval_workflow();
-        assert_eq!(workflow.name, "purpose_approval");
-        assert_eq!(workflow.stages.len(), 2);
+        let workflow_name = purpose_approval_workflow();
+        assert_eq!(workflow_name, "purpose_approval");
     }
 }
