@@ -10,10 +10,10 @@ Een context-driven informatiemanagement platform voor Nederlandse overheidsorgan
 |-----------|-------------|
 | **Core Library** | Rust with feature flags (WASM-compatible) |
 | **Rules Engine** | PROVISA/BPMN/DMN via Open Regels |
-| **GraphRAG** | petgraph + ArangoDB |
+| **GraphRAG** | petgraph + DuckDB (analytical) + PostgreSQL (transactional) |
 | **Frontend** | [Dioxus](https://dioxuslabs.com/) (WebAssembly) |
 | **Maps** | Leaflet.js + Cesium (3D) |
-| **NLP** | Rust regex NER |
+| **NLP** | Rust regex NER + AI agents |
 
 ## 📦 Project Structuur
 
@@ -22,12 +22,25 @@ iou-modern/
 ├── crates/
 │   ├── iou-core/       # Gedeelde domain modellen (WASM-compatible)
 │   └── iou-regels/     # PROVISA/BPMN/DMN rules engine
+├── server/
+│   ├── crates/
+│   │   ├── iou-api/         # Axum HTTP server + WebSocket
+│   │   ├── iou-storage/     # PostgreSQL + S3 storage layer
+│   │   ├── iou-ai/          # AI agents + NER + compliance
+│   │   ├── iou-ai-service/  # AI service binary
+│   │   ├── iou-camunda-worker/ # Camunda 8 workflow worker
+│   │   └── iou-orchestrator/  # Workflow orchestration
+│   └── Cargo.toml       # Server workspace
 ├── frontend/
 │   └── crates/
 │       └── iou-frontend/   # Dioxus WASM app (separate workspace)
-├── docs/                # Architectuur documentatie
-├── migrations/          # Database schema's
-├── templates/           # Document templates (Markdown)
+├── docs/                # Architectuur documentatie (ArcKit)
+├── migrations/          # PostgreSQL schema's (SQLx)
+├── projects/            # ArcKit project artifacts
+│   ├── 000-global/      # Global architecture principles
+│   ├── 001-iou-modern/  # Main project documentation
+│   ├── 002-metadata-registry/
+│   └── 003-context-aware-data/
 └── static/              # Statische HTML pagina's
 ```
 
@@ -75,6 +88,37 @@ dx serve --port 8080
 
 # Production build
 dx build --release
+```
+
+### Database Setup
+
+```bash
+# PostgreSQL (development)
+docker run -d -p 5432:5432 \
+  -e POSTGRES_DB=iou_modern \
+  -e POSTGRES_USER=iou \
+  -e POSTGRES_PASSWORD=dev \
+  postgres:16
+
+# Run migrations
+cargo run --bin iou-api -- migrate
+
+# DuckDB (embedded, no setup required)
+# Analytical queries and full-text search
+```
+
+### Server Development
+
+```bash
+# Run API server
+cd server
+cargo run --bin iou-api
+
+# Run AI service
+cargo run --bin iou-ai-service
+
+# Run Camunda worker
+cargo run --bin iou-camunda-worker
 ```
 
 ## 🎯 Kernconcepten
