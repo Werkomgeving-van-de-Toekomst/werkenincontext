@@ -1,0 +1,34 @@
+[package]
+name = "context-store"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Workspace crates
+context-core = { path = "../context-core" }
+iou-core = { path = "../../../crates/iou-core", default-features = false, features = ["server"] }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Types
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Database
+arangors = { workspace = true }
+mobc = { workspace = true }
+
+# Logging
+tracing = { workspace = true }

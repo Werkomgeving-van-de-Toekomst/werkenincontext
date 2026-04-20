@@ -1,0 +1,42 @@
+[package]
+name = "context-inference"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Workspace crates
+context-core = { path = "../context-core" }
+iou-core = { path = "../../../crates/iou-core", default-features = false, features = ["server"] }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Types
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# AI/ML - Nebul API (OpenAI-compatible)
+reqwest = { workspace = true, features = ["json"] }
+
+# Local NLP (fallback/acceleration)
+candle-core = { version = "0.8" }
+candle-transformers = { version = "0.8" }
+tokenizers = { workspace = true }
+regex = "1.10"
+
+# Validation
+garde = { workspace = true }
+
+# Logging
+tracing = { workspace = true }

@@ -35,7 +35,9 @@ impl ContextValidator {
             errors.push(ValidationError::MissingField("actor.actor_id"));
         }
 
-        if context.temporal.aangemaakt_op.is_empty() {
+        // Check if timestamp is reasonable (not year 0 or far in the future)
+        let year_2000 = chrono::DateTime::from_timestamp(946684800, 0).unwrap();
+        if context.temporal.aangemaakt_op < year_2000 {
             errors.push(ValidationError::MissingField("temporal.aangemaakt_op"));
         }
 

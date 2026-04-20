@@ -305,9 +305,11 @@ impl CategoryRepository {
         let mut root_ids: Vec<Uuid> = Vec::new();
         for (id, parent_id) in parent_relationships {
             if let Some(parent_id) = parent_id {
+                // Clone child first to avoid borrow checker issue
+                let child_clone = by_id.get(&id).cloned();
                 if let Some(parent) = by_id.get_mut(&parent_id) {
-                    if let Some(child) = by_id.get(&id) {
-                        parent.add_child(child.clone());
+                    if let Some(child) = child_clone {
+                        parent.add_child(child);
                     }
                 }
             } else {

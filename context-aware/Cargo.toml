@@ -13,12 +13,13 @@ resolver = "2"
 members = [
     "crates/context-core",
     "crates/context-api",
-    "crates/context-domain",
-    "crates/context-semantic",
-    "crates/context-provenance",
-    "crates/context-inference",
-    "crates/context-quality",
     "crates/context-store",
+    "crates/context-inference",
+    # TODO: Implement these crates
+    # "crates/context-domain",
+    # "crates/context-semantic",
+    # "crates/context-provenance",
+    # "crates/context-quality",
 ]
 
 [workspace.package]
@@ -71,12 +72,21 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 # Database (ArangoDB for graph context relationships)
 arangors = { version = "0.6", features = ["rocksdb"] }
 
+# Connection pool
+mobc = "0.8"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+
+# HTTP types
+http = "1.3"
+
 # Vector database for semantic context
 qdrant-client = "1.12"
 
-# AI/ML for inference
-candle-core = "0.8"
-candle-transformers = "0.8"
+# AI/ML for inference (Metal acceleration on Mac, CUDA on Linux)
+candle-core = { version = "0.8", features = ["metal"] }
+candle-transformers = { version = "0.8", features = ["metal"] }
 tokenizers = "0.15"
 
 # Validation

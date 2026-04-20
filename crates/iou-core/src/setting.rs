@@ -201,6 +201,22 @@ pub enum SettingValueType {
     StringArray,
 }
 
+impl std::str::FromStr for SettingValueType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "string" => Ok(Self::String),
+            "integer" => Ok(Self::Integer),
+            "float" => Ok(Self::Float),
+            "boolean" => Ok(Self::Boolean),
+            "json" => Ok(Self::Json),
+            "string_array" => Ok(Self::StringArray),
+            _ => Err(format!("unknown SettingValueType: {}", s)),
+        }
+    }
+}
+
 impl SettingValueType {
     fn from_json(value: &serde_json::Value) -> Self {
         match value {
@@ -234,6 +250,21 @@ pub enum SettingScope {
     Domain,
     /// Gebruiker specifiek
     User,
+}
+
+impl std::str::FromStr for SettingScope {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "system" => Ok(Self::System),
+            "tenant" => Ok(Self::Tenant),
+            "organization" => Ok(Self::Organization),
+            "domain" => Ok(Self::Domain),
+            "user" => Ok(Self::User),
+            _ => Err(format!("unknown SettingScope: {}", s)),
+        }
+    }
 }
 
 impl SettingScope {

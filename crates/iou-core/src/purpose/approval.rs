@@ -182,14 +182,16 @@ pub struct PurposeApprovalSummary {
 
 impl From<PurposeRequest> for PurposeApprovalSummary {
     fn from(req: PurposeRequest) -> Self {
+        let is_expired = req.is_expired();
+        let next_approvers = req.required_approvers();
         Self {
             request_id: req.id,
             purpose_name: req.name,
             status: req.status,
             requested_by: req.requested_by,
             created_at: req.created_at,
-            is_expired: req.is_expired(),
-            next_approvers: req.required_approvers(),
+            is_expired,
+            next_approvers,
         }
     }
 }

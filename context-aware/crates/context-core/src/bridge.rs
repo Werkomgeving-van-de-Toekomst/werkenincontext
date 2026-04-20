@@ -120,9 +120,9 @@ impl From<&Context> for GghhContext {
             context_id: context.id.to_string(),
             actor: GghhActor {
                 actor_type: match context.actor.actor_type {
-                    crate::entities::ActorType::Persoon => "persoon",
-                    crate::entities::ActorType::Systeem => "systeem",
-                    crate::entities::ActorType::Service => "service",
+                    crate::entities::ActorType::Persoon => "persoon".to_string(),
+                    crate::entities::ActorType::Systeem => "systeem".to_string(),
+                    crate::entities::ActorType::Service => "service".to_string(),
                 },
                 actor_id: context.actor.actor_id.clone(),
                 naam: context.actor.display_name.clone(),

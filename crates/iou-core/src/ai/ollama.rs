@@ -492,7 +492,7 @@ INSTRUCTIES:
 
 SAMENVATTING:"#,
             document.titel,
-            document.document_type.unwrap_or("Onbekend"),
+            document.document_type.clone().unwrap_or_else(|| "Onbekend".to_string()),
             document.inhoud
         )
     }
@@ -571,7 +571,7 @@ Geef antwoord in JSON-formaat:
   "redengeving": "toelichting bij deze termijn"
 }}"#,
             document.titel,
-            document.document_type.unwrap_or("Onbekend"),
+            document.document_type.clone().unwrap_or_else(|| "Onbekend".to_string()),
             document.inhoud
         )
     }

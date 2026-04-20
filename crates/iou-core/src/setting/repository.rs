@@ -381,7 +381,7 @@ impl SettingsRepository {
             validation_regex: row.get("validation_regex"),
             is_encrypted: row.get("is_encrypted"),
             is_public: row.get("is_public"),
-            metadata: metadata.unwrap_or_else(|_| serde_json::json!({})),
+            metadata,
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })

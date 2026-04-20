@@ -7,7 +7,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use garde::Validate;
 
-use crate::{ContextId, ContextRecordId, Id, Timestamp, OrganisationId};
+use crate::{ContextId, ContextRecordId, Timestamp, OrganisationId};
 
 /// Context: The complete contextual metadata for an information object
 ///
@@ -20,39 +20,51 @@ use crate::{ContextId, ContextRecordId, Id, Timestamp, OrganisationId};
 #[derive(Clone, Debug, Serialize, Deserialize, Validate)]
 pub struct Context {
     /// Unique identifier for this context
+    #[garde(skip)]
     pub id: ContextId,
 
     /// Information object this context describes
+    #[garde(skip)]
     pub informatieobject_id: Uuid,
 
     /// Organization that owns this context
+    #[garde(skip)]
     pub organisatie_id: OrganisationId,
 
     /// Actor who created/last modified the context
+    #[garde(skip)]
     pub actor: Actor,
 
     /// Temporal context (when)
+    #[garde(skip)]
     pub temporal: TemporalContext,
 
     /// Domain context (where in organization)
+    #[garde(skip)]
     pub domain: DomainContext,
 
     /// Purpose context (why - grondslag/beleid)
+    #[garde(skip)]
     pub purpose: PurposeContext,
 
     /// Semantic context (meaning/keywords)
+    #[garde(skip)]
     pub semantic: SemanticContext,
 
     /// Provenance context (origin/lineage)
+    #[garde(skip)]
     pub provenance: ProvenanceContext,
 
     /// Quality metrics
+    #[garde(skip)]
     pub quality: QualityMetrics,
 
     /// Validity period
+    #[garde(skip)]
     pub geldigheid: Geldigheid,
 
     /// Metadata
+    #[garde(skip)]
     pub metadata: ContextMetadata,
 }
 
@@ -177,7 +189,7 @@ pub struct PurposeContext {
     pub grondslagen: Vec<Grondslag>,
 
     /// Policy references
-    pub beleidsreferenties: Vec<Beleidsreferantie>,
+    pub beleidsreferenties: Vec<Beleidsreferentie>,
 
     /// Business purpose description
     pub zakelijk_doel: Option<String>,

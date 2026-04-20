@@ -3,7 +3,7 @@
 // =============================================================================
 
 use async_trait::async_trait;
-use crate::{Context, ContextId, ContextRecord, InformatieobjectId};
+use crate::{Context, ContextId};
 
 /// Context store trait - abstract storage interface
 #[async_trait]

@@ -2,7 +2,7 @@
 // Context Inference - AI-powered context enrichment
 // =============================================================================
 
-use crate::{Context, Confidence, SemanticContext, Entiteit, EntiteitType};
+use crate::{Context, Confidence, SemanticContext, Entiteit};
 
 /// Context inference service trait
 pub trait ContextInference: Send + Sync {
