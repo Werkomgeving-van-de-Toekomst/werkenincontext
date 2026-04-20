@@ -1,0 +1,200 @@
+# IOU-Modern Development Environment
+#
+# Services:
+# - PostgreSQL: Primary database with automatic migrations
+# - MinIO: S3-compatible object storage
+# - pgAdmin: Database management UI
+# - Adminer: Lightweight database management tool
+#
+# Usage:
+#   docker-compose up -d
+#   docker-compose logs -f postgres
+#   docker-compose down
+#
+# Environment:
+#   Set DATABASE_URL in .env or export:
+#   export DATABASE_URL="postgresql://iou_user:iou_password@localhost:5432/iou_modern"
+
+version: "3.9"
+
+services:
+  # =============================================================================
+  # PostgreSQL Database
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: iou-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: iou_modern
+      POSTGRES_USER: iou_user
+      POSTGRES_PASSWORD: iou_password
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      # Performance tuning for development
+      shared_buffers: 256MB
+      effective_cache_size: 1GB
+      maintenance_work_mem: 64MB
+      checkpoint_completion_target: 0.9
+      wal_buffers: 16MB
+      default_statistics_target: 100
+      random_page_cost: 1.1
+      effective_io_concurrency: 200
+      work_mem: 2621kB
+      min_wal_size: 1GB
+      max_wal_size: 4GB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/postgres:/docker-entrypoint-initdb.d:ro
+      - ./scripts/docker/init-db.sh:/docker-entrypoint-initdb.d/99-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iou_user -d iou_modern"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - iou-network
+
+  # =============================================================================
+  # MinIO S3-compatible Storage
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: iou-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_DEFAULT_BUCKETS: iou-documents:public,iou-temp:private
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+    networks:
+      - iou-network
+
+  # =============================================================================
+  # pgAdmin - Database Management UI
+  # =============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: iou-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@iou-modern.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_DISABLE_POSTFIX: "True"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - iou-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # =============================================================================
+  # Adminer - Lightweight Database Management
+  # =============================================================================
+  adminer:
+    image: adminer:latest
+    container_name: iou-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - iou-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # =============================================================================
+  # Mailhog - Email Testing (SMTP Server)
+  # =============================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: iou-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8025"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - iou-network
+
+  # =============================================================================
+  # Redis - Caching and Session Storage
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: iou-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iou-network
+
+  # =============================================================================
+  # DuckDB Service (optional, for analytics)
+  # =============================================================================
+  duckdb:
+    image: ghcr.io/datahunt-dev/chartgpt-langchain-api:latest
+    container_name: iou-duckdb
+    restart: unless-stopped
+    command: tail -f /dev/null
+    profiles:
+      - analytics
+    networks:
+      - iou-network
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  iou-network:
+    driver: bridge

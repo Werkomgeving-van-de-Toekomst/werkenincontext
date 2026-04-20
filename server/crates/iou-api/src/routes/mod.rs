@@ -14,6 +14,8 @@ pub mod graphrag;
 pub mod health;
 pub mod id;
 pub mod objects;
+pub mod purpose;
+pub mod registry;
 pub mod search;
 pub mod stakeholder;
 pub mod templates;

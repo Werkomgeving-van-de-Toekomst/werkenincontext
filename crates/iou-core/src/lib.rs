@@ -10,6 +10,7 @@
 //! - [`objects`]: Informatieobjecten (documenten, emails, besluiten)
 //! - [`compliance`]: Woo, AVG en Archiefwet compliance types
 //! - [`organization`]: Organisatie, afdelingen, gebruikers
+//! - [`purpose`]: Purpose binding voor AVG/GDPR compliance
 //! - [`graphrag`]: Knowledge graph types (entities, relationships)
 //! - [`workflows`]: Workflow status en definitie types
 //! - [`delegation`]: Delegatie types
@@ -18,6 +19,10 @@
 //! - [`document`]: Document types
 //! - [`sla`]: SLA calculatie types
 //! - [`tenancy`]: Multi-tenant context types
+//! - [`ai`]: AI service integratie (Ollama)
+//! - [`tag`]: Tags voor flexibele classificatie
+//! - [`category`]: Categories voor hiërarchische classificatie
+//! - [`setting`]: Settings voor systeemconfiguratie
 //!
 //! ## Server-only (requires tokio/sqlx/reqwest)
 //! - [`audit`]: Audit logging met PostgreSQL backend
@@ -31,10 +36,12 @@
 // Always-available modules (WASM-compatible)
 // =============================================================================
 
+pub mod ai;
 pub mod domain;
 pub mod objects;
 pub mod compliance;
 pub mod organization;
+pub mod purpose;
 pub mod graphrag;
 pub mod api_types;
 pub mod workflows;
@@ -44,6 +51,9 @@ pub mod diff;
 pub mod document;
 pub mod sla;
 pub mod tenancy;
+pub mod tag;
+pub mod category;
+pub mod setting;
 
 // =============================================================================
 // Server-only modules (require "server" feature)
@@ -76,6 +86,9 @@ pub use domain::{DomainType, InformationDomain, Case, Project, PolicyTopic};
 pub use objects::{ObjectType, InformationObject};
 pub use compliance::{Classification, WooMetadata, AvgMetadata, RetentionPolicy};
 pub use organization::{Organization, Department, User, Role};
+
+// AI service types (Ollama integration)
+pub use ai::{OllamaClient, NederlandseAIDienst, OllamaError, DocumentInhoud, DocumentSamenvatting, AIDocumentMetadata, WooClassificatie};
 
 // GraphRAG types (only the data structures, not the store)
 pub use graphrag::types::{
@@ -124,6 +137,26 @@ pub use document::{
     AuditEntry,  // Re-exported from document.rs for convenience
     StorageRef, DocumentVersion, DocumentFormat,
     Template, TemplateVariable, VariableSource, RenderedDocument,
+};
+
+// Tag types
+pub use tag::{
+    Tag, TagType, ObjectTag, DomainTag,
+    TagSuggestion, SuggestionReason, TagStats,
+};
+
+// Category types
+pub use category::{
+    Category, CategoryType, ObjectCategory, DomainCategory,
+    CategoryNode, CategoryMigration, MigrationStrategy, MigrationStatus,
+    CategoryStats,
+};
+
+// Setting types
+pub use setting::{
+    Setting, SettingKey, SettingValueType, SettingScope,
+    SettingHistory, SettingBulkUpdate, SettingUpdateItem,
+    SettingQuery, SettingGroup,
 };
 
 // =============================================================================
@@ -183,3 +216,15 @@ pub use escalation::{
     StageDeadlineInfo,
     EscalationError,
 };
+
+// Tag repository
+#[cfg(feature = "server")]
+pub use tag::repository::{TagRepository, TagError};
+
+// Category repository
+#[cfg(feature = "server")]
+pub use category::repository::{CategoryRepository, CategoryError};
+
+// Setting repository
+#[cfg(feature = "server")]
+pub use setting::repository::{SettingsRepository, SettingsError};

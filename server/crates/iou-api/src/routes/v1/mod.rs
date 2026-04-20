@@ -5,6 +5,9 @@ pub mod calculations;
 pub mod processes;
 pub mod data_subject_rights;
 pub mod woo;
+pub mod categories;
+pub mod tags;
+pub mod settings;
 
 pub use rules::{list_rules, evaluate_rule, get_open_regels_rule, RuleEvaluationRequest};
 pub use calculations::{start_calculation, CalculationRequest, CalculationResponse};
